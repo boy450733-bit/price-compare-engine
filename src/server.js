@@ -18,24 +18,37 @@ async function autoSetup() {
   await pool.query(sql);
   console.log("Schema ready.");
 
+const stores = [
+  [
+    "Mega.pk",
+    "#0071dc",
+    "https://www.mega.pk",
+    "https://www.mega.pk/search/{query}",
+    null,
+  ],
+  [
+    "PriceOye.pk",
+    "#0071cc",
+    "https://priceoye.pk/",
+    "https://priceoye.pk/search?q={query}",
+    null,
+  ],
+];
+
+for (const store of stores) {
   await pool.query(
     `INSERT INTO stores (name, color, base_url, search_url_template, affiliate_param)
      VALUES ($1,$2,$3,$4,$5)
      ON CONFLICT (name) DO UPDATE SET
        color = EXCLUDED.color,
        base_url = EXCLUDED.base_url,
-       search_url_template = EXCLUDED.search_url_template`,
-    [
-      "Mega.pk",
-      "#0071dc",
-      "https://www.mega.pk",
-      "https://www.mega.pk/search/{query}",
-      null,
-    ]
+       search_url_template = EXCLUDED.search_url_template,
+       affiliate_param = EXCLUDED.affiliate_param`,
+    store
   );
-  console.log("Stores seeded.");
 }
 
+console.log("Stores seeded.");
 const app = express();
 app.use(express.json());
 
