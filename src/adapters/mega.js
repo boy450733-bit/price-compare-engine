@@ -5,31 +5,61 @@ import * as cheerio from "cheerio";
 // are real and stable. This adapter ignores the query text for now and
 // returns everything in the Xiaomi mobiles category, so it's a
 // placeholder to prove the pipeline end-to-end.
+
 const SEARCH_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
 
 export async function megaAdapter(query) {
-  const res = await fetch(CATEGORY_URL, {
-    headers: { "User-Agent": "PriceCompareBot/0.1 (+contact@yourdomain.com)" },
+  const res = await fetch(SEARCH_URL, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+    },
   });
+
   if (!res.ok) return [];
 
   const html = await res.text();
   const $ = cheerio.load(html);
+
   const results = [];
 
-  // NOTE: verify these selectors against the real page — see Option 2
-  // for how to find them accurately using your own browser.
-  $("a[href*='mobiles_products']").each((_, el) => {
-    const title = $(el).attr("title") || $(el).text().trim();
-    const href = $(el).attr("href");
-    if (!title || !href) return;
+  $(".product-grid-div ul.item_grid > li").each((_, el) => {
+    const product = $(el);
+
+    const link = product.find("#lap_name_div h3 a");
+
+    const title = link.text().trim();
+
+    const url = link.attr("href");
+
+    const image =
+      product.find(".image img").attr("src") ||
+      product.find(".image img").attr("data-src") ||
+      null;
+
+    const priceText = product
+      .find(".cat_price")
+      .clone()                // remove old price before reading current price
+      .find(".was")
+      .remove()
+      .end()
+      .text()
+      .replace("- PKR", "")
+      .replace(/,/g, "")
+      .trim();
+
+    const oldPriceText = product
+      .find(".cat_price .was")
+      .text()
+      .replace("- PKR", "")
+      .replace(/,/g, "")
+      .trim();
 
     results.push({
       title,
-      url: href.startsWith("http") ? href : `https://www.mega.pk${href}`,
-      image: null,
-      price: null,
-      originalPrice: null,
+      url,
+      image,
+      price: priceText ? Number(priceText) : null,
+      originalPrice: oldPriceText ? Number(oldPriceText) : null,
       rating: 0,
       reviewCount: 0,
       inStock: true,
