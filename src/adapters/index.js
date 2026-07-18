@@ -1,13 +1,12 @@
 import { createAdapter } from "./createAdapter.js";
 import { genericAdapter } from "./generic.js";
-import { megaConfig } from "./stores/mega.config.js";
-// import { darazConfig } from "./stores/daraz.config.js";
+import { megaConfig } from "./mega.config.js";
+import { priceOyeConfig } from "./priceoye.config.js";
 
-const configs = {
-  "Mega.pk": megaConfig,
-  "Priceoye.pk":priceoyeConfig,
-  // "Daraz": darazConfig,
-};
+export const allStoreConfigs = [
+  megaConfig,
+  priceOyeConfig,
+];
 
 const adapterCache = {};
 export function getAdapter(storeName) {
