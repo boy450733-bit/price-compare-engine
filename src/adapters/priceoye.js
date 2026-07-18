@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 
-const SEARCH_URL = (q) => `https://priceoye.pk/search?q=${encodeURIComponent(q)}`;
+//const SEARCH_URL = (q) => `https://priceoye.pk/search?q=${encodeURIComponent(q)}`;
+const SEARCH_URL = 'https://priceoye.pk/search?q=Xiaomi+Redmi+14c`;
 
 export async function priceOyeAdapter(query) {
   const res = await fetch(SEARCH_URL(query), {
