@@ -15,11 +15,11 @@ export async function megaAdapter(query) {
   const $ = cheerio.load(html);
   const results = [];
 
-  $(".product-item").each((_, el) => {
-    const title = $(el).find(".product-title").text().trim();
-    const url = $(el).find("a").attr("href");
-    const image = $(el).find("img").attr("src");
-    const priceText = $(el).find(".price").text().replace(/[^\d.]/g, "");
+  $("m.lap_thu_box").each((_, el) => {
+    const title = $(el).find("h3 a").text().trim();
+    const url = $(el).find("h3 a").attr("href");
+    const image = $(el).find("a img").attr("src");
+    const priceText = $(el).find(".cat_price").text().replace(/[^\d.]/g, "");
 
     if (!title || !url) return;
 
