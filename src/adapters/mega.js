@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 
-const CATEGORY_URL =
-  "https://www.mega.pk/search/Xiaomi%2BRedmi/";
+const CATEGORY_URL = (q) =>
+  "https://www.mega.pk/search/$(q)/";
 
 export async function megaAdapter(query) {
   const res = await fetch(CATEGORY_URL, {
