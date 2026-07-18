@@ -1,18 +1,12 @@
 import * as cheerio from "cheerio";
 
-// Category-page based, not search-based — Mega.pk doesn't expose a
-// confirmed keyword-search endpoint, but brand/category pages like this
-// are real and stable. This adapter ignores the query text for now and
-// returns everything in the Xiaomi mobiles category, so it's a
-// placeholder to prove the pipeline end-to-end.
-
-const SEARCH_URL = (query)=>`https://www.mega.pk/search/${encodeURIComponent(query)}`;
+const CATEGORY_URL =
+  "https://www.mega.pk/mobiles/Xiaomi_Mobiles.php";
 
 export async function megaAdapter(query) {
-  const res = await fetch(SEARCH_URL, {
+  const res = await fetch(CATEGORY_URL, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-      "sec-ch-ua-platform":"Windows",
+      "User-Agent": "Mozilla/5.0",
     },
   });
 
