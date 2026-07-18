@@ -1,0 +1,59 @@
+import { query } from "../db/client.js";
+import { productId } from "../utils/hash.js";
+import { getAdapter } from "../adapters/index.js";
+
+export async function scrapeStoreForQuery(storeName, searchQuery) {
+  const adapter = getAdapter(storeName);
+  const listings = await adapter(searchQuery);
+
+  for (const listing of listings) {
+    const id = productId(storeName, listing.url);
+
+    await query(
+      `INSERT INTO products
+         (id, title, store, url, image, price, original_price, rating, review_count, in_stock, source_query, scraped_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, now())
+       ON CONFLICT (id) DO UPDATE SET
+         price = EXCLUDED.price,
+         original_price = EXCLUDED.original_price,
+         in_stock = EXCLUDED.in_stock,
+         rating = EXCLUDED.rating,
+         review_count = EXCLUDED.review_count,
+         scraped_at = now()`,
+      [
+        id,
+        listing.title,
+        storeName,
+        listing.url,
+        listing.image,
+        listing.price,
+        listing.originalPrice,
+        listing.rating,
+        listing.reviewCount,
+        listing.inStock,
+        searchQuery,
+      ]
+    );
+
+    // Log a price_history row every time we re-scrape, so price trends
+    // and "lowest in 30 days" features have real data to draw from.
+    await query(
+      `INSERT INTO price_history (product_id, price) VALUES ($1, $2)`,
+      [id, listing.price]
+    );
+  }
+
+  return listings.length;
+}
+
+export async function scrapeAllStoresForQuery(searchQuery) {
+  const { rows: stores } = await query(
+    `SELECT name FROM stores WHERE enabled = true`
+  );
+
+  const results = await Promise.allSettled(
+    stores.map((s) => scrapeStoreForQuery(s.name, searchQuery))
+  );
+
+  return results;
+}
