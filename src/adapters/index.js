@@ -5,6 +5,7 @@ import { megaConfig } from "./stores/mega.config.js";
 
 const configs = {
   "Mega.pk": megaConfig,
+  "Priceoye.pk":priceoyeConfig,
   // "Daraz": darazConfig,
 };
 
