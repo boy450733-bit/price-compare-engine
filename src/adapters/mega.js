@@ -13,6 +13,10 @@ export async function megaAdapter(query) {
   if (!res.ok) return [];
 
   const html = await res.text();
+
+  console.log(html.length);
+  console.log(html.slice(0, 500));
+  
   const $ = cheerio.load(html);
 
   const results = [];
