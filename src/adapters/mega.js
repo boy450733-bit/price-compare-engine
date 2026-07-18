@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
-
-const SEARCH_URL = (q) => `https://www.mega.pk/search.php?query=${encodeURIComponent(q)}`;
+https://www.mega.pk/search/Xiaomi%2BRedmi/
+const SEARCH_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
 
 // This is a TEMPLATE — verify the actual selectors against the live site
 // (they change; check DevTools before relying on this). Prefer JSON-LD
