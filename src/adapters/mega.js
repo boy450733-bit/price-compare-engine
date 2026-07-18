@@ -1,5 +1,4 @@
 import * as cheerio from "cheerio";
-https://www.mega.pk/search/Xiaomi%2BRedmi/
 const SEARCH_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
 
 // This is a TEMPLATE — verify the actual selectors against the live site
