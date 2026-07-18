@@ -34,7 +34,9 @@ async function autoSetup() {
 }
 
 const app = express();
+app.use(cors());
 app.use(express.json());
+app.use(express.static("public")); // serves public/index.html at "/"
 
 app.use("/api", searchRoutes);
 app.use("/", redirectRoutes);
