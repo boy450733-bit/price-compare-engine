@@ -7,7 +7,7 @@ const SEARCH_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
 // before falling back to raw HTML selectors like this.
 export async function megaAdapter(query) {
   const res = await fetch(SEARCH_URL(query), {
-    headers: { "User-Agent": "PriceCompareBot/0.1 (+contact@yourdomain.com)" },
+    headers: { "User-Agent": "GPTBot/0.1 (+contact@yourdomain.com)" },
   });
   if (!res.ok) return [];
 
