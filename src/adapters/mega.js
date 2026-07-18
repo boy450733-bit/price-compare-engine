@@ -6,7 +6,7 @@ import * as cheerio from "cheerio";
 // returns everything in the Xiaomi mobiles category, so it's a
 // placeholder to prove the pipeline end-to-end.
 
-const SEARCH_URL = `https://www.mega.pk/search/${encodeURIComponent(query)}`;
+const SEARCH_URL = (query)=>`https://www.mega.pk/search/${encodeURIComponent(query)}`;
 
 export async function megaAdapter(query) {
   const res = await fetch(SEARCH_URL, {
