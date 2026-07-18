@@ -11,7 +11,7 @@ const SEARCH_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
 export async function megaAdapter(query) {
   const res = await fetch(SEARCH_URL, {
     headers: {
-      "User-Agent": "Mozilla/5.0",
+      "User-Agent": "GPTBot",
     },
   });
 
