@@ -1,7 +1,6 @@
 import * as cheerio from "cheerio";
 
-const CATEGORY_URL = (q) =>
-  "https://www.mega.pk/search/$(q)/";
+const CATEGORY_URL = (q) => https://www.mega.pk/search/${encodeURIComponent(q)};
 
 export async function megaAdapter(query) {
   const res = await fetch(CATEGORY_URL, {
