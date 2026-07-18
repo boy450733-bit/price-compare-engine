@@ -1,64 +1,52 @@
 import * as cheerio from "cheerio";
 
-//const CATEGORY_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
-const CATEGORY_URL = 'https://www.mega.pk/search/Xiaomi%2BRedmi%2B14c/';
+// Confirmed real search pattern: words joined with "+", trailing slash.
+// e.g. https://www.mega.pk/search/Xiaomi+Redmi+15c/
+const SEARCH_URL = (q) =>
+  `https://www.mega.pk/search/${encodeURIComponent(q.trim().split(/\s+/).join("+"))}/`;
 
+// Selectors verified against real page markup (2026-07):
+// container: li.col-xs-6 > div.lap_thu_box
+// title+url: #lap_name_div h3 a
+// image: .image img[src]
+// price: .cat_price (strip the nested .was element, which holds the
+//        pre-discount price, before parsing the current price)
 export async function megaAdapter(query) {
-  const res = await fetch(CATEGORY_URL, {
+  const res = await fetch(SEARCH_URL(query), {
     headers: {
-      "User-Agent": "Mozilla/5.0",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
     },
   });
-
   if (!res.ok) return [];
 
   const html = await res.text();
-
-  console.log('scraped : ' + CATEGORY_URL);
- // console.log(html.slice(0, 500));
-  
   const $ = cheerio.load(html);
-
   const results = [];
 
-  $(".product-grid-div ul.item_grid > li").each((_, el) => {
-    const product = $(el);
+  $(".lap_thu_box").each((_, el) => {
+    const $el = $(el);
+    const titleLink = $el.find("#lap_name_div h3 a");
+    const title = titleLink.text().trim();
+    const url = titleLink.attr("href");
+    const image = $el.find(".image img").attr("src");
 
-    const link = product.find("#lap_name_div h3 a");
+    const priceBox = $el.find(".cat_price");
+    const wasText = priceBox.find(".was").text().trim();
 
-    const title = link.text().trim();
+    const priceBoxClone = priceBox.clone();
+    priceBoxClone.find(".was").remove();
+    const priceText = priceBoxClone.text().replace(/[^\d.]/g, "");
+    const originalPriceText = wasText.replace(/[^\d.]/g, "");
 
-    const url = link.attr("href");
-
-    const image =
-      product.find(".image img").attr("src") ||
-      product.find(".image img").attr("data-src") ||
-      null;
-
-    const priceText = product
-      .find(".cat_price")
-      .clone()                // remove old price before reading current price
-      .find(".was")
-      .remove()
-      .end()
-      .text()
-      .replace("- PKR", "")
-      .replace(/,/g, "")
-      .trim();
-
-    const oldPriceText = product
-      .find(".cat_price .was")
-      .text()
-      .replace("- PKR", "")
-      .replace(/,/g, "")
-      .trim();
+    if (!title || !url) return;
 
     results.push({
       title,
-      url,
+      url: url.startsWith("http") ? url : `https://www.mega.pk${url}`,
       image,
       price: priceText ? Number(priceText) : null,
-      originalPrice: oldPriceText ? Number(oldPriceText) : null,
+      originalPrice: originalPriceText ? Number(originalPriceText) : null,
       rating: 0,
       reviewCount: 0,
       inStock: true,
