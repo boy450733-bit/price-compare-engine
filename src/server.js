@@ -29,7 +29,7 @@ async function autoSetup() {
       "Mega.pk",
       "#0071dc",
       "https://www.mega.pk",
-      "https://www.mega.pk/search.php?query={query}",
+      "https://www.mega.pk/search/{query}",
       null,
     ]
   );
