@@ -1,12 +1,15 @@
 import * as cheerio from "cheerio";
+
+// Category-page based, not search-based — Mega.pk doesn't expose a
+// confirmed keyword-search endpoint, but brand/category pages like this
+// are real and stable. This adapter ignores the query text for now and
+// returns everything in the Xiaomi mobiles category, so it's a
+// placeholder to prove the pipeline end-to-end.
 const SEARCH_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
-// This is a TEMPLATE — verify the actual selectors against the live site
-// (they change; check DevTools before relying on this). Prefer JSON-LD
-// (script[type="application/ld+json"]) or a site search API if one exists
-// before falling back to raw HTML selectors like this.
+
 export async function megaAdapter(query) {
-  const res = await fetch(SEARCH_URL(query), {
-    headers: { "User-Agent": "GPTBot/0.1 (+contact@yourdomain.com)" },
+  const res = await fetch(CATEGORY_URL, {
+    headers: { "User-Agent": "PriceCompareBot/0.1 (+contact@yourdomain.com)" },
   });
   if (!res.ok) return [];
 
@@ -14,19 +17,18 @@ export async function megaAdapter(query) {
   const $ = cheerio.load(html);
   const results = [];
 
-  $(".lap_thu_box").each((_, el) => {
-    const title = $(el).find("h3 a").text().trim();
-    const url = $(el).find("h3 a").attr("href");
-    const image = $(el).find("a img").attr("src");
-    const priceText = $(el).find(".cat_price").text().replace(/[^\d.]/g, "");
-
-    if (!title || !url) return;
+  // NOTE: verify these selectors against the real page — see Option 2
+  // for how to find them accurately using your own browser.
+  $("a[href*='mobiles_products']").each((_, el) => {
+    const title = $(el).attr("title") || $(el).text().trim();
+    const href = $(el).attr("href");
+    if (!title || !href) return;
 
     results.push({
       title,
-      url: url.startsWith("http") ? url : `https://www.mega.pk${url}`,
-      image,
-      price: priceText ? Number(priceText) : null,
+      url: href.startsWith("http") ? href : `https://www.mega.pk${href}`,
+      image: null,
+      price: null,
       originalPrice: null,
       rating: 0,
       reviewCount: 0,
