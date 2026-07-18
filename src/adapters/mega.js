@@ -14,7 +14,7 @@ export async function megaAdapter(query) {
   const $ = cheerio.load(html);
   const results = [];
 
-  $("m.lap_thu_box").each((_, el) => {
+  $(".lap_thu_box").each((_, el) => {
     const title = $(el).find("h3 a").text().trim();
     const url = $(el).find("h3 a").attr("href");
     const image = $(el).find("a img").attr("src");
