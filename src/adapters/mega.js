@@ -1,4 +1,4 @@
-import { createAdapter } from "./createAdapter.js";
-import { megaConfig } from "./stores/mega.config.js";
+//import { createAdapter } from "./createAdapter.js";
+//import { megaConfig } from "./stores/mega.config.js";
 
-export const megaAdapter = createAdapter(megaConfig);
+//export const megaAdapter = createAdapter(megaConfig);
