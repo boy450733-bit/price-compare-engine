@@ -14,8 +14,8 @@ export async function megaAdapter(query) {
 
   const html = await res.text();
 
-  console.log(html.length);
-  console.log(html.slice(0, 500));
+  console.log('scraped : ' + CATEGORY_URL);
+ // console.log(html.slice(0, 500));
   
   const $ = cheerio.load(html);
 
