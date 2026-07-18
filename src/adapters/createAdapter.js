@@ -1,42 +1,77 @@
-// COPY THIS FILE to add a new store. Rename it e.g. daraz.config.js,
-// fill in the fields below using your browser's Inspect tool on the
-// store's real search results page, then register it in ../index.js
-// (one line — see the comment there).
+import * as cheerio from "cheerio";
 
-export const templateConfig = {
-  name: "StoreName", // REQUIRED — must exactly match the `name` in your `stores` DB table
-  baseUrl: "https://www.example.com", // REQUIRED — used to resolve relative links
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-  // REQUIRED — build the real search URL for this store.
-  // Find it by typing a search into the store's own search box and
-  // copying the resulting URL, then figure out where the query goes.
-  searchUrl: (q) => `https://www.example.com/search?q=${encodeURIComponent(q)}`,
+/**
+ * Turns a small per-store config object into a working adapter function.
+ * This is the ONE place scraping/parsing logic lives — new stores should
+ * never need to touch this file, only add a config (see stores/_template.config.js).
+ */
+export function createAdapter(config) {
+  const {
+    baseUrl, // REQUIRED e.g. "https://www.mega.pk"
+    searchUrl, // REQUIRED (query) => full search URL string
+    selectors: {
+      container, // REQUIRED CSS selector for one product card
+      title, // REQUIRED selector (relative to container) for the title text
+      link = title, // selector (relative to container) holding the href — defaults to the title element
+      linkAttr = "href",
+      image, // selector (relative to container) for the product image, omit if none
+      imageAttr = "src",
+      price, // REQUIRED selector (relative to container) for the price text block
+      originalPrice = null, // optional selector for a struck-through "was" price;
+      // also gets stripped out of `price` text before parsing, since sites
+      // often nest the old price inside the same price block
+    },
+    userAgent = DEFAULT_USER_AGENT,
+    parsePrice = defaultParsePrice,
+  } = config;
 
-  selectors: {
-    // REQUIRED — CSS selector that matches ONE product card/listing.
-    // Find it in DevTools: right-click a product → Inspect → find the
-    // smallest repeating parent element that wraps one whole product.
-    container: ".product-card",
+  return async function adapter(query) {
+    const url = searchUrl(query);
+    const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+    if (!res.ok) return [];
 
-    // REQUIRED — selector (relative to container) for the title element.
-    title: ".product-title",
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const results = [];
 
-    // Optional — only set this if the link is on a DIFFERENT element
-    // than the title (e.g. the image is the link, not the title text).
-    // link: "a.product-link",
-    // linkAttr: "href",
+    $(container).each((_, el) => {
+      const $el = $(el);
 
-    // Optional — selector (relative to container) for the product image.
-    // Leave undefined entirely if you don't need images yet.
-    image: ".product-image img",
-    // imageAttr: "data-src", // some sites lazy-load images under a
-    // different attribute than src — check DevTools if image comes back null
+      const titleText = $el.find(title).text().trim();
+      const href = $el.find(link).attr(linkAttr);
+      if (!titleText || !href) return;
 
-    // REQUIRED — selector (relative to container) for the price text.
-    price: ".price",
+      const imageSrc = image ? $el.find(image).attr(imageAttr) : null;
 
-    // Optional — selector for a struck-through "was" / original price,
-    // if the site shows discounts. Leave as null if not applicable.
-    originalPrice: null, // e.g. ".price .was" or ".old-price"
-  },
-};
+      let priceBox = $el.find(price);
+      let originalPriceText = "";
+
+      if (originalPrice) {
+        originalPriceText = $el.find(originalPrice).text().trim();
+        priceBox = priceBox.clone();
+        priceBox.find(originalPrice).remove();
+      }
+
+      results.push({
+        title: titleText,
+        url: href.startsWith("http") ? href : `${baseUrl}${href}`,
+        image: imageSrc || null,
+        price: parsePrice(priceBox.text()),
+        originalPrice: originalPriceText ? parsePrice(originalPriceText) : null,
+        rating: 0,
+        reviewCount: 0,
+        inStock: true,
+      });
+    });
+
+    return results;
+  };
+}
+
+function defaultParsePrice(text) {
+  const cleaned = text.replace(/[^\d.]/g, "");
+  return cleaned ? Number(cleaned) : null;
+}
