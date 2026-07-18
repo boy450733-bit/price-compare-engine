@@ -14,7 +14,9 @@ export async function priceOyeAdapter(query) {
 
   const html = await res.text();
   const $ = cheerio.load(html);
-
+  
+  console.log('scraped : ' + SEARCH_URL);
+  
   const searchWords = query
     .toLowerCase()
     .split(/\s+/)
