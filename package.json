@@ -1,0 +1,24 @@
+{
+  "name": "price-compare-engine",
+  "version": "0.1.0",
+  "description": "Multi-store price comparison backbone (search-first, scrape-on-demand)",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "worker": "node src/queue/worker.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "ioredis": "^5.4.1",
+    "bullmq": "^5.12.0",
+    "playwright": "^1.46.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "nanoid": "^5.0.7"
+  }
+}
