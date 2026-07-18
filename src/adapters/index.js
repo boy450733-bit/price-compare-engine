@@ -1,6 +1,18 @@
-// Fallback used when a store has no dedicated adapter yet.
-// Returns nothing rather than guessing at HTML structure blindly.
-export async function genericAdapter(query) {
-  console.warn(`No adapter implemented for this store. Query was: "${query}"`);
-  return [];
+import { createAdapter } from "./createAdapter.js";
+import { genericAdapter } from "./generic.js";
+import { megaConfig } from "./stores/mega.config.js";
+// import { darazConfig } from "./stores/daraz.config.js";
+
+const configs = {
+  "Mega.pk": megaConfig,
+  // "Daraz": darazConfig,
+};
+
+const adapterCache = {};
+export function getAdapter(storeName) {
+  if (!configs[storeName]) return genericAdapter;
+  if (!adapterCache[storeName]) {
+    adapterCache[storeName] = createAdapter(configs[storeName]);
+  }
+  return adapterCache[storeName];
 }
