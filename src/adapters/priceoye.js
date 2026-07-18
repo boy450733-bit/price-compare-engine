@@ -1,9 +1,9 @@
 import * as cheerio from "cheerio";
 
-const CATEGORY_URL = (q) => `https://www.mega.pk/search/${encodeURIComponent(q)}`;
+const SEARCH_URL = (q) => `https://priceoye.pk/search?q=${encodeURIComponent(q)}`;
 
-export async function megaAdapter(query) {
-  const res = await fetch(CATEGORY_URL, {
+export async function priceOyeAdapter(query) {
+  const res = await fetch(SEARCH_URL(query), {
     headers: {
       "User-Agent": "Mozilla/5.0",
     },
@@ -12,52 +12,53 @@ export async function megaAdapter(query) {
   if (!res.ok) return [];
 
   const html = await res.text();
-
-  console.log(html.length);
-  console.log(html.slice(0, 500));
-  
   const $ = cheerio.load(html);
+
+  const searchWords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
 
   const results = [];
 
-  $(".product-grid-div ul.item_grid > li").each((_, el) => {
+  // <-- Replace this selector with the product card selector
+  $(".PRODUCT_CARD_SELECTOR").each((_, el) => {
     const product = $(el);
 
-    const link = product.find("#lap_name_div h3 a");
+    // <-- Replace selectors below with PriceOye selectors
+    const title = product.find("TITLE_SELECTOR").text().trim();
 
-    const title = link.text().trim();
+    if (!title) return;
 
-    const url = link.attr("href");
+    // Require EVERY search word to appear in the title
+    const titleLower = title.toLowerCase();
+
+    const matches = searchWords.every(word =>
+      titleLower.includes(word)
+    );
+
+    if (!matches) return;
+
+    const url = product.find("LINK_SELECTOR").attr("href");
 
     const image =
-      product.find(".image img").attr("src") ||
-      product.find(".image img").attr("data-src") ||
+      product.find("IMG_SELECTOR").attr("src") ||
+      product.find("IMG_SELECTOR").attr("data-src") ||
+      product.find("IMG_SELECTOR").attr("data-lazy-src") ||
       null;
 
-    const priceText = product
-      .find(".cat_price")
-      .clone()                // remove old price before reading current price
-      .find(".was")
-      .remove()
-      .end()
-      .text()
-      .replace("- PKR", "")
-      .replace(/,/g, "")
-      .trim();
+    const price = product.find("PRICE_SELECTOR").text().trim();
 
-    const oldPriceText = product
-      .find(".cat_price .was")
-      .text()
-      .replace("- PKR", "")
-      .replace(/,/g, "")
-      .trim();
+    const oldPrice = product.find("OLD_PRICE_SELECTOR").text().trim();
 
     results.push({
       title,
-      url,
+      url: url?.startsWith("http")
+        ? url
+        : `https://priceoye.pk${url}`,
       image,
-      price: priceText ? Number(priceText) : null,
-      originalPrice: oldPriceText ? Number(oldPriceText) : null,
+      price: Number(price.replace(/[^\d]/g, "")) || null,
+      originalPrice: Number(oldPrice.replace(/[^\d]/g, "")) || null,
       rating: 0,
       reviewCount: 0,
       inStock: true,
