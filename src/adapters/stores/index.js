@@ -3,6 +3,7 @@ import { priceOyeConfig } from "./priceoye.config.js";
 import { iShoppingConfig } from "./ishopping.config.js";
 import { darazConfig } from "./daraz.config.js";
 import { flashiConfig } from "./flashi.config.js";
+import { eezepcConfig } from "./eezepc.config.js";
 
 export const allStoreConfigs = [
   megaConfig,
@@ -10,4 +11,5 @@ export const allStoreConfigs = [
    // iShoppingConfig,  // disabled: Cloudflare managed challenge as of 2026-07-19
   darazConfig,
   flashiConfig,
+  eezepcConfig,
 ];
