@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS price_history (
 
 CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history (product_id, recorded_at DESC);
 
+CREATE TABLE IF NOT EXISTS site_settings (
+  id         INT PRIMARY KEY DEFAULT 1,
+  data       JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT single_row CHECK (id = 1) -- enforces exactly one settings row
+);
+
 CREATE TABLE IF NOT EXISTS affiliate_links (
   product_id    TEXT PRIMARY KEY REFERENCES products(id),
   affiliate_url TEXT NOT NULL,
