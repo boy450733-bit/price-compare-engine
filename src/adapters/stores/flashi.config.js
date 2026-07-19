@@ -20,12 +20,12 @@ export const flashiConfig = {
       inStock: item.inStock !== false,
 
       // Optional extra fields if your app uses them
-      id: item.id,
-      store: item.store,
-      storeColor: item.storeColor,
-      sourceQuery: item.sourceQuery,
-      scrapedAt: item.scrapedAt,
-      createdAt: item.createdAt,
+      //id: item.id,
+      //store: item.store,
+      //storeColor: item.storeColor,
+      //sourceQuery: item.sourceQuery,
+      //scrapedAt: item.scrapedAt,
+      //createdAt: item.createdAt,
     }));
   },
 };
