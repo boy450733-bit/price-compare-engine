@@ -97,7 +97,7 @@ function createHtmlAdapter(config) {
       const href = $el.find(link).attr(linkAttr);
       if (!titleText || !href) return;
 
-      const imageSrc = image ? $el.find(image).attr(imageAttr) : null;
+      const imageSrc = image ? getFirstAttrValue($el.find(image), imageAttr) : null;
 
       let priceBox = $el.find(price);
       let originalPriceText = "";
@@ -132,6 +132,15 @@ function createHtmlAdapter(config) {
 
     return results;
   };
+}
+
+function getFirstAttrValue($el, attrs) {
+  const list = Array.isArray(attrs) ? attrs : [attrs];
+  for (const attr of list) {
+    const val = $el.attr(attr);
+    if (val) return val;
+  }
+  return null;
 }
 
 function defaultParsePrice(text) {
