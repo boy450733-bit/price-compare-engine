@@ -7,7 +7,16 @@ import { pool } from "./db/client.js";
 import { allStoreConfigs } from "./adapters/stores/index.js";
 import searchRoutes from "./routes/search.js";
 import redirectRoutes from "./routes/redirect.js";
+import storesRoutes from "./routes/stores.js";
+import adminRoutes from "./routes/admin.js";
 
+// Runs the schema + seeds every store listed in
+// src/adapters/stores/index.js automatically on boot. Safe to run every
+// time the app starts: schema.sql uses CREATE TABLE IF NOT EXISTS, and
+// the store insert uses ON CONFLICT, so re-running this on every deploy
+// never duplicates or breaks anything. This removes the need to run
+// `npm run migrate` / `npm run seed` manually from a console — and means
+// adding a store to stores/index.js is the ONLY step needed to register it.
 async function autoSetup() {
   const schemaPath = path.resolve("src/db/schema.sql");
   const sql = fs.readFileSync(schemaPath, "utf8");
@@ -35,11 +44,13 @@ async function autoSetup() {
 }
 
 const app = express();
-app.use(cors());
+app.use(cors()); // still useful if you ever host the frontend separately later
 app.use(express.json());
 app.use(express.static("public")); // serves public/index.html at "/"
 
 app.use("/api", searchRoutes);
+app.use("/api", storesRoutes);
+app.use("/admin/api", adminRoutes);
 app.use("/", redirectRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
