@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sasta.pk Admin</title>
+<style>
+  :root {
+    --color-bg: #FAF7F0; --color-surface: #fff; --color-ink: #17231D;
+    --color-ink-soft: #5B6B62; --color-brand: #0B6E4F; --color-line: #E4DDCB;
+    --color-danger: #C24B3F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: -apple-system, Inter, sans-serif; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 32px 0 10px; }
+  .subtitle { color: var(--color-ink-soft); font-size: 13px; margin: 0 0 24px; }
+  .stats { display: flex; gap: 16px; margin-bottom: 8px; }
+  .stat-card { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; padding: 12px 16px; min-width: 120px; }
+  .stat-card .num { font-size: 22px; font-weight: 700; }
+  .stat-card .label { font-size: 11px; color: var(--color-ink-soft); text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; overflow: hidden; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--color-line); vertical-align: middle; }
+  th { background: #F4F0E4; font-size: 11px; text-transform: uppercase; color: var(--color-ink-soft); }
+  input[type="text"], input[type="color"] { padding: 5px 8px; border: 1px solid var(--color-line); border-radius: 6px; font-size: 12px; font-family: inherit; }
+  input[type="text"] { width: 100%; }
+  button { padding: 5px 12px; border: none; border-radius: 6px; background: var(--color-brand); color: #fff; font-size: 12px; cursor: pointer; }
+  button:hover { opacity: 0.9; }
+  button.secondary { background: transparent; color: var(--color-ink-soft); border: 1px solid var(--color-line); }
+  .muted { color: var(--color-ink-soft); font-size: 12px; }
+  a.link { color: var(--color-brand); font-size: 12px; }
+  #authGate { max-width: 400px; margin: 80px auto; text-align: center; }
+  #authGate input { width: 100%; padding: 10px; margin: 12px 0; border: 1px solid var(--color-line); border-radius: 8px; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<div id="authGate">
+  <h1>Sasta.pk Admin</h1>
+  <p class="subtitle">Enter your admin token to continue.</p>
+  <input type="text" id="tokenInput" placeholder="ADMIN_TOKEN">
+  <button id="loginBtn" style="width:100%">Enter</button>
+  <p class="muted" id="authError" style="color:var(--color-danger)"></p>
+</div>
+
+<div id="app">
+  <h1>Sasta.pk Admin</h1>
+  <p class="subtitle">Manage stores and affiliate links.</p>
+
+  <div class="stats" id="stats"></div>
+
+  <h2>Stores</h2>
+  <table id="storesTable">
+    <thead><tr><th>Name</th><th>Enabled</th><th>Color</th><th>Affiliate param</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Affiliate link worklist</h2>
+  <p class="muted">Products that have been clicked but have no tracked affiliate link yet, sorted by click count. Convert the top ones through the store's affiliate tool, then paste the result here.</p>
+  <table id="worklistTable">
+    <thead><tr><th>Clicks</th><th>Store</th><th>Product</th><th>Affiliate URL</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+(function () {
+  let TOKEN = "";
+
+  function api(path, options = {}) {
+    return fetch(`/admin/api${path}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}`, ...(options.headers || {}) },
+    }).then(async (res) => {
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      return res.json();
+    });
+  }
+
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    TOKEN = document.getElementById("tokenInput").value.trim();
+    try {
+      await api("/stats");
+      document.getElementById("authGate").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      loadAll();
+    } catch (err) {
+      document.getElementById("authError").textContent = "Invalid token, or ADMIN_TOKEN not set on the server.";
+    }
+  });
+
+  async function loadAll() {
+    const stats = await api("/stats");
+    document.getElementById("stats").innerHTML = `
+      <div class="stat-card"><div class="num">${stats.totalProducts}</div><div class="label">Products cached</div></div>
+      <div class="stat-card"><div class="num">${stats.totalClicks}</div><div class="label">Total clicks</div></div>
+      <div class="stat-card"><div class="num">${stats.totalSearches}</div><div class="label">Total searches</div></div>
+    `;
+
+    const { stores } = await api("/stores");
+    const tbody = document.querySelector("#storesTable tbody");
+    tbody.innerHTML = stores
+      .map(
+        (s) => `
+      <tr data-store="${s.name}">
+        <td><strong>${s.name}</strong></td>
+        <td><input type="checkbox" class="f-enabled" ${s.enabled ? "checked" : ""}></td>
+        <td><input type="color" class="f-color" value="${s.color || "#666666"}"></td>
+        <td><input type="text" class="f-affiliate" value="${s.affiliate_param || ""}" placeholder="e.g. aff_id=123"></td>
+        <td><button class="save-store">Save</button></td>
+      </tr>`
+      )
+      .join("");
+
+    tbody.querySelectorAll(".save-store").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const name = row.dataset.store;
+        const enabled = row.querySelector(".f-enabled").checked;
+        const color = row.querySelector(".f-color").value;
+        const affiliate_param = row.querySelector(".f-affiliate").value || null;
+        btn.textContent = "Saving...";
+        await api(`/stores/${encodeURIComponent(name)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ enabled, color, affiliate_param }),
+        });
+        btn.textContent = "Saved";
+        setTimeout(() => (btn.textContent = "Save"), 1200);
+      });
+    });
+
+    const { worklist } = await api("/affiliate-worklist");
+    const wtbody = document.querySelector("#worklistTable tbody");
+    if (worklist.length === 0) {
+      wtbody.innerHTML = `<tr><td colspan="5" class="muted">Nothing pending — every clicked product already has an affiliate link.</td></tr>`;
+    } else {
+      wtbody.innerHTML = worklist
+        .map(
+          (w) => `
+        <tr data-product-id="${w.id}">
+          <td>${w.clicks}</td>
+          <td>${w.store}</td>
+          <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 50)}${w.title.length > 50 ? "..." : ""}</a></td>
+          <td><input type="text" class="f-affiliate-url" placeholder="paste tracked link here"></td>
+          <td><button class="save-link">Save</button></td>
+        </tr>`
+        )
+        .join("");
+
+      wtbody.querySelectorAll(".save-link").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          const row = e.target.closest("tr");
+          const productId = row.dataset.productId;
+          const affiliateUrl = row.querySelector(".f-affiliate-url").value.trim();
+          if (!affiliateUrl) return;
+          btn.textContent = "Saving...";
+          await api("/affiliate-links", {
+            method: "POST",
+            body: JSON.stringify({ productId, affiliateUrl }),
+          });
+          row.style.opacity = "0.4";
+          btn.textContent = "Saved";
+        });
+      });
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
