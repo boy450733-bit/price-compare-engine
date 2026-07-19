@@ -49,7 +49,7 @@ async function autoSetup() {
   await pool.query(
     `INSERT INTO site_settings (id, data) VALUES (1, $1)
      ON CONFLICT (id) DO NOTHING`,
-    [defaultSettings]
+    [JSON.stringify(req.body)]
   );
   console.log("Site settings ready.");
 }
