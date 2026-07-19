@@ -12,21 +12,50 @@ const DEFAULT_USER_AGENT =
  *
  * 2. JSON mode (SPA/API-backed stores, e.g. Daraz) — provide `parseJson`
  *    instead of `selectors`. Fetches the URL, parses the response as JSON,
- *    and calls your function to turn it into listings. Use this whenever
- *    a store's search is powered by an internal API instead of server-
- *    rendered HTML (check DevTools Network tab — if you see a clean JSON
- *    response, always prefer this over trying to scrape HTML).
+ *    and calls your function to turn it into listings.
+ *
+ * Either mode also supports POST requests (needed for stores whose search
+ * is an AJAX POST to a separate endpoint, e.g. WooCommerce sites using the
+ * "Advanced Woo Search" plugin) via two optional config fields:
+ *   method: "POST"
+ *   body: (query) => string   — the raw request body (e.g. a
+ *                                URLSearchParams(...).toString() for
+ *                                form-encoded, or JSON.stringify(...) for
+ *                                a JSON body)
+ *   headers: { ... }          — extra headers, e.g. Content-Type, merged
+ *                                with the default User-Agent
  */
 export function createAdapter(config) {
   return config.parseJson ? createJsonAdapter(config) : createHtmlAdapter(config);
 }
 
+async function performFetch(config, query) {
+  const {
+    searchUrl,
+    method = "GET",
+    body,
+    headers = {},
+    userAgent = DEFAULT_USER_AGENT,
+  } = config;
+
+  const url = searchUrl(query);
+  const fetchOptions = {
+    method,
+    headers: { "User-Agent": userAgent, ...headers },
+  };
+
+  if (method !== "GET" && body) {
+    fetchOptions.body = typeof body === "function" ? body(query) : body;
+  }
+
+  return fetch(url, fetchOptions);
+}
+
 function createJsonAdapter(config) {
-  const { searchUrl, parseJson, userAgent = DEFAULT_USER_AGENT } = config;
+  const { parseJson } = config;
 
   return async function adapter(query) {
-    const url = searchUrl(query);
-    const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+    const res = await performFetch(config, query);
     if (!res.ok) return [];
 
     const data = await res.json();
@@ -37,7 +66,6 @@ function createJsonAdapter(config) {
 function createHtmlAdapter(config) {
   const {
     baseUrl,
-    searchUrl,
     selectors: {
       container,
       title,
@@ -47,17 +75,15 @@ function createHtmlAdapter(config) {
       imageAttr = "src",
       price,
       originalPrice = null,
-      rating = null, // optional selector (relative to container) for a rating value/label
-      reviewCount = null, // optional selector for a review count
-      outOfStock = null, // optional selector whose mere PRESENCE (not its text) means the item is out of stock
+      rating = null,
+      reviewCount = null,
+      outOfStock = null,
     },
-    userAgent = DEFAULT_USER_AGENT,
     parsePrice = defaultParsePrice,
   } = config;
 
   return async function adapter(query) {
-    const url = searchUrl(query);
-    const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+    const res = await performFetch(config, query);
     if (!res.ok) return [];
 
     const html = await res.text();
@@ -82,10 +108,6 @@ function createHtmlAdapter(config) {
         priceBox.find(originalPrice).remove();
       }
 
-      // Rating text often looks like "Rated 4.50 out of 5" — using the
-      // first number MATCH (not a strip-and-concat of all digits) avoids
-      // accidentally combining "4.50" and the "5" from "out of 5" into
-      // a wrong value like 4.505.
       const ratingValue = rating
         ? parseFloat($el.find(rating).text().match(/[\d.]+/)?.[0] || "0")
         : 0;
