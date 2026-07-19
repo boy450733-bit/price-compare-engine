@@ -5,24 +5,48 @@ const DEFAULT_USER_AGENT =
 
 /**
  * Turns a small per-store config object into a working adapter function.
- * This is the ONE place scraping/parsing logic lives — new stores should
- * never need to touch this file, only add a config (see stores/_template.config.js).
+ * Supports two modes, auto-detected from the config shape:
+ *
+ * 1. HTML mode (most stores) — provide `selectors`. Fetches the page and
+ *    parses it with Cheerio (see stores/_template.config.js).
+ *
+ * 2. JSON mode (SPA/API-backed stores, e.g. Daraz) — provide `parseJson`
+ *    instead of `selectors`. Fetches the URL, parses the response as JSON,
+ *    and calls your function to turn it into listings. Use this whenever
+ *    a store's search is powered by an internal API instead of server-
+ *    rendered HTML (check DevTools Network tab — if you see a clean JSON
+ *    response, always prefer this over trying to scrape HTML).
  */
 export function createAdapter(config) {
+  return config.parseJson ? createJsonAdapter(config) : createHtmlAdapter(config);
+}
+
+function createJsonAdapter(config) {
+  const { searchUrl, parseJson, userAgent = DEFAULT_USER_AGENT } = config;
+
+  return async function adapter(query) {
+    const url = searchUrl(query);
+    const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    return parseJson(data, query) || [];
+  };
+}
+
+function createHtmlAdapter(config) {
   const {
-    baseUrl, // REQUIRED e.g. "https://www.mega.pk"
-    searchUrl, // REQUIRED (query) => full search URL string
+    baseUrl,
+    searchUrl,
     selectors: {
-      container, // REQUIRED CSS selector for one product card
-      title, // REQUIRED selector (relative to container) for the title text
-      link = title, // selector (relative to container) holding the href — defaults to the title element
+      container,
+      title,
+      link = title,
       linkAttr = "href",
-      image, // selector (relative to container) for the product image, omit if none
+      image,
       imageAttr = "src",
-      price, // REQUIRED selector (relative to container) for the price text block
-      originalPrice = null, // optional selector for a struck-through "was" price;
-      // also gets stripped out of `price` text before parsing, since sites
-      // often nest the old price inside the same price block
+      price,
+      originalPrice = null,
     },
     userAgent = DEFAULT_USER_AGENT,
     parsePrice = defaultParsePrice,
