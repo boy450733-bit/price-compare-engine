@@ -6,6 +6,6 @@ import { darazConfig } from "./daraz.config.js";
 export const allStoreConfigs = [
   megaConfig,
   priceOyeConfig,
-  iShoppingConfig,
+   // iShoppingConfig,  // disabled: Cloudflare managed challenge as of 2026-07-19
   darazConfig,
 ];
