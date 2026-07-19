@@ -94,6 +94,7 @@
       <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
       <button class="tab-btn" data-tab="stores">🏬 Store Config</button>
       <button class="tab-btn" data-tab="affiliate">🔗 Affiliate</button>
+      <button class="tab-btn" data-tab="settings">🎨 Site Settings</button>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logoutBtn">Log out</button>
       </div>
@@ -148,6 +149,47 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Site Settings -->
+      <div class="page" id="page-settings">
+        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, and which optional card details show on the storefront.</p></div>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Branding</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr><td style="width:160px">Logo text</td><td><input type="text" class="cell-input" id="s-logoText"></td></tr>
+            <tr><td>Hero subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
+            <tr><td>Footer text</td><td><input type="text" class="cell-input" id="s-footerText"></td></tr>
+            <tr><td>Hero quotes<br><span class="muted">one per line, one is shown at random per visit</span></td>
+              <td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Theme</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr><td style="width:160px">Brand color</td><td><input type="color" id="s-brandColor"></td></tr>
+            <tr><td>Accent color</td><td><input type="color" id="s-accentColor"></td></tr>
+            <tr><td>Display font</td><td><input type="text" class="cell-input" id="s-fontDisplay" placeholder="e.g. Space Grotesk"></td></tr>
+            <tr><td>Body font</td><td><input type="text" class="cell-input" id="s-fontBody" placeholder="e.g. Inter"></td></tr>
+          </tbody>
+        </table>
+        <p class="muted" style="margin-top:-14px;margin-bottom:24px">Fonts must be a Google Fonts family name already loaded by the page, or the browser falls back to a default sans-serif.</p>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Product card fields</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr><td style="width:220px">Rating &amp; review count</td><td><input type="checkbox" id="s-showRating"></td></tr>
+            <tr><td>Discount badge</td><td><input type="checkbox" id="s-showDiscountBadge"></td></tr>
+            <tr><td>Original (struck-through) price</td><td><input type="checkbox" id="s-showOriginalPrice"></td></tr>
+            <tr><td>Out of stock tag</td><td><input type="checkbox" id="s-showOutOfStock"></td></tr>
+            <tr><td>"Updated X ago" text</td><td><input type="checkbox" id="s-showUpdatedAt"></td></tr>
+          </tbody>
+        </table>
+
+        <button class="btn-sm" id="saveSettingsBtn">Save Settings</button>
+        <span class="muted" id="settingsSavedMsg" style="margin-left:10px"></span>
       </div>
     </div>
   </div>
@@ -242,7 +284,59 @@
     const linkedRes = await api("/affiliate-links");
     linkedData = linkedRes.links;
     renderLinked(linkedData);
+
+    loadSettings();
   }
+
+  // ---------- Site Settings tab ----------
+  async function loadSettings() {
+    const data = await api("/settings");
+    document.getElementById("s-logoText").value = data.logoText || "";
+    document.getElementById("s-heroSubtitle").value = data.heroSubtitle || "";
+    document.getElementById("s-footerText").value = data.footerText || "";
+    document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
+
+    const t = data.theme || {};
+    document.getElementById("s-brandColor").value = t.brandColor || "#0B6E4F";
+    document.getElementById("s-accentColor").value = t.accentColor || "#E8A33D";
+    document.getElementById("s-fontDisplay").value = t.fontDisplay || "";
+    document.getElementById("s-fontBody").value = t.fontBody || "";
+
+    const cf = data.cardFeatures || {};
+    document.getElementById("s-showRating").checked = cf.showRating !== false;
+    document.getElementById("s-showDiscountBadge").checked = cf.showDiscountBadge !== false;
+    document.getElementById("s-showOriginalPrice").checked = cf.showOriginalPrice !== false;
+    document.getElementById("s-showOutOfStock").checked = cf.showOutOfStock !== false;
+    document.getElementById("s-showUpdatedAt").checked = cf.showUpdatedAt !== false;
+  }
+
+  document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+    const payload = {
+      logoText: document.getElementById("s-logoText").value,
+      heroSubtitle: document.getElementById("s-heroSubtitle").value,
+      footerText: document.getElementById("s-footerText").value,
+      heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
+      theme: {
+        brandColor: document.getElementById("s-brandColor").value,
+        accentColor: document.getElementById("s-accentColor").value,
+        fontDisplay: document.getElementById("s-fontDisplay").value,
+        fontBody: document.getElementById("s-fontBody").value,
+      },
+      cardFeatures: {
+        showRating: document.getElementById("s-showRating").checked,
+        showDiscountBadge: document.getElementById("s-showDiscountBadge").checked,
+        showOriginalPrice: document.getElementById("s-showOriginalPrice").checked,
+        showOutOfStock: document.getElementById("s-showOutOfStock").checked,
+        showUpdatedAt: document.getElementById("s-showUpdatedAt").checked,
+      },
+    };
+    const btn = document.getElementById("saveSettingsBtn");
+    btn.textContent = "Saving...";
+    await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
+    btn.textContent = "Save Settings";
+    document.getElementById("settingsSavedMsg").textContent = "Saved ✓";
+    setTimeout(() => (document.getElementById("settingsSavedMsg").textContent = ""), 2000);
+  });
 
   // ---------- Stores tab ----------
   function renderStores(list) {

@@ -5,51 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sasta.pk — Compare prices across Pakistan's top stores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link id="googleFontsLink" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --brand-name: "Sasta.pk";
-  --color-bg: #FAF7F0;
-  --color-surface: #FFFFFF;
-  --color-ink: #17231D;
-  --color-ink-soft: #5B6B62;
-  --color-brand: #0B6E4F;
-  --color-brand-dark: #094F39;
-  --color-accent: #E8A33D;
-  --color-accent-dark: #C4841F;
-  --color-line: #E4DDCB;
-  --color-danger: #C24B3F;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --radius: 14px;
-}
+  :root {
+    --color-bg: #FAF7F0; --color-surface: #FFFFFF; --color-ink: #17231D;
+    --color-ink-soft: #5B6B62; --color-brand: #0B6E4F; --color-brand-dark: #094F39;
+    --color-accent: #E8A33D; --color-accent-dark: #C4841F; --color-line: #E4DDCB;
+    --color-danger: #C24B3F; --font-display: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif; --radius: 14px;
+  }
 </style>
 <script>
-  window.APP_CONFIG = {
-    API_BASE_URL: "", // same origin as this page
-    BRAND_NAME: "Sasta.pk",
-  };
+  window.APP_CONFIG = { API_BASE_URL: "", BRAND_NAME: "Sasta.pk" };
 </script>
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
   a { color: inherit; text-decoration: none; }
-  button { font-family: inherit; cursor: pointer; }
   :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
 
   header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; max-width: 1080px; margin: 0 auto; }
   .logo { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--color-brand-dark); }
   .logo .dot { color: var(--color-accent); }
 
-  /* ---------- Store marquee ---------- */
-  .marquee-wrap { overflow: hidden; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); background: var(--color-surface); }
-  .marquee-track { display: flex; gap: 10px; padding: 10px 0; width: max-content; animation: scrollMarquee 28s linear infinite; }
-  .marquee-wrap:hover .marquee-track { animation-play-state: paused; }
-  @keyframes scrollMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .marquee-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #fff; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
-
-  /* ---------- Hero / search ---------- */
   .hero { max-width: 720px; margin: 28px auto 8px; padding: 0 24px; text-align: center; }
   .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 5vw, 36px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
   .hero p { color: var(--color-ink-soft); margin: 0 0 24px; font-size: 15px; }
@@ -58,7 +37,6 @@
   .search-box input:focus { border-color: var(--color-brand); box-shadow: 0 0 0 4px rgba(11, 110, 79, 0.1); }
   .search-box svg { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-ink-soft); pointer-events: none; }
 
-  /* ---------- Filter bar ---------- */
   .filter-bar { max-width: 1080px; margin: 22px auto 0; padding: 14px 24px; display: none; gap: 18px; flex-wrap: wrap; align-items: center; }
   .filter-bar.visible { display: flex; }
   .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -78,11 +56,13 @@
   .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(23, 35, 29, 0.08); }
   .card::before, .card::after { content: ""; position: absolute; width: 16px; height: 16px; background: var(--color-bg); border-radius: 50%; top: 128px; z-index: 2; }
   .card::before { left: -8px; } .card::after { right: -8px; }
-  .card-image { height: 128px; display: flex; align-items: center; justify-content: center; padding: 14px; background: #FCFAF4; }
+  .card-image { height: 128px; display: flex; align-items: center; justify-content: center; padding: 14px; background: #FCFAF4; position: relative; }
   .card-image img { max-height: 100%; max-width: 100%; object-fit: contain; mix-blend-mode: multiply; }
   .card-perforation { border-top: 1.5px dashed var(--color-line); margin: 0 18px; }
   .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .card-top-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
   .store-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; color: #fff; width: fit-content; }
+  .discount-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #FDEDEA; color: var(--color-danger); }
   .card-title { font-size: 14px; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-rating { font-size: 11.5px; color: var(--color-ink-soft); display: flex; align-items: center; gap: 4px; }
   .card-rating .stars { color: var(--color-accent-dark); }
@@ -92,6 +72,7 @@
   .best-ribbon { position: absolute; top: 10px; left: 10px; background: var(--color-accent); color: #2A1B04; font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; z-index: 3; }
   .out-of-stock { filter: grayscale(0.5); opacity: 0.6; }
   .out-of-stock-tag { font-size: 11px; color: var(--color-danger); font-weight: 600; }
+  .updated-at { font-size: 10.5px; color: var(--color-ink-soft); opacity: 0.8; }
 
   .state-panel { max-width: 420px; margin: 60px auto; text-align: center; padding: 0 24px; }
   .state-panel .icon { font-size: 34px; margin-bottom: 12px; }
@@ -108,16 +89,12 @@
 <body>
 
 <header>
-  <div class="logo">Sasta<span class="dot">.pk</span></div>
+  <div class="logo" id="logoSlot">Sasta<span class="dot">.pk</span></div>
 </header>
 
-<div class="marquee-wrap">
-  <div class="marquee-track" id="marqueeTrack"></div>
-</div>
-
 <div class="hero">
-  <h1>Same phone. Different price. <br>Find out which store is lying.</h1>
-  <p>Search once, compare instantly across Pakistan's top stores.</p>
+  <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
+  <p id="heroSubtitle">Search once, compare instantly across Pakistan's top stores.</p>
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="Search e.g. Xiaomi Redmi 15C" autocomplete="off" aria-label="Search for a product">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -125,18 +102,13 @@
 </div>
 
 <div class="filter-bar" id="filterBar">
-  <div class="filter-group">
-    <span class="filter-label">Stores</span>
-    <div id="storeChips"></div>
-  </div>
+  <div class="filter-group"><span class="filter-label">Stores</span><div id="storeChips"></div></div>
   <div class="filter-group">
     <span class="filter-label">Price</span>
     <input type="number" class="price-input" id="minPrice" placeholder="Min">
     <input type="number" class="price-input" id="maxPrice" placeholder="Max">
   </div>
-  <div class="filter-group">
-    <label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label>
-  </div>
+  <div class="filter-group"><label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label></div>
   <div class="filter-group">
     <span class="filter-label">Sort</span>
     <select id="sortSelect">
@@ -151,7 +123,7 @@
 <div class="status-line" id="statusLine"></div>
 <div class="results" id="results"></div>
 
-<footer>Sasta.pk — prices are pulled directly from each store and may change without notice.</footer>
+<footer id="footerSlot">Sasta.pk — prices are pulled directly from each store and may change without notice.</footer>
 
 <script>
 (function () {
@@ -167,70 +139,88 @@
   const maxPriceEl = document.getElementById("maxPrice");
   const inStockOnlyEl = document.getElementById("inStockOnly");
   const sortSelectEl = document.getElementById("sortSelect");
-  const marqueeTrack = document.getElementById("marqueeTrack");
 
-  let debounceTimer = null;
-  let priceDebounceTimer = null;
-  let pollTimer = null;
+  let debounceTimer = null, priceDebounceTimer = null, pollTimer = null;
   let currentQuery = "";
   let allStores = [];
   let excludedStores = new Set();
+  let settings = null;
 
   function formatPKR(n) {
     if (n === null || n === undefined) return null;
     return "Rs " + Number(n).toLocaleString("en-PK");
   }
 
-  // ---------- Store list: powers the marquee + filter chips ----------
+  function relativeTime(dateStr) {
+    if (!dateStr) return "";
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "Updated just now";
+    if (mins < 60) return `Updated ${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `Updated ${hrs}h ago`;
+    return `Updated ${Math.floor(hrs / 24)}d ago`;
+  }
+
+  // ---------- Site settings: branding, theme, card feature toggles ----------
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
+      settings = await res.json();
+    } catch (err) {
+      settings = { theme: {}, cardFeatures: {} }; // safe fallback, CSS defaults still apply
+    }
+    applySettings();
+  }
+
+  function applySettings() {
+    if (!settings) return;
+
+    document.getElementById("logoSlot").textContent = settings.logoText || "Sasta.pk";
+    document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
+    document.getElementById("footerSlot").textContent = settings.footerText || "";
+
+    if (settings.heroQuotes && settings.heroQuotes.length > 0) {
+      const pick = settings.heroQuotes[Math.floor(Math.random() * settings.heroQuotes.length)];
+      document.getElementById("heroQuote").textContent = pick;
+    }
+
+    const t = settings.theme || {};
+    const root = document.documentElement.style;
+    if (t.brandColor) { root.setProperty("--color-brand", t.brandColor); root.setProperty("--color-brand-dark", t.brandColor); }
+    if (t.accentColor) { root.setProperty("--color-accent", t.accentColor); }
+    if (t.fontDisplay) root.setProperty("--font-display", `"${t.fontDisplay}", sans-serif`);
+    if (t.fontBody) root.setProperty("--font-body", `"${t.fontBody}", sans-serif`);
+  }
+
+  // ---------- Stores: filter chips ----------
   async function loadStores() {
     try {
       const res = await fetch(`${CFG.API_BASE_URL}/api/stores`);
       const data = await res.json();
       allStores = data.stores || [];
-      renderMarquee();
       renderStoreChips();
-    } catch (err) {
-      // Non-fatal — marquee/filters just won't show if this fails.
-    }
-  }
-
-  function renderMarquee() {
-    const pills = allStores
-      .map((s) => `<span class="marquee-pill" style="background:${s.color || '#666'}">${s.name}</span>`)
-      .join("");
-    // Duplicate the content once so the 50%-translate loop is seamless.
-    marqueeTrack.innerHTML = pills + pills;
+    } catch (err) {}
   }
 
   function renderStoreChips() {
     storeChipsEl.innerHTML = allStores
-      .map(
-        (s) => `<span class="store-chip" data-store="${s.name}" style="border-color:${s.color || '#ccc'}"><span style="width:8px;height:8px;border-radius:50%;background:${s.color || '#999'}"></span>${s.name}</span>`
-      )
+      .map((s) => `<span class="store-chip" data-store="${s.name}" style="border-color:${s.color || '#ccc'}"><span style="width:8px;height:8px;border-radius:50%;background:${s.color || '#999'}"></span>${s.name}</span>`)
       .join("");
-
     storeChipsEl.querySelectorAll(".store-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         const store = chip.dataset.store;
-        if (excludedStores.has(store)) {
-          excludedStores.delete(store);
-          chip.classList.remove("off");
-        } else {
-          excludedStores.add(store);
-          chip.classList.add("off");
-        }
+        if (excludedStores.has(store)) { excludedStores.delete(store); chip.classList.remove("off"); }
+        else { excludedStores.add(store); chip.classList.add("off"); }
         if (currentQuery) fetchResults(currentQuery);
       });
     });
   }
 
-  // ---------- Search / render ----------
   function buildParams(query) {
     const params = new URLSearchParams({ q: query, limit: "50" });
     const activeStores = allStores.map((s) => s.name).filter((n) => !excludedStores.has(n));
-    if (excludedStores.size > 0 && activeStores.length > 0) {
-      params.set("stores", activeStores.join(","));
-    }
+    if (excludedStores.size > 0 && activeStores.length > 0) params.set("stores", activeStores.join(","));
     if (minPriceEl.value) params.set("minPrice", minPriceEl.value);
     if (maxPriceEl.value) params.set("maxPrice", maxPriceEl.value);
     if (inStockOnlyEl.checked) params.set("inStockOnly", "true");
@@ -258,8 +248,6 @@
   }
 
   function renderResults(data, query) {
-    // Defensive client-side dedup by URL, on top of the backend's own
-    // dedup — cheap insurance against any edge case slipping through.
     const seen = new Set();
     const products = data.products.filter((p) => {
       if (seen.has(p.url)) return false;
@@ -278,28 +266,44 @@
     }
 
     const lowestPrice = products.find((p) => p.price != null)?.price;
+    const cf = (settings && settings.cardFeatures) || {};
 
     results.innerHTML = products
       .map((p) => {
         const isBest = p.price === lowestPrice;
         const outLink = `${CFG.API_BASE_URL}/out/${p.id}`;
-        const ratingHtml = p.rating
-          ? `<div class="card-rating"><span class="stars">${starString(p.rating)}</span> ${p.rating.toFixed ? p.rating.toFixed(1) : p.rating}${p.reviewCount ? ` (${p.reviewCount})` : ""}</div>`
+        const isOutOfStock = cf.showOutOfStock !== false && p.inStock === false;
+
+        const discountPct = p.originalPrice && p.price && p.originalPrice > p.price
+          ? Math.round((1 - p.price / p.originalPrice) * 100)
+          : null;
+
+        const ratingHtml = cf.showRating !== false && p.rating
+          ? `<div class="card-rating"><span class="stars">${starString(p.rating)}</span> ${Number(p.rating).toFixed(1)}${p.reviewCount ? ` (${p.reviewCount})` : ""}</div>`
           : "";
+
+        const updatedHtml = cf.showUpdatedAt !== false
+          ? `<div class="updated-at">${relativeTime(p.scrapedAt || p.scraped_at)}</div>`
+          : "";
+
         return `
-        <a class="card ${p.inStock === false ? "out-of-stock" : ""}" href="${outLink}" target="_blank" rel="noopener">
+        <a class="card ${isOutOfStock ? "out-of-stock" : ""}" href="${outLink}" target="_blank" rel="noopener">
           ${isBest ? `<div class="best-ribbon">Best price</div>` : ""}
           <div class="card-image">${p.image ? `<img src="${p.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}</div>
           <div class="card-perforation"></div>
           <div class="card-body">
-            <span class="store-badge" style="background:${p.storeColor || "#666"}">${p.store}</span>
+            <div class="card-top-row">
+              <span class="store-badge" style="background:${p.storeColor || "#666"}">${p.store}</span>
+              ${cf.showDiscountBadge !== false && discountPct ? `<span class="discount-badge">${discountPct}% OFF</span>` : ""}
+            </div>
             <div class="card-title">${p.title}</div>
             ${ratingHtml}
             <div class="price-row">
               ${p.price != null ? `<span class="price">${formatPKR(p.price)}</span>` : `<span class="price-original">Price unavailable</span>`}
-              ${p.originalPrice ? `<span class="price-original">${formatPKR(p.originalPrice)}</span>` : ""}
-              ${p.inStock === false ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
+              ${cf.showOriginalPrice !== false && p.originalPrice ? `<span class="price-original">${formatPKR(p.originalPrice)}</span>` : ""}
             </div>
+            ${isOutOfStock ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
+            ${updatedHtml}
           </div>
         </a>`;
       })
@@ -307,7 +311,6 @@
 
     const storeText = data.storeCount === 1 ? "1 store" : `${data.storeCount} stores`;
     statusLine.innerHTML = `<strong>${products.length}</strong> results from <strong>${storeText}</strong>${data.needsLiveScrape ? " — refreshing in the background..." : ""}`;
-
     if (data.needsLiveScrape) schedulePoll(query);
   }
 
@@ -330,17 +333,11 @@
 
   input.addEventListener("input", (e) => {
     const query = e.target.value.trim();
-    clearTimeout(debounceTimer);
-    clearTimeout(pollTimer);
-
+    clearTimeout(debounceTimer); clearTimeout(pollTimer);
     if (!query) {
-      currentQuery = "";
-      results.innerHTML = "";
-      statusLine.innerHTML = "";
-      filterBar.classList.remove("visible");
+      currentQuery = ""; results.innerHTML = ""; statusLine.innerHTML = ""; filterBar.classList.remove("visible");
       return;
     }
-
     filterBar.classList.add("visible");
     renderSkeleton();
     statusLine.innerHTML = "";
@@ -356,6 +353,7 @@
   inStockOnlyEl.addEventListener("change", () => { if (currentQuery) fetchResults(currentQuery); });
   sortSelectEl.addEventListener("change", () => { if (currentQuery) fetchResults(currentQuery); });
 
+  loadSettings();
   loadStores();
 })();
 </script>
