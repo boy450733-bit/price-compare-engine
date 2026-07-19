@@ -13,6 +13,10 @@ export const eezepcConfig = {
     container: ".wd-product",
     title: ".wd-entities-title a",
     image: ".product-image-link img",
+    // WoodMart lazy-loads images — `src` holds a placeholder SVG until JS
+    // runs. Try the common real-image attributes first, falling back to
+    // `src` last so it degrades gracefully instead of erroring if none match.
+    imageAttr: ["data-src", "data-lazy-src", "data-original", "src"],
     price: ".wrap-price .price",
     originalPrice: "del .amount",
     rating: ".rating",
