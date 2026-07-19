@@ -3,6 +3,7 @@ import { priceOyeConfig } from "./priceoye.config.js";
 import { iShoppingConfig } from "./ishopping.config.js";
 import { darazConfig } from "./daraz.config.js";
 import { eezepcConfig } from "./ezeepc.config.js";
+import { shophiveConfig } from "./shophive.config.js";
 
 // This is the ONLY place you list active stores. Both the adapter
 // registry (src/adapters/index.js) and the auto-seed step
@@ -14,4 +15,5 @@ export const allStoreConfigs = [
   iShoppingConfig, // currently blocked by Cloudflare managed challenge — see earlier notes
   darazConfig,
   eezepcConfig,
+  shophiveConfig,
 ];
