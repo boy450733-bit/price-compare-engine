@@ -2,14 +2,16 @@ import { megaConfig } from "./mega.config.js";
 import { priceOyeConfig } from "./priceoye.config.js";
 import { iShoppingConfig } from "./ishopping.config.js";
 import { darazConfig } from "./daraz.config.js";
-import { flashiConfig } from "./flashi.config.js";
-import { eezepcConfig } from "./eezepc.config.js";
+import { eezepcConfig } from "./ezeepc.config.js";
 
+// This is the ONLY place you list active stores. Both the adapter
+// registry (src/adapters/index.js) and the auto-seed step
+// (src/server.js) read from this array, so adding a store here is
+// enough to make it show up in both places.
 export const allStoreConfigs = [
   megaConfig,
   priceOyeConfig,
-   // iShoppingConfig,  // disabled: Cloudflare managed challenge as of 2026-07-19
+  iShoppingConfig, // currently blocked by Cloudflare managed challenge — see earlier notes
   darazConfig,
-  flashiConfig,
   eezepcConfig,
 ];
