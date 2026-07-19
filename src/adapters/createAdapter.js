@@ -54,7 +54,23 @@ function createHtmlAdapter(config) {
 
   return async function adapter(query) {
     const url = searchUrl(query);
-    const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+    const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "User-Agent": userAgent,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+      "Referer": new URL(url).origin + "/",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "same-origin",
+      "Upgrade-Insecure-Requests": "1",
+    },
+    redirect: "follow",
+  });
     if (!res.ok) return [];
 
     const html = await res.text();
