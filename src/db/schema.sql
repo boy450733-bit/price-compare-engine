@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS price_history (
 
 CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history (product_id, recorded_at DESC);
 
+CREATE TABLE IF NOT EXISTS affiliate_links (
+  product_id    TEXT PRIMARY KEY REFERENCES products(id),
+  affiliate_url TEXT NOT NULL,
+  created_at    TIMESTAMPTZ DEFAULT now()
+); -- manually-converted links for stores with no bulk/API affiliate tool (e.g. Daraz)
+
 CREATE TABLE IF NOT EXISTS clicks (
   id          BIGSERIAL PRIMARY KEY,
   click_ref   TEXT UNIQUE,           -- short id passed as the affiliate network's sub-id/tracking param, so network-reported sales can be matched back to this row
