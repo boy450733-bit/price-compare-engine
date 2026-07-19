@@ -47,6 +47,9 @@ function createHtmlAdapter(config) {
       imageAttr = "src",
       price,
       originalPrice = null,
+      rating = null, // optional selector (relative to container) for a rating value/label
+      reviewCount = null, // optional selector for a review count
+      outOfStock = null, // optional selector whose mere PRESENCE (not its text) means the item is out of stock
     },
     userAgent = DEFAULT_USER_AGENT,
     parsePrice = defaultParsePrice,
@@ -79,15 +82,29 @@ function createHtmlAdapter(config) {
         priceBox.find(originalPrice).remove();
       }
 
+      // Rating text often looks like "Rated 4.50 out of 5" — using the
+      // first number MATCH (not a strip-and-concat of all digits) avoids
+      // accidentally combining "4.50" and the "5" from "out of 5" into
+      // a wrong value like 4.505.
+      const ratingValue = rating
+        ? parseFloat($el.find(rating).text().match(/[\d.]+/)?.[0] || "0")
+        : 0;
+
+      const reviewCountValue = reviewCount
+        ? parseInt($el.find(reviewCount).text().replace(/[^\d]/g, ""), 10) || 0
+        : 0;
+
+      const inStockValue = outOfStock ? $el.find(outOfStock).length === 0 : true;
+
       results.push({
         title: titleText,
         url: href.startsWith("http") ? href : `${baseUrl}${href}`,
         image: imageSrc || null,
         price: parsePrice(priceBox.text()),
         originalPrice: originalPriceText ? parsePrice(originalPriceText) : null,
-        rating: 0,
-        reviewCount: 0,
-        inStock: true,
+        rating: ratingValue,
+        reviewCount: reviewCountValue,
+        inStock: inStockValue,
       });
     });
 
