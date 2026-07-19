@@ -95,6 +95,24 @@ router.post("/affiliate-links", async (req, res) => {
   res.json({ ok: true });
 });
 
+// Site settings — branding, theme, and which optional card fields show
+// on the storefront. Admin sees/edits the raw stored row (which may be
+// partial); the PUBLIC /api/settings endpoint is what merges it with
+// defaults for the frontend, so this one can just return what's saved.
+router.get("/settings", async (_req, res) => {
+  const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
+  res.json(rows[0]?.data || {});
+});
+
+router.put("/settings", async (req, res) => {
+  await db(
+    `INSERT INTO site_settings (id, data, updated_at) VALUES (1, $1, now())
+     ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = now()`,
+    [JSON.stringify(req.body)]
+  );
+  res.json({ ok: true });
+});
+
 // Basic stats for the admin dashboard header.
 router.get("/stats", async (_req, res) => {
   const [{ rows: productRows }, { rows: clickRows }, { rows: searchRows }] = await Promise.all([
