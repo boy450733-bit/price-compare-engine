@@ -40,6 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history (product_i
 
 CREATE TABLE IF NOT EXISTS clicks (
   id          BIGSERIAL PRIMARY KEY,
+  click_ref   TEXT UNIQUE,           -- short id passed as the affiliate network's sub-id/tracking param, so network-reported sales can be matched back to this row
   product_id  TEXT NOT NULL REFERENCES products(id),
   clicked_at  TIMESTAMPTZ DEFAULT now(),
   ip_hash     TEXT
