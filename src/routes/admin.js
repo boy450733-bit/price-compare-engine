@@ -65,6 +65,20 @@ router.get("/affiliate-worklist", async (_req, res) => {
   res.json({ worklist: rows });
 });
 
+// Existing manually-converted affiliate links, for review/editing —
+// separate from the worklist above (which only shows products still
+// missing a link).
+router.get("/affiliate-links", async (_req, res) => {
+  const { rows } = await db(`
+    SELECT al.product_id, al.affiliate_url, al.created_at, p.title, p.store, p.url
+    FROM affiliate_links al
+    JOIN products p ON p.id = al.product_id
+    ORDER BY al.created_at DESC
+    LIMIT 200
+  `);
+  res.json({ links: rows });
+});
+
 // Save a manually-converted affiliate link for a product.
 router.post("/affiliate-links", async (req, res) => {
   const { productId, affiliateUrl } = req.body;
