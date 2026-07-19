@@ -5,10 +5,12 @@ import path from "node:path";
 import "dotenv/config";
 import { pool } from "./db/client.js";
 import { allStoreConfigs } from "./adapters/stores/index.js";
+import { defaultSettings } from "./config/defaultSettings.js";
 import searchRoutes from "./routes/search.js";
 import redirectRoutes from "./routes/redirect.js";
 import storesRoutes from "./routes/stores.js";
 import adminRoutes from "./routes/admin.js";
+import settingsRoutes from "./routes/settings.js";
 
 // Runs the schema + seeds every store listed in
 // src/adapters/stores/index.js automatically on boot. Safe to run every
@@ -41,6 +43,15 @@ async function autoSetup() {
     );
   }
   console.log(`Stores seeded: ${allStoreConfigs.map((c) => c.name).join(", ")}`);
+
+  // Only seeds if no row exists yet — never overwrites settings you've
+  // already customized via the admin panel.
+  await pool.query(
+    `INSERT INTO site_settings (id, data) VALUES (1, $1)
+     ON CONFLICT (id) DO NOTHING`,
+    [defaultSettings]
+  );
+  console.log("Site settings ready.");
 }
 
 const app = express();
@@ -50,6 +61,7 @@ app.use(express.static("public")); // serves public/index.html at "/"
 
 app.use("/api", searchRoutes);
 app.use("/api", storesRoutes);
+app.use("/api", settingsRoutes);
 app.use("/admin/api", adminRoutes);
 app.use("/", redirectRoutes);
 
