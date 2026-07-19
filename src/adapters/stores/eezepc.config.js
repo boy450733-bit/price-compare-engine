@@ -4,14 +4,28 @@ export const eezepcConfig = {
   searchUrl: (q) =>
     `https://eezepc.com/?s=${encodeURIComponent(q)}&post_type=product&dgwt_wcas=1`,
 
+  // Confirmed via ReqBin: the exact same URL returns 403 on GET but 200
+  // on POST (no body needed) — looks like a Cloudflare WAF rule targeting
+  // GET specifically on this endpoint, not a cookie/JS-challenge issue.
+  method: "POST",
+
   selectors: {
     container: ".wd-product",
     title: ".wd-entities-title a",
-    url: ".wd-entities-title a",
     image: ".product-image-link img",
     price: ".wrap-price .price",
     originalPrice: "del .amount",
     rating: ".rating",
     outOfStock: ".out-of-stock",
   },
+
+  // TEMPORARY: strips everything except digits, same fix used for
+  // iShopping's "Rs. 31,999" stray-period bug. Remove this override once
+  // we confirm from real HTML whether EzeePC's price format actually has
+  // decimals that matter.
+  parsePrice: (text) => {
+    const digits = text.replace(/[^\d]/g, "");
+    return digits ? Number(digits) : null;
+  },
 };
+
