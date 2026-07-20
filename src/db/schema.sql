@@ -10,24 +10,75 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 
 CREATE TABLE IF NOT EXISTS products (
-  id              TEXT PRIMARY KEY,     -- md5(store || '|' || url)
-  title           TEXT NOT NULL,
-  store           TEXT NOT NULL REFERENCES stores(name),
-  url             TEXT NOT NULL,
-  image           TEXT,
-  price           NUMERIC,
-  original_price  NUMERIC,
-  rating          NUMERIC DEFAULT 0,
-  review_count    INTEGER DEFAULT 0,
-  in_stock        BOOLEAN DEFAULT true,
-  source_query    TEXT,
-  scraped_at      TIMESTAMPTZ,
-  created_at      TIMESTAMPTZ DEFAULT now()
+  id                 TEXT PRIMARY KEY,      -- md5(store || '|' || url)
+
+  -- Original scraped data
+  title              TEXT NOT NULL,
+  url                TEXT NOT NULL,
+  image              TEXT,
+  store              TEXT NOT NULL REFERENCES stores(name),
+
+  -- Pricing
+  price              NUMERIC,
+  original_price     NUMERIC,
+
+  -- Reviews
+  rating             NUMERIC DEFAULT 0,
+  review_count       INTEGER DEFAULT 0,
+
+  -- Availability
+  in_stock           BOOLEAN DEFAULT true,
+
+  -- Search metadata
+  source_query       TEXT,
+  category           TEXT,
+  brand              TEXT,
+  model              TEXT,
+  normalized_title   TEXT,
+  keywords           TEXT[],
+
+  -- Intelligent matching
+  fingerprint        TEXT,
+  match_score        NUMERIC DEFAULT 0,
+
+  -- Flexible specifications
+  specs              JSONB DEFAULT '{}'::jsonb,
+
+  -- Complete scraped object for debugging
+  raw_data           JSONB DEFAULT '{}'::jsonb,
+
+  -- Dates
+  scraped_at         TIMESTAMPTZ,
+  created_at         TIMESTAMPTZ DEFAULT now(),
+  updated_at         TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_products_title_trgm ON products USING gin (title gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_products_source_query ON products (source_query);
-CREATE INDEX IF NOT EXISTS idx_products_store ON products (store);
+CREATE INDEX IF NOT EXISTS idx_products_title_trgm
+ON products USING gin(title gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_products_source_query
+ON products(source_query);
+
+CREATE INDEX IF NOT EXISTS idx_products_store
+ON products(store);
+
+CREATE INDEX IF NOT EXISTS idx_products_brand
+ON products(brand);
+
+CREATE INDEX IF NOT EXISTS idx_products_model
+ON products(model);
+
+CREATE INDEX IF NOT EXISTS idx_products_category
+ON products(category);
+
+CREATE INDEX IF NOT EXISTS idx_products_fingerprint
+ON products(fingerprint);
+
+CREATE INDEX IF NOT EXISTS idx_products_keywords
+ON products USING GIN(keywords);
+
+CREATE INDEX IF NOT EXISTS idx_products_specs
+ON products USING GIN(specs);
 
 CREATE TABLE IF NOT EXISTS price_history (
   id          BIGSERIAL PRIMARY KEY,
