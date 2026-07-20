@@ -2,12 +2,12 @@ export const shophiveConfig = {
   name: "Shophive",
   baseUrl: "https://www.shophive.com",
   searchUrl: (q) =>
-    `https://www.shophive.com/magebig_ajaxsearch/ajax/index/?q=${encodeURIComponent(q)}`,
+    `https://www.shophive.com/catalogsearch/result/index/?p=2&q=${encodeURIComponent(q)}`,
 
     // Confirmed via ReqBin: the exact same URL returns 403 on GET but 200
   // on POST (no body needed) — looks like a Cloudflare WAF rule targeting
   // GET specifically on this endpoint, not a cookie/JS-challenge issue.
-  method: "POST",
+  //method: "POST",
   selectors: {
     container: "li.product-item",
 
