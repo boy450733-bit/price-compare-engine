@@ -39,6 +39,12 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
 
     const product = processProduct(listing, searchQuery, storeName);
 
+    console.log("RAW LISTING");
+    console.log(listing);
+
+    console.log("PIPELINE OUTPUT");
+    console.dir(product, { depth: null });
+
     if (!product.accept) continue;
 
     const id = productId(storeName, product.url);
