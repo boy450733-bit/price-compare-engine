@@ -24,6 +24,6 @@ export function processProduct(listing, searchQuery, storeName) {
       color: "Black"
     },
 
-    fingerprint: "TEST_FINGERPRINT_123456"
+    fingerprint: `test-${storeName}-${Date.now()}`
   };
 }
