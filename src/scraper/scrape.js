@@ -1,6 +1,7 @@
 import { query } from "../db/client.js";
 import { productId } from "../utils/hash.js";
 import { getAdapter } from "../adapters/index.js";
+import { processProduct } from "../intelligence/index.js";
 
 export async function scrapeStoreForQuery(storeName, searchQuery) {
   const adapter = getAdapter(storeName);
@@ -56,4 +57,5 @@ export async function scrapeAllStoresForQuery(searchQuery) {
   );
 
   return results;
+  console.log('Results len' +results.length);
 }
