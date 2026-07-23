@@ -16,17 +16,16 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
     // 1. Process listing through your intelligence layer middleware
     const product = processProduct(listing, searchQuery, storeName);
 
-  //  console.log("RAW LISTING:", listing.title);
-  //  console.log("PIPELINE OUTPUT:", product);
+    //
+    console.log("FINAL PRODUCT START");
+    console.log(JSON.stringify(product, null, 2));
+    console.log("FINAL PRODUCT ENDS");
 
     // If the intelligence layer flags this item as noise/irrelevant, skip it
     if (!product.accepted) continue;
 
     const id = productId(storeName, product.url);
-    //
-    console.log("FINAL PRODUCT START");
-    console.log(JSON.stringify(product, null, 2));
-    console.log("FINAL PRODUCT ENDS");
+
     
     // 2. Insert enriched intelligence metadata into PostgreSQL
     await query(
