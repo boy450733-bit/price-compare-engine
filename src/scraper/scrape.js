@@ -24,8 +24,9 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
 
     const id = productId(storeName, product.url);
     //
-    console.log("FINAL PRODUCT");
+    console.log("FINAL PRODUCT START");
     console.log(JSON.stringify(product, null, 2));
+    console.log("FINAL PRODUCT ENDS");
     
     // 2. Insert enriched intelligence metadata into PostgreSQL
     await query(
