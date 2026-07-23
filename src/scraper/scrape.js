@@ -2,53 +2,29 @@ import { query } from "../db/client.js";
 import { productId } from "../utils/hash.js";
 import { getAdapter } from "../adapters/index.js";
 import { processProduct } from "../intelligence/index.js";
-/*
+
 export async function scrapeStoreForQuery(storeName, searchQuery) {
   const adapter = getAdapter(storeName);
+  if (!adapter) {
+    console.warn(`No adapter found for store: ${storeName}`);
+    return 0;
+  }
+
   const listings = await adapter(searchQuery);
 
   for (const listing of listings) {
-    const id = productId(storeName, listing.url);
-
-    await query(
-      `INSERT INTO products
-         (id, title, store, url, image, price, original_price, rating, review_count, in_stock, source_query, scraped_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, now())
-       ON CONFLICT (id) DO UPDATE SET
-         price = EXCLUDED.price,
-         original_price = EXCLUDED.original_price,
-         in_stock = EXCLUDED.in_stock,
-         rating = EXCLUDED.rating,
-         review_count = EXCLUDED.review_count,
-         scraped_at = now()`,
-      [
-        id,
-        listing.title,
-        storeName,
-        listing.url,
-        listing.image,
-        listing.price,
-        listing.originalPrice,
-        listing.rating,
-        listing.reviewCount,
-        listing.inStock,
-        searchQuery,
-      ]
-    );
-*/
-
+    // 1. Process listing through your intelligence layer middleware
     const product = processProduct(listing, searchQuery, storeName);
 
-    console.log("RAW LISTING");
-    console.log(listing);
+    console.log("RAW LISTING:", listing.title);
+    console.log("PIPELINE OUTPUT:", product);
 
-    console.log("PIPELINE OUTPUT");
-    console.dir(product, { depth: null });
-
+    // If the intelligence layer flags this item as noise/irrelevant, skip it
     if (!product.accept) continue;
 
     const id = productId(storeName, product.url);
 
+    // 2. Insert enriched intelligence metadata into PostgreSQL
     await query(
       `INSERT INTO products (
         id,
@@ -56,8 +32,10 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
         brand,
         model,
         category,
+        normalized_title,
         specs,
         fingerprint,
+        match_score,
         store,
         url,
         image,
@@ -70,32 +48,36 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
         scraped_at
       )
       VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16,NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, NOW()
       )
       ON CONFLICT (id)
       DO UPDATE SET
-        title=EXCLUDED.title,
-        brand=EXCLUDED.brand,
-        model=EXCLUDED.model,
-        category=EXCLUDED.category,
-        specs=EXCLUDED.specs,
-        fingerprint=EXCLUDED.fingerprint,
-        image=EXCLUDED.image,
-        price=EXCLUDED.price,
-        original_price=EXCLUDED.original_price,
-        rating=EXCLUDED.rating,
-        review_count=EXCLUDED.review_count,
-        in_stock=EXCLUDED.in_stock,
-        scraped_at=NOW()`,
+        title = EXCLUDED.title,
+        brand = EXCLUDED.brand,
+        model = EXCLUDED.model,
+        category = EXCLUDED.category,
+        normalized_title = EXCLUDED.normalized_title,
+        specs = EXCLUDED.specs,
+        fingerprint = EXCLUDED.fingerprint,
+        match_score = EXCLUDED.match_score,
+        image = EXCLUDED.image,
+        price = EXCLUDED.price,
+        original_price = EXCLUDED.original_price,
+        rating = EXCLUDED.rating,
+        review_count = EXCLUDED.review_count,
+        in_stock = EXCLUDED.in_stock,
+        scraped_at = NOW()`,
       [
         id,
         product.title,
         product.brand,
         product.model,
         product.category,
+        product.normalizedTitle,
         JSON.stringify(product.specs || {}),
         product.fingerprint,
+        product.relevanceScore || 0,
         storeName,
         product.url,
         product.image,
@@ -108,12 +90,10 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
       ]
     );
 
-
-    // Log a price_history row every time we re-scrape, so price trends
-    // and "lowest in 30 days" features have real data to draw from.
+    // 3. Log price history for trends
     await query(
       `INSERT INTO price_history (product_id, price) VALUES ($1, $2)`,
-      [id, listing.price]
+      [id, product.price]
     );
   }
 
