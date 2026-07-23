@@ -98,7 +98,7 @@ export function calculateRelevance(queryInfo, productInfo) {
 
   return {
     score,
-    accepted: score >= 0.1,
+    accepted: true, //score >= 0.1,
     breakdown: {
       text,
       numbers,
