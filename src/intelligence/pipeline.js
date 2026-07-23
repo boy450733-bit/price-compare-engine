@@ -36,7 +36,7 @@ export function processProduct(rawProduct, searchQuery) {
   return product;
 }
 
-export function processProducts(products, searchQuery, minScore = 0.55) {
+export function processProducts(products, searchQuery, minScore = 0.1) {
   return products
     .map(product => processProduct(product, searchQuery))
     .filter(product => product.accepted)
