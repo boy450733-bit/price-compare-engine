@@ -20,13 +20,14 @@ function normalizeStorage(text) {
     .replace(/(\d+)\s*gb/gi, "$1GB");
 }
 
-function detectBrand(title, category) {
-  const brands = BRANDS_BY_CATEGORY[category] || [];
+function detectBrand(title) {
   const lower = title.toLowerCase();
 
-  for (const brand of brands) {
-    if (lower.includes(brand.toLowerCase())) {
-      return brand;
+  for (const brands of Object.values(BRANDS_BY_CATEGORY)) {
+    for (const brand of brands) {
+      if (lower.includes(brand.toLowerCase())) {
+        return brand;
+      }
     }
   }
 
