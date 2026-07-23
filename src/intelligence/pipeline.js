@@ -29,11 +29,7 @@ export function processProduct(rawProduct, searchQuery) {
   query.specs = extractSpecs(searchQuery);
 
   const relevance = calculateRelevance(query, product);
-  // check 
-  console.log("RELEVANCE OBJECT starts");
-  console.log(JSON.stringify(relevance, null, 2));
-  console.log("RELEVANCE OBJECT ends");
-  
+
   product.relevance = relevance.score;
   product.accepted = relevance.accepted;
 
