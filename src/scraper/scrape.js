@@ -16,8 +16,8 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
     // 1. Process listing through your intelligence layer middleware
     const product = processProduct(listing, searchQuery, storeName);
 
-    console.log("RAW LISTING:", listing.title);
-    console.log("PIPELINE OUTPUT:", product);
+  //  console.log("RAW LISTING:", listing.title);
+  //  console.log("PIPELINE OUTPUT:", product);
 
     // If the intelligence layer flags this item as noise/irrelevant, skip it
     if (!product.accept) continue;
