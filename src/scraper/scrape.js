@@ -20,7 +20,7 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
   //  console.log("PIPELINE OUTPUT:", product);
 
     // If the intelligence layer flags this item as noise/irrelevant, skip it
-  //  if (!product.accept) continue;
+    if (!product.accepted) continue;
 
     const id = productId(storeName, product.url);
 
