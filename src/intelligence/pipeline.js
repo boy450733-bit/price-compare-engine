@@ -29,7 +29,9 @@ export function processProduct(rawProduct, searchQuery) {
   query.specs = extractSpecs(searchQuery);
 
   const relevance = calculateRelevance(query, product);
-
+  // check 
+  console.log("RELEVANCE OBJECT:", relevance);
+  
   product.relevance = relevance.score;
   product.accepted = relevance.accepted;
 
