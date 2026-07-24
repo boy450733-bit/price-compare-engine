@@ -209,6 +209,7 @@
   let settings = null;
 
   let cachedProducts = [];
+  // Dynamic filter sets declared globally
   let dynamicCategories = new Set();
   let dynamicBrands = new Set();
   let dynamicRams = new Set();
@@ -266,7 +267,6 @@
       specs.push({ label: p.category });
     }
 
-    // Extract RAM
     let ramVal = null;
     if (p.specs && p.specs.ram) {
       ramVal = String(p.specs.ram).replace(/[^0-9]/g, '');
@@ -284,7 +284,6 @@
       dynamicRams.add(ramVal.toLowerCase());
     }
 
-    // Extract ROM / Storage
     let romVal = null;
     if (p.specs && p.specs.storage) {
       romVal = String(p.specs.storage).replace(/[^0-9]/g, '');
@@ -308,26 +307,17 @@
   }
 
   function populateFilterDropdowns() {
-    const curCat = categorySelectEl.value;
-    const curBrand = brandSelectEl.value;
-    const curRam = ramSelectEl.value;
-    const curRom = romSelectEl.value;
-
     categorySelectEl.innerHTML = '<option value="">All Categories</option>' + 
       Array.from(dynamicCategories).sort().map(c => `<option value="${c}">${c}</option>`).join('');
-    categorySelectEl.value = curCat;
 
     brandSelectEl.innerHTML = '<option value="">All Brands</option>' + 
       Array.from(dynamicBrands).sort().map(b => `<option value="${b}">${b}</option>`).join('');
-    brandSelectEl.value = curBrand;
 
     ramSelectEl.innerHTML = '<option value="">Any RAM</option>' + 
       Array.from(dynamicRams).sort((a,b)=>Number(a)-Number(b)).map(r => `<option value="${r}">${r.toUpperCase()}GB</option>`).join('');
-    ramSelectEl.value = curRam;
 
     romSelectEl.innerHTML = '<option value="">Any ROM</option>' + 
       Array.from(dynamicRoms).sort((a,b)=>Number(a)-Number(b)).map(r => `<option value="${r}">${r.toUpperCase()}GB</option>`).join('');
-    romSelectEl.value = curRom;
   }
 
   async function loadSettings() {
@@ -387,7 +377,6 @@
     results.appendChild(panel);
   }
 
-  // Pure client-side filtering and sorting with exact RAM and ROM matching
   function applyClientFiltersAndRender() {
     if (!cachedProducts.length) return;
 
@@ -407,7 +396,6 @@
       if (selCategory && p.category !== selCategory) return false;
       if (selBrand && p.brand !== selBrand) return false;
 
-      // RAM Filter Check
       if (selRam) {
         const titleLower = (p.title || "").toLowerCase();
         const pRam = p.specs && p.specs.ram ? String(p.specs.ram).replace(/[^0-9]/g, '') : "";
@@ -415,7 +403,6 @@
         if (!matchesRam) return false;
       }
 
-      // ROM Filter Check
       if (selRom) {
         const titleLower = (p.title || "").toLowerCase();
         const pRom = p.specs && p.specs.storage ? String(p.specs.storage).replace(/[^0-9]/g, '') : "";
@@ -435,7 +422,6 @@
       return true;
     });
 
-    // Sorting
     list.sort((a, b) => {
       if (sortBy === "price_asc") {
         return (a.min_price ?? 0) - (b.min_price ?? 0);
@@ -524,7 +510,14 @@
       const data = await res.json();
       
       if (query === currentQuery) {
+        // RESET filter option collections completely for the new search query
+        dynamicCategories.clear();
+        dynamicBrands.clear();
+        dynamicRams.clear();
+        dynamicRoms.clear();
+
         cachedProducts = (data.products || []).map(enrichProductData);
+        
         populateFilterDropdowns();
         applyClientFiltersAndRender();
         if (data.needsLiveScrape) schedulePoll(query);
