@@ -32,12 +32,19 @@
   .search-box input:focus { border-color: var(--color-brand); box-shadow: 0 0 0 5px rgba(11, 110, 79, 0.12); }
   .search-box svg { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--color-ink-soft); pointer-events: none; }
 
-  .filter-bar { max-width: 1140px; margin: 24px auto 0; padding: 16px 24px; display: none; gap: 18px; flex-wrap: wrap; align-items: center; background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); }
+  /* Structured Multi-line Filter Bar Layout */
+  .filter-bar { max-width: 1140px; margin: 24px auto 0; padding: 16px 24px; display: none; flex-direction: column; gap: 14px; background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); }
   .filter-bar.visible { display: flex; }
+  
+  .filter-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; width: 100%; }
+  .filter-row:not(:last-child) { border-bottom: 1px dashed var(--color-line); padding-bottom: 12px; }
+
   .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .filter-label { font-size: 12px; font-weight: 700; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .filter-label { font-size: 12px; font-weight: 700; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; min-width: 70px; }
+  
   .store-chip, .filter-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; user-select: none; transition: all 0.15s ease; }
   .store-chip.off, .filter-chip.off { opacity: 0.4; background: var(--color-surface); }
+  
   .price-input { width: 92px; padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); }
   .toggle-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; }
   select#sortSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); }
@@ -114,39 +121,55 @@
 </div>
 
 <div class="filter-bar" id="filterBar">
-  <div class="filter-group"><span class="filter-label">Stores</span><div id="storeChips"></div></div>
-  <div class="filter-group">
-    <span class="filter-label">Category</span>
-    <select id="categorySelect" class="filter-select">
-      <option value="">All Categories</option>
-    </select>
+  <!-- Line 1: Stores Filter -->
+  <div class="filter-row">
+    <div class="filter-group" style="width: 100%;">
+      <span class="filter-label">Stores</span>
+      <div id="storeChips" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+    </div>
   </div>
-  <div class="filter-group">
-    <span class="filter-label">Brand</span>
-    <select id="brandSelect" class="filter-select">
-      <option value="">All Brands</option>
-    </select>
+  
+  <!-- Line 2: Dropdown Filters (Category, Brand, RAM) -->
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">Category</span>
+      <select id="categorySelect" class="filter-select">
+        <option value="">All Categories</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Brand</span>
+      <select id="brandSelect" class="filter-select">
+        <option value="">All Brands</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">RAM Spec</span>
+      <select id="ramSelect" class="filter-select">
+        <option value="">Any RAM</option>
+      </select>
+    </div>
   </div>
-  <div class="filter-group">
-    <span class="filter-label">RAM Spec</span>
-    <select id="ramSelect" class="filter-select">
-      <option value="">Any RAM</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <span class="filter-label">Price</span>
-    <input type="number" class="price-input" id="minPrice" placeholder="Min">
-    <input type="number" class="price-input" id="maxPrice" placeholder="Max">
-  </div>
-  <div class="filter-group"><label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label></div>
-  <div class="filter-group">
-    <span class="filter-label">Sort</span>
-    <select id="sortSelect">
-      <option value="relevance">Relevance</option>
-      <option value="price_asc">Price: Low to High</option>
-      <option value="price_desc">Price: High to Low</option>
-      <option value="rating">Rating</option>
-    </select>
+
+  <!-- Line 3: Price, In-stock, Sort -->
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">Price</span>
+      <input type="number" class="price-input" id="minPrice" placeholder="Min">
+      <input type="number" class="price-input" id="maxPrice" placeholder="Max">
+    </div>
+    <div class="filter-group">
+      <label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label>
+    </div>
+    <div class="filter-group" style="margin-left: auto;">
+      <span class="filter-label" style="min-width: unset;">Sort</span>
+      <select id="sortSelect">
+        <option value="relevance">Relevance</option>
+        <option value="price_asc">Price: Low to High</option>
+        <option value="price_desc">Price: High to Low</option>
+        <option value="rating">Rating</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -197,7 +220,6 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  // Handle extraction of comprehensive data fields including category, image and brand
   function enrichProductData(p) {
     let title = p.title;
     let image = p.image;
@@ -233,7 +255,6 @@
     const title = p.title || "";
     const lower = title.toLowerCase();
 
-    // Include category as the first badge pill if present
     if (p.category) {
       specs.push({ label: p.category });
     }
@@ -392,7 +413,23 @@
     const products = (data.products || []).map(enrichProductData);
     updateDynamicFilters();
 
-    if (products.length === 0) {
+    // Client-side precise filtering guard to ensure dropdown selections match accurately
+    const selCategory = categorySelectEl.value.toLowerCase();
+    const selBrand = brandSelectEl.value.toLowerCase();
+    const selRam = ramSelectEl.value.toLowerCase();
+
+    const filteredProducts = products.filter(p => {
+      const pTitle = (p.title || "").toLowerCase();
+      const pCategory = (p.category || "").toLowerCase();
+      const pBrand = (p.brand || "").toLowerCase();
+      
+      if (selCategory && !pCategory.includes(selCategory) && !pTitle.includes(selCategory)) return false;
+      if (selBrand && !pBrand.includes(selBrand) && !pTitle.includes(selBrand)) return false;
+      if (selRam && !pTitle.includes(selRam) && !(p.specs && String(p.specs.ram).toLowerCase().includes(selRam))) return false;
+      return true;
+    });
+
+    if (filteredProducts.length === 0) {
       const msg = data.needsLiveScrape ? "Checking live store prices..." : "No matching products found";
       const sub = data.needsLiveScrape ? "We are scanning top Pakistani web stores for real-time prices. Please hold on a moment." : "Try searching with broader terms or clear your active store/price filters.";
       renderEmpty(msg, sub);
@@ -400,7 +437,7 @@
       return;
     }
 
-    results.innerHTML = products.map((p) => {
+    results.innerHTML = filteredProducts.map((p) => {
       const sortedOffers = [...(p.offers || [])].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
       const titleText = p.title || `Product Series (${p.fingerprint.substring(0, 8)})`;
       
@@ -466,7 +503,7 @@
     }).join("");
 
     const storeText = data.storeCount === 1 ? "1 store" : `${data.storeCount || 4} stores`;
-    statusLine.innerHTML = `Found <strong>${products.length}</strong> product listings across <strong>${storeText}</strong>${data.needsLiveScrape ? " — updating live prices..." : ""}`;
+    statusLine.innerHTML = `Found <strong>${filteredProducts.length}</strong> product listings across <strong>${storeText}</strong>${data.needsLiveScrape ? " — updating live prices..." : ""}`;
     if (data.needsLiveScrape) schedulePoll(query);
   }
 
