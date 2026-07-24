@@ -269,45 +269,61 @@
     const cf = (settings && settings.cardFeatures) || {};
 
     results.innerHTML = products
-      .map((p) => {
-        const isBest = p.price === lowestPrice;
-        const outLink = `${CFG.API_BASE_URL}/out/${p.id}`;
-        const isOutOfStock = cf.showOutOfStock !== false && p.inStock === false;
+  .map((p) => {
+    // Each product now has p.fingerprint and p.offers (array of stores)
+    const lowestOffer = p.offers.reduce(
+      (min, o) => (o.price != null && o.price < min.price ? o : min),
+      p.offers[0]
+    );
 
-        const discountPct = p.originalPrice && p.price && p.originalPrice > p.price
-          ? Math.round((1 - p.price / p.originalPrice) * 100)
-          : null;
+    const isBest = true; // lowestOffer is always the best price
+    const outLink = lowestOffer.url;
+    const isOutOfStock = lowestOffer.in_stock === false;
 
-        const ratingHtml = cf.showRating !== false && p.rating
-          ? `<div class="card-rating"><span class="stars">${starString(p.rating)}</span> ${Number(p.rating).toFixed(1)}${p.reviewCount ? ` (${p.reviewCount})` : ""}</div>`
-          : "";
+    const discountPct =
+      lowestOffer.originalPrice && lowestOffer.price && lowestOffer.originalPrice > lowestOffer.price
+        ? Math.round((1 - lowestOffer.price / lowestOffer.originalPrice) * 100)
+        : null;
 
-        const updatedHtml = cf.showUpdatedAt !== false
-          ? `<div class="updated-at">${relativeTime(p.scrapedAt || p.scraped_at)}</div>`
-          : "";
+    const ratingHtml =
+      lowestOffer.rating
+        ? `<div class="card-rating"><span class="stars">${starString(lowestOffer.rating)}</span> ${Number(lowestOffer.rating).toFixed(1)}</div>`
+        : "";
 
-        return `
-        <a class="card ${isOutOfStock ? "out-of-stock" : ""}" href="${outLink}" target="_blank" rel="noopener">
-          ${isBest ? `<div class="best-ribbon">Best price</div>` : ""}
-          <div class="card-image">${p.image ? `<img src="${p.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}</div>
-          <div class="card-perforation"></div>
-          <div class="card-body">
-            <div class="card-top-row">
-              <span class="store-badge" style="background:${p.storeColor || "#666"}">${p.store}</span>
-              ${cf.showDiscountBadge !== false && discountPct ? `<span class="discount-badge">${discountPct}% OFF</span>` : ""}
-            </div>
-            <div class="card-title">${p.title}</div>
-            ${ratingHtml}
-            <div class="price-row">
-              ${p.price != null ? `<span class="price">${formatPKR(p.price)}</span>` : `<span class="price-original">Price unavailable</span>`}
-              ${cf.showOriginalPrice !== false && p.originalPrice ? `<span class="price-original">${formatPKR(p.originalPrice)}</span>` : ""}
-            </div>
-            ${isOutOfStock ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
-            ${updatedHtml}
-          </div>
-        </a>`;
-      })
+    const updatedHtml = p.scrapedAt
+      ? `<div class="updated-at">${relativeTime(p.scrapedAt || p.scraped_at)}</div>`
+      : "";
+
+    // Build offers list (all stores for this fingerprint)
+    const offersHtml = p.offers
+      .map(
+        (o) => `
+        <div class="offer-row">
+          <span class="store-badge" style="background:${o.storeColor || "#666"}">${o.store}</span>
+          <span class="price">${o.price != null ? formatPKR(o.price) : "N/A"}</span>
+          ${o.in_stock === false ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
+        </div>`
+      )
       .join("");
+
+    return `
+      <div class="card ${isOutOfStock ? "out-of-stock" : ""}">
+        ${isBest ? `<div class="best-ribbon">Best price</div>` : ""}
+        <div class="card-image">${p.image ? `<img src="${p.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}</div>
+        <div class="card-body">
+          <div class="card-title">${p.title || p.fingerprint}</div>
+          ${ratingHtml}
+          <div class="price-row">
+            <span class="price">${formatPKR(lowestOffer.price)}</span>
+            ${discountPct ? `<span class="discount-badge">${discountPct}% OFF</span>` : ""}
+          </div>
+          ${updatedHtml}
+          <div class="offers-list">${offersHtml}</div>
+        </div>
+      </div>`;
+  })
+  .join("");
+
 
     const storeText = data.storeCount === 1 ? "1 store" : `${data.storeCount} stores`;
     statusLine.innerHTML = `<strong>${products.length}</strong> results from <strong>${storeText}</strong>${data.needsLiveScrape ? " — refreshing in the background..." : ""}`;
