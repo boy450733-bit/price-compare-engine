@@ -69,6 +69,9 @@
 
   .card-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
   
+  /* Category Pill Badge style located right above title */
+  .category-pill { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-brand); background: #E6F4EA; padding: 3px 8px; border-radius: 6px; width: fit-content; }
+
   .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--color-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   
   .specs-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
@@ -207,7 +210,6 @@
   let allStores = [];
   let excludedStores = new Set();
   let settings = null;
-  let totalServerStoresCount = 4;
 
   let cachedProducts = [];
   let dynamicCategories = new Set();
@@ -231,8 +233,8 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  function enrichProductData(p) {
-    let title = p.title;
+  function extractSpecsAndMetadata(p) {
+    let title = p.title || "";
     let image = p.image;
     let brand = p.brand;
     let category = p.category;
@@ -246,28 +248,7 @@
     if (brand) dynamicBrands.add(brand);
     if (category) dynamicCategories.add(category);
 
-    if ((!title || title.startsWith("Product Series")) && p.offers && p.offers.length > 0) {
-      const sampleUrl = p.offers[0].url || "";
-      const segments = sampleUrl.split("/").filter(Boolean);
-      const lastSegment = segments[segments.length - 1];
-      if (lastSegment && lastSegment !== "mobiles" && lastSegment !== "products") {
-        title = lastSegment.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-      }
-    }
-
-    return { ...p, title, image, brand, category };
-  }
-
-  function parseSpecs(p) {
-    const specs = [];
-    const title = p.title || "";
-    const lower = title.toLowerCase();
-
-    if (p.category) {
-      specs.push({ label: p.category });
-    }
-
-    // Comprehensive robust RAM extraction
+    // Parse RAM
     let ramVal = null;
     if (p.specs && p.specs.ram) {
       ramVal = String(p.specs.ram).replace(/[^0-9]/g, '');
@@ -275,42 +256,55 @@
     if (!ramVal) {
       const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
       if (ramMatch) ramVal = ramMatch[1];
-      else if (lower.includes('4gb') || lower.includes(' 4g ')) ramVal = '4';
-      else if (lower.includes('6gb')) ramVal = '6';
-      else if (lower.includes('8gb')) ramVal = '8';
-      else if (lower.includes('12gb')) ramVal = '12';
-      else if (lower.includes('16gb')) ramVal = '16';
+      else if (title.toLowerCase().includes('4gb')) ramVal = '4';
+      else if (title.toLowerCase().includes('6gb')) ramVal = '6';
+      else if (title.toLowerCase().includes('8gb')) ramVal = '8';
+      else if (title.toLowerCase().includes('12gb')) ramVal = '12';
+      else if (title.toLowerCase().includes('16gb')) ramVal = '16';
     }
-
     if (ramVal && Number(ramVal) > 0 && Number(ramVal) < 64) {
-      specs.push({ label: `${ramVal}GB RAM` });
       dynamicRams.add(ramVal);
     }
 
-    // Comprehensive robust ROM / Storage extraction
+    // Parse ROM
     let romVal = null;
     if (p.specs && p.specs.storage) {
       romVal = String(p.specs.storage).replace(/[^0-9]/g, '');
     }
     if (!romVal) {
       const romMatch = title.match(/(\d+)\s*(?:gb)?\s*(?:rom|storage)/i) || title.match(/[\/\s](\d{2,3})gb/i);
+      const lowerTitle = title.toLowerCase();
       if (romMatch && romMatch[1] !== ramVal) {
         romVal = romMatch[1];
-      } else if (lower.includes('1000gb') || lower.includes('1tb')) romVal = '1000';
-      else if (lower.includes('512gb')) romVal = '512';
-      else if (lower.includes('256gb')) romVal = '256';
-      else if (lower.includes('128gb')) romVal = '128';
-      else if (lower.includes('64gb')) romVal = '64';
-      else if (lower.includes('32gb')) romVal = '32';
+      } else if (lowerTitle.includes('512gb')) romVal = '512';
+      else if (lowerTitle.includes('256gb')) romVal = '256';
+      else if (lowerTitle.includes('128gb')) romVal = '128';
+      else if (lowerTitle.includes('64gb')) romVal = '64';
+      else if (lowerTitle.includes('32gb')) romVal = '32';
     }
-
     if (romVal && Number(romVal) >= 16) {
-      specs.push({ label: `${romVal}GB ROM` });
       dynamicRoms.add(romVal);
     }
 
-    if (specs.length === 0) specs.push({ label: 'PTA Approved' });
-    return specs;
+    return { 
+      ...p, 
+      parsedRam: ramVal, 
+      parsedRom: romVal, 
+      brand: brand || "General", 
+      category: category || "Mobile" 
+    };
+  }
+
+  function getCardChips(p) {
+    const chips = [];
+    if (p.parsedRam) {
+      chips.push({ label: `${p.parsedRam}GB RAM` });
+    }
+    if (p.parsedRom) {
+      chips.push({ label: `${p.parsedRom}GB ROM` });
+    }
+    chips.push({ label: 'PTA Approved' });
+    return chips;
   }
 
   function populateFilterDropdowns() {
@@ -349,7 +343,6 @@
       const res = await fetch(`${CFG.API_BASE_URL}/api/stores`);
       const data = await res.json();
       allStores = data.stores || [];
-      totalServerStoresCount = allStores.length || 4;
       renderStoreChips();
     } catch (err) {
       allStores = [
@@ -358,7 +351,6 @@
         { name: "Flashi", color: "#4A90E2" },
         { name: "EzeePC", color: "#27AE60" }
       ];
-      totalServerStoresCount = 4;
       renderStoreChips();
     }
   }
@@ -404,20 +396,8 @@
 
       if (selCategory && p.category !== selCategory) return false;
       if (selBrand && p.brand !== selBrand) return false;
-
-      if (selRam) {
-        const titleLower = (p.title || "").toLowerCase();
-        const pRam = p.specs && p.specs.ram ? String(p.specs.ram).replace(/[^0-9]/g, '') : "";
-        const matchesRam = pRam === selRam || titleLower.includes(`${selRam}gb`) || titleLower.includes(`${selRam} gb`);
-        if (!matchesRam) return false;
-      }
-
-      if (selRom) {
-        const titleLower = (p.title || "").toLowerCase();
-        const pRom = p.specs && p.specs.storage ? String(p.specs.storage).replace(/[^0-9]/g, '') : "";
-        const matchesRom = pRom === selRom || titleLower.includes(`${selRom}gb`) || titleLower.includes(`${selRom} gb`);
-        if (!matchesRom) return false;
-      }
+      if (selRam && p.parsedRam !== selRam) return false;
+      if (selRom && p.parsedRom !== selRom) return false;
 
       const effectivePrice = p.min_price != null ? Number(p.min_price) : null;
       if (minPrice !== null && effectivePrice !== null && effectivePrice < minPrice) return false;
@@ -455,13 +435,13 @@
       const titleText = p.title || `Product Series`;
       const displayRating = p.max_rating && p.max_rating !== "0" ? p.max_rating : null;
       const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
-      const specs = parseSpecs(p);
+      const cardChips = getCardChips(p);
 
       const ratingHtml = displayRating 
         ? `<div class="card-rating"><span class="stars">★</span> ${Number(displayRating).toFixed(1)}</div>` 
         : `<div class="card-rating"><span class="stars">★</span> Verified Deal</div>`;
 
-      const specsHtml = specs.map(s => `
+      const specsHtml = cardChips.map(s => `
         <span class="spec-chip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
           ${s.label}
@@ -490,6 +470,7 @@
             ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📱</span>`}
           </div>
           <div class="card-body">
+            <div><span class="category-pill">${p.category}</span></div>
             <div class="card-title" title="${titleText}">${titleText}</div>
             <div class="specs-bar">${specsHtml}</div>
             <div class="card-meta-row">
@@ -526,7 +507,7 @@
         dynamicRams.clear();
         dynamicRoms.clear();
 
-        cachedProducts = (data.products || []).map(enrichProductData);
+        cachedProducts = (data.products || []).map(extractSpecsAndMetadata);
         
         populateFilterDropdowns();
         applyClientFiltersAndRender();
