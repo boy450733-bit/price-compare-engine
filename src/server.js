@@ -32,7 +32,14 @@ async function autoSetup() {
        ON CONFLICT (name) DO UPDATE SET
          color = EXCLUDED.color,
          base_url = EXCLUDED.base_url,
-         search_url_template = EXCLUDED.search_url_template`,
+         search_url_template = EXCLUDED.search_url_template,
+         -- COALESCE, not a blind overwrite: affiliate_param can also be
+         -- set later via the admin panel (PATCH /admin/api/stores/:name),
+         -- and this runs on every boot — an unconditional overwrite here
+         -- would silently wipe out those admin edits on every deploy.
+         -- Only fill it in from the code config when the DB doesn't
+         -- already have a value.
+         affiliate_param = COALESCE(stores.affiliate_param, EXCLUDED.affiliate_param)`,
       [
         config.name,
         config.color || "#666666",
