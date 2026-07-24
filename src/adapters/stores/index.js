@@ -2,7 +2,7 @@ import { megaConfig } from "./mega.config.js";
 import { priceOyeConfig } from "./priceoye.config.js";
 import { iShoppingConfig } from "./ishopping.config.js";
 import { darazConfig } from "./daraz.config.js";
-import { eezepcConfig } from "./ezeepc.config.js";
+import { eezepcConfig } from "./eezepc.config.js";
 import { shophiveConfig } from "./shophive.config.js";
 
 // This is the ONLY place you list active stores. Both the adapter
