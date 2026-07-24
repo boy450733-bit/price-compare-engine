@@ -1,54 +1,184 @@
-# Price Compare Engine
+import * as cheerio from "cheerio";
 
-Search-first, scrape-on-demand price comparison backbone (Flashi.pk-style architecture).
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-## How it works
+/**
+ * Turns a small per-store config object into a working adapter function.
+ * Supports two modes, auto-detected from the config shape:
+ *
+ * 1. HTML mode (most stores) — provide `selectors`. Fetches the page and
+ *    parses it with Cheerio (see stores/_template.config.js).
+ *
+ * 2. JSON mode (SPA/API-backed stores, e.g. Daraz) — provide `parseJson`
+ *    instead of `selectors`. Fetches the URL, parses the response as JSON,
+ *    and calls your function to turn it into listings.
+ *
+ * Either mode also supports POST requests (needed for stores whose search
+ * is an AJAX POST to a separate endpoint, e.g. WooCommerce sites using the
+ * "Advanced Woo Search" plugin) via two optional config fields:
+ *   method: "POST"
+ *   body: (query) => string   — the raw request body (e.g. a
+ *                                URLSearchParams(...).toString() for
+ *                                form-encoded, or JSON.stringify(...) for
+ *                                a JSON body)
+ *   headers: { ... }          — extra headers, e.g. Content-Type, merged
+ *                                with the default User-Agent
+ */
+export function createAdapter(config) {
+  return config.parseJson ? createJsonAdapter(config) : createHtmlAdapter(config);
+}
 
-1. User searches a product → API checks Postgres cache (`GET /api/products?q=...`).
-2. If cache is fresh and has enough store coverage, results return immediately.
-3. If cache is thin/stale, a scrape job is queued (BullMQ + Redis) and the response
-   includes `needsLiveScrape: true` so the frontend knows to poll again shortly.
-4. A background worker process picks up the job, runs each store's adapter
-   (`src/adapters/`), and upserts fresh listings + price history into Postgres.
-5. Clicking a result hits `GET /out/:productId`, which logs the click and
-   redirects to the store with your affiliate tag appended.
+async function performFetch(config, query) {
+  const {
+    searchUrl,
+    method = "GET",
+    body,
+    headers = {},
+    userAgent = DEFAULT_USER_AGENT,
+  } = config;
 
-## Setup
+  const url = searchUrl(query);
+  const fetchOptions = {
+    method,
+    headers: { "User-Agent": userAgent, ...headers },
+  };
 
-```bash
-cp .env.example .env
-docker compose up -d          # starts Postgres + Redis
-npm install
-npm run migrate               # applies schema.sql
-npm run seed                  # registers initial stores
-npm run dev                   # starts the API (terminal 1)
-npm run worker                # starts the scrape worker (terminal 2)
-```
+  if (method !== "GET" && body) {
+    fetchOptions.body = typeof body === "function" ? body(query) : body;
+  }
 
-Test it:
+  return fetch(url, fetchOptions);
+}
 
-```bash
-curl "http://localhost:3000/api/products?q=Xiaomi+Redmi+15c&limit=50"
-```
+function createJsonAdapter(config) {
+  const { parseJson } = config;
 
-## Adding a new store
+  return async function adapter(query) {
+    const res = await performFetch(config, query);
+    if (!res.ok) return [];
 
-1. Create `src/adapters/<store>.js` implementing `async (query) => RawListing[]`.
-   Check the store's site for: (a) a public search/autocomplete API first,
-   (b) JSON-LD structured data in the page `<head>`, (c) a sitemap, before
-   falling back to raw HTML scraping.
-2. Register it in `src/adapters/index.js`.
-3. Add a row for it via `scripts/seed.js` (or a small admin script) with its
-   `search_url_template` and `affiliate_param`.
+    const data = await res.json();
+    return parseJson(data, query) || [];
+  };
+}
 
-## What's intentionally NOT built yet
+function createHtmlAdapter(config) {
+  const {
+    baseUrl,
+    selectors: {
+      container,
+      title,
+      link = title,
+      linkAttr = "href",
+      image,
+      imageAttr = "src",
+      price,
+      originalPrice = null,
+      rating = null,
+      reviewCount = null,
+      outOfStock = null,
+      // Counterpart to outOfStock for stores that only expose a positive
+      // "this is buyable" signal (e.g. an "Add to cart" button) rather
+      // than a negative "sold out" badge. Presence = in stock.
+      inStockIndicator = null,
+    },
+    parsePrice = defaultParsePrice,
+  } = config;
 
-- Real per-store adapters beyond the Mega.pk template — this is where most
-  of your actual engineering time will go.
-- Frontend — this is API-only; build the UI as a separate app that calls
-  `/api/products`.
-- Popular-query pre-warming cron job (scheduled re-scrape of trending
-  searches) — straightforward to add once `search_log` has real data.
-- Price-drop alert notifications (email/push) — the `price_history` table
-  is already there to support this.
-- Rate limiting / proxy rotation for scraping at scale.
+  return async function adapter(query) {
+    const res = await performFetch(config, query);
+    if (!res.ok) return [];
+
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const results = [];
+
+    $(container).each((_, el) => {
+      const $el = $(el);
+
+      const titleText = getFirstText($el, title);
+      const href = getFirstAttrFromSelector($el, link, linkAttr);
+      if (!titleText || !href) return;
+
+      const imageSrc = image ? getFirstAttrValue($el.find(image), imageAttr) : null;
+
+      // `price` may be a single selector or an ordered array of fallback
+      // selectors (e.g. "discount price if present, else regular price").
+      // Try each in order and use the first one that actually matches an
+      // element on this card — a selector matching zero elements (like a
+      // discount-only class on a non-discounted item) would otherwise
+      // silently produce an empty price.
+      let priceBox = getFirstMatching($el, price);
+      let originalPriceText = "";
+
+      if (originalPrice) {
+        originalPriceText = $el.find(originalPrice).text().trim();
+        priceBox = priceBox.clone();
+        priceBox.find(originalPrice).remove();
+      }
+
+      const ratingValue = rating
+        ? parseFloat($el.find(rating).text().match(/[\d.]+/)?.[0] || "0")
+        : 0;
+
+      const reviewCountValue = reviewCount
+        ? parseInt($el.find(reviewCount).text().replace(/[^\d]/g, ""), 10) || 0
+        : 0;
+
+      let inStockValue = true;
+      if (outOfStock) {
+        inStockValue = $el.find(outOfStock).length === 0;
+      } else if (inStockIndicator) {
+        inStockValue = $el.find(inStockIndicator).length > 0;
+      }
+
+      results.push({
+        title: titleText,
+        url: href.startsWith("http") ? href : `${baseUrl}${href}`,
+        image: imageSrc || null,
+        price: parsePrice(priceBox.text()),
+        originalPrice: originalPriceText ? parsePrice(originalPriceText) : null,
+        rating: ratingValue,
+        reviewCount: reviewCountValue,
+        inStock: inStockValue,
+      });
+    });
+
+    return results;
+  };
+}
+
+// Selector fields (title, price, link, ...) may be a single CSS selector
+// string or an array of fallback selectors tried in order — the first
+// one that matches an element within $el wins.
+function getFirstMatching($el, selectorOrArray) {
+  const list = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+  for (const sel of list) {
+    const found = $el.find(sel);
+    if (found.length) return found;
+  }
+  return $el.find(list[0]); // empty cheerio selection, handled by caller
+}
+
+function getFirstText($el, selectorOrArray) {
+  return getFirstMatching($el, selectorOrArray).text().trim();
+}
+
+function getFirstAttrFromSelector($el, selectorOrArray, attr) {
+  return getFirstMatching($el, selectorOrArray).attr(attr);
+}
+
+function getFirstAttrValue($el, attrs) {
+  const list = Array.isArray(attrs) ? attrs : [attrs];
+  for (const attr of list) {
+    const val = $el.attr(attr);
+    if (val) return val;
+  }
+  return null;
+}
+
+function defaultParsePrice(text) {
+  const cleaned = text.replace(/[^\d.]/g, "");
+  return cleaned ? Number(cleaned) : null;
+}

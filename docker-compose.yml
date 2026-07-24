@@ -1,19 +1,40 @@
-version: "3.8"
-services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: price_compare
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+export const shophiveConfig = {
+  name: "Shophive",
+  baseUrl: "https://www.shophive.com",
+  searchUrl: (q) =>
+    `https://www.shophive.com/catalogsearch/result/index/?p=2&q=${encodeURIComponent(q)}`,
 
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
+    // Confirmed via ReqBin: the exact same URL returns 403 on GET but 200
+  // on POST (no body needed) — looks like a Cloudflare WAF rule targeting
+  // GET specifically on this endpoint, not a cookie/JS-challenge issue.
+  //method: "POST",
+  selectors: {
+    container: "li.product-item",
 
-volumes:
-  pgdata:
+    // Product URL
+    link: "h2.product-item-name a.product-item-link",
+    linkAttr: "href",
+
+    // Product Title
+    title: "h2.product-item-name a.product-item-link",
+
+    // Product Image
+    image: "img.product-image-photo",
+    imageAttr: "src",
+
+    // Current Price — Magento only renders ".special-price" when the item
+    // is discounted, so a plain ".price" fallback is required or
+    // non-discounted listings come back with price: null. Tried in order.
+    price: [".special-price .price", ".price-final_price .price", ".price"],
+
+    // Original Price (if available)
+    originalPrice: ".old-price .price",
+
+    // Optional fields
+    // NOTE: was `inStock`, which createAdapter.js never read (it only
+    // understood `outOfStock`), so this silently did nothing and every
+    // Shophive listing was marked in-stock regardless of reality.
+    inStockIndicator: ".action.tocart",
+    rating: ".rating-result",
+  },
+};
