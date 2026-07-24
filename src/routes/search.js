@@ -20,6 +20,10 @@ const SORT_EXPR = {
   rating: { inner: "p.rating DESC NULLS LAST", outer: "rating DESC NULLS LAST" },
 };
 
+
+////
+
+
 router.get("/products", async (req, res) => {
   const q = (req.query.q || "").trim();
   const limit = Math.min(Number(req.query.limit) || 100, 1000);
