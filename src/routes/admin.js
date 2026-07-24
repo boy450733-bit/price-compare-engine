@@ -1,7 +1,18 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import { query as db } from "../db/client.js";
 
 const router = Router();
+
+function tokensMatch(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  // timingSafeEqual throws if lengths differ, so check that first —
+  // that early-exit isn't a meaningful timing leak (it's a fixed
+  // property of the secret's length, not derived byte-by-byte).
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 // Simple shared-secret auth — fine for a single-operator admin panel.
 // Set ADMIN_TOKEN in your environment (Railway → Variables). Every
@@ -11,7 +22,7 @@ router.use((req, res, next) => {
   if (!process.env.ADMIN_TOKEN) {
     return res.status(500).json({ error: "ADMIN_TOKEN not configured on the server" });
   }
-  if (token !== process.env.ADMIN_TOKEN) {
+  if (!token || !tokensMatch(token, process.env.ADMIN_TOKEN)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();

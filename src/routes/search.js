@@ -6,18 +6,25 @@ const router = Router();
 const STALE_HOURS = Number(process.env.CACHE_STALE_HOURS || 12);
 const MIN_STORE_COUNT = Number(process.env.CACHE_MIN_STORE_COUNT || 3);
 
-const SORT_MAP = {
-  relevance: 'similarity(p.title, $1) DESC, p.price ASC',
-  price_asc: "p.price ASC NULLS LAST",
-  price_desc: "p.price DESC NULLS LAST",
-  rating: "p.rating DESC NULLS LAST",
+// Two variants of each sort expression: `inner` is used (with the `p.`
+// table prefix) inside the dedup CTE below, `outer` is used against the
+// CTE's already-flattened columns (no prefix, since the CTE has already
+// collapsed `p.*` + `s.color` into a single row shape).
+const SORT_EXPR = {
+  relevance: {
+    inner: "similarity(p.title, $1) DESC, p.price ASC",
+    outer: 'similarity(title, $1) DESC, price ASC',
+  },
+  price_asc: { inner: "p.price ASC NULLS LAST", outer: "price ASC NULLS LAST" },
+  price_desc: { inner: "p.price DESC NULLS LAST", outer: "price DESC NULLS LAST" },
+  rating: { inner: "p.rating DESC NULLS LAST", outer: "rating DESC NULLS LAST" },
 };
 
 router.get("/products", async (req, res) => {
   const q = (req.query.q || "").trim();
   const limit = Math.min(Number(req.query.limit) || 100, 1000);
-  const page = Number(req.query.page) || 1;
-  const sort = SORT_MAP[req.query.sort] ? req.query.sort : "relevance";
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const sort = SORT_EXPR[req.query.sort] ? req.query.sort : "relevance";
   const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
   const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
   const inStockOnly = req.query.inStockOnly === "true";
@@ -53,29 +60,33 @@ router.get("/products", async (req, res) => {
   const limitParam = params.length - 1;
   const offsetParam = params.length;
 
-  // storeColor comes from the `stores` table, not `products` — this join
-  // is the fix for the color badges never rendering on the frontend.
+  // Dedup by URL (variations across re-scrapes — protocol, trailing
+  // slash, tracking params — can in theory produce near-duplicate rows
+  // for the same listing) now happens INSIDE the query via DISTINCT ON,
+  // before LIMIT/OFFSET are applied. Doing it after pagination (as this
+  // used to) could silently shrink a page below `limit` and shift/skip
+  // rows across page boundaries.
+  //
+  // `COUNT(*) OVER()` gives us the true total match count (post-dedup,
+  // pre-pagination) in the same round trip, so `total` in the response
+  // reflects the real number of results rather than just this page's size.
   const { rows: rawRows } = await db(
-    `SELECT p.*, s.color AS "storeColor"
-     FROM products p
-     JOIN stores s ON s.name = p.store
-     WHERE ${whereClause}
-     ORDER BY ${SORT_MAP[sort]}
+    `WITH deduped AS (
+       SELECT DISTINCT ON (p.url) p.*, s.color AS "storeColor"
+       FROM products p
+       JOIN stores s ON s.name = p.store
+       WHERE ${whereClause}
+       ORDER BY p.url, ${SORT_EXPR[sort].inner}
+     )
+     SELECT *, COUNT(*) OVER() AS "totalCount"
+     FROM deduped
+     ORDER BY ${SORT_EXPR[sort].outer}
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
     params
   );
 
-  // Defensive dedup by URL. Each product's id is a deterministic hash of
-  // (store, url), so true duplicate rows shouldn't exist in normal
-  // operation — but URL variations across re-scrapes (protocol, trailing
-  // slash, tracking params) could in theory produce near-duplicates.
-  // Cheap insurance: keep only the first (best-ranked) occurrence per URL.
-  const seenUrls = new Set();
-  const rows = rawRows.filter((r) => {
-    if (seenUrls.has(r.url)) return false;
-    seenUrls.add(r.url);
-    return true;
-  });
+  const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
+  const rows = rawRows.map(({ totalCount, ...r }) => r);
 
   const { rows: storeCountRows } = await db(
     `SELECT COUNT(DISTINCT store) AS count FROM products WHERE title % $1`,
@@ -105,7 +116,7 @@ router.get("/products", async (req, res) => {
   ]);
 
   res.json({
-    total: rows.length,
+    total,
     page,
     limit,
     products: rows,
