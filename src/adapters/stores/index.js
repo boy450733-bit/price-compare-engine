@@ -4,6 +4,7 @@ import { iShoppingConfig } from "./ishopping.config.js";
 import { darazConfig } from "./daraz.config.js";
 import { eezepcConfig } from "./eezepc.config.js";
 import { shophiveConfig } from "./shophive.config.js";
+import { flashiConfig } from "./flashi.config.js";
 
 // This is the ONLY place you list active stores. Both the adapter
 // registry (src/adapters/index.js) and the auto-seed step
@@ -16,4 +17,5 @@ export const allStoreConfigs = [
   darazConfig,
   eezepcConfig,
   shophiveConfig,
+  flashiConfig,
 ];
