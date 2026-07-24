@@ -78,6 +78,10 @@ function createHtmlAdapter(config) {
       rating = null,
       reviewCount = null,
       outOfStock = null,
+      // Counterpart to outOfStock for stores that only expose a positive
+      // "this is buyable" signal (e.g. an "Add to cart" button) rather
+      // than a negative "sold out" badge. Presence = in stock.
+      inStockIndicator = null,
     },
     parsePrice = defaultParsePrice,
   } = config;
@@ -93,13 +97,19 @@ function createHtmlAdapter(config) {
     $(container).each((_, el) => {
       const $el = $(el);
 
-      const titleText = $el.find(title).text().trim();
-      const href = $el.find(link).attr(linkAttr);
+      const titleText = getFirstText($el, title);
+      const href = getFirstAttrFromSelector($el, link, linkAttr);
       if (!titleText || !href) return;
 
       const imageSrc = image ? getFirstAttrValue($el.find(image), imageAttr) : null;
 
-      let priceBox = $el.find(price);
+      // `price` may be a single selector or an ordered array of fallback
+      // selectors (e.g. "discount price if present, else regular price").
+      // Try each in order and use the first one that actually matches an
+      // element on this card — a selector matching zero elements (like a
+      // discount-only class on a non-discounted item) would otherwise
+      // silently produce an empty price.
+      let priceBox = getFirstMatching($el, price);
       let originalPriceText = "";
 
       if (originalPrice) {
@@ -116,7 +126,12 @@ function createHtmlAdapter(config) {
         ? parseInt($el.find(reviewCount).text().replace(/[^\d]/g, ""), 10) || 0
         : 0;
 
-      const inStockValue = outOfStock ? $el.find(outOfStock).length === 0 : true;
+      let inStockValue = true;
+      if (outOfStock) {
+        inStockValue = $el.find(outOfStock).length === 0;
+      } else if (inStockIndicator) {
+        inStockValue = $el.find(inStockIndicator).length > 0;
+      }
 
       results.push({
         title: titleText,
@@ -132,6 +147,26 @@ function createHtmlAdapter(config) {
 
     return results;
   };
+}
+
+// Selector fields (title, price, link, ...) may be a single CSS selector
+// string or an array of fallback selectors tried in order — the first
+// one that matches an element within $el wins.
+function getFirstMatching($el, selectorOrArray) {
+  const list = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+  for (const sel of list) {
+    const found = $el.find(sel);
+    if (found.length) return found;
+  }
+  return $el.find(list[0]); // empty cheerio selection, handled by caller
+}
+
+function getFirstText($el, selectorOrArray) {
+  return getFirstMatching($el, selectorOrArray).text().trim();
+}
+
+function getFirstAttrFromSelector($el, selectorOrArray, attr) {
+  return getFirstMatching($el, selectorOrArray).attr(attr);
 }
 
 function getFirstAttrValue($el, attrs) {
