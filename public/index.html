@@ -175,12 +175,10 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  // Extract or synthesize RAM and ROM specs cleanly from product title / attributes
   function parseSpecs(title = "") {
     const specs = [];
     const lower = title.toLowerCase();
 
-    // Match RAM patterns like "4gb", "6gb", "8gb ram"
     const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
     if (ramMatch) {
       specs.push({ label: `${ramMatch[1]}GB RAM`, icon: 'memory' });
@@ -192,7 +190,6 @@
       specs.push({ label: '8GB RAM', icon: 'memory' });
     }
 
-    // Match ROM / Storage patterns like "64gb", "128gb", "256gb"
     const romMatch = title.match(/(\d+)\s*(?:gb)?\s*(?:rom|storage)/i) || title.match(/[\/\s](\d{2,3})gb/i);
     if (romMatch && romMatch[1] !== (ramMatch ? ramMatch[1] : '')) {
       specs.push({ label: `${romMatch[1]}GB Storage`, icon: 'hdd' });
@@ -204,7 +201,6 @@
       specs.push({ label: '256GB ROM', icon: 'hdd' });
     }
 
-    // Default general placeholder chip if none found to keep card uniform
     if (specs.length === 0) {
       specs.push({ label: 'Official PTA Approved', icon: 'shield' });
     } else {
@@ -291,9 +287,7 @@
 
     if (products.length === 0) {
       const msg = data.needsLiveScrape ? "Checking live store prices..." : "No matching products found";
-      const sub = data.needsLiveScrape
-        .replace(/(\r\n|\n|\r)/gm, "")
-        : "Try searching with broader terms or clear your active store/price filters.";
+      const sub = data.needsLiveScrape ? "We are scanning top Pakistani web stores for real-time prices. Please hold on a moment." : "Try searching with broader terms or clear your active store/price filters.";
       renderEmpty(msg, sub);
       if (data.needsLiveScrape) schedulePoll(query);
       return;
@@ -386,8 +380,9 @@
     }
   }
 
-  input.addEventListener("input", (e) => {
-    const query = e.target.value.trim();
+  // FIXED: Trigger search on page load if input already contains text, and listen properly on input/keyup
+  function handleSearchTrigger() {
+    const query = input.value.trim();
     clearTimeout(debounceTimer); clearTimeout(pollTimer);
     if (!query) {
       currentQuery = ""; results.innerHTML = ""; statusLine.innerHTML = ""; filterBar.classList.remove("visible");
@@ -396,8 +391,11 @@
     filterBar.classList.add("visible");
     renderSkeleton();
     statusLine.innerHTML = "";
-    debounceTimer = setTimeout(() => fetchResults(query), 400);
-  });
+    debounceTimer = setTimeout(() => fetchResults(query), 300);
+  }
+
+  input.addEventListener("input", handleSearchTrigger);
+  input.addEventListener("keyup", handleSearchTrigger);
 
   [minPriceEl, maxPriceEl].forEach((el) => {
     el.addEventListener("input", () => {
@@ -409,7 +407,9 @@
   sortSelectEl.addEventListener("change", () => { if (currentQuery) fetchResults(currentQuery); });
 
   loadSettings();
-  loadStores();
+  loadStores().then(() => {
+    if (input.value.trim()) handleSearchTrigger();
+  });
 })();
 </script>
 
