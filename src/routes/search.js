@@ -60,6 +60,13 @@ router.get("/products", async (req, res) => {
          MIN(similarity(p.title, $1)) AS relevance,
          MIN(p.price) AS min_price,
          MAX(p.rating) AS max_rating,
+         MAX(p.title) AS title,
+         MAX(p.image) AS image,
+         MAX(p.brand) AS brand,
+         MAX(p.model) AS model,
+         MAX(p.category) AS category,
+         MAX(p.specs::text) AS specs_text,
+         MAX(p.scraped_at) AS scraped_at,
          json_agg(
            json_build_object(
              'store', p.store,
@@ -76,13 +83,25 @@ router.get("/products", async (req, res) => {
        WHERE ${whereClause}
        GROUP BY p.fingerprint
      )
-     SELECT *, COUNT(*) OVER() AS "totalCount"
+     SELECT 
+       fingerprint,
+       relevance,
+       min_price,
+       max_rating,
+       title,
+       image,
+       brand,
+       model,
+       category,
+       specs_text::json AS specs,
+       scraped_at,
+       offers,
+       COUNT(*) OVER() AS "totalCount"
      FROM grouped
      ORDER BY ${SORT_EXPR[sort].outer}
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
     params
   );
-
   const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
   const rows = rawRows.map(({ totalCount, offers, ...r }) => ({
     ...r,
