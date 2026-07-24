@@ -1,3 +1,4 @@
+// search.js
 import { Router } from "express";
 import { query as db } from "../db/client.js";
 import { enqueueScrape } from "../queue/queue.js";
@@ -6,23 +7,14 @@ const router = Router();
 const STALE_HOURS = Number(process.env.CACHE_STALE_HOURS || 12);
 const MIN_STORE_COUNT = Number(process.env.CACHE_MIN_STORE_COUNT || 3);
 
-// Two variants of each sort expression: `inner` is used (with the `p.`
-// table prefix) inside the dedup CTE below, `outer` is used against the
-// CTE's already-flattened columns (no prefix, since the CTE has already
-// collapsed `p.*` + `s.color` into a single row shape).
 const SORT_EXPR = {
   relevance: {
-    inner: "similarity(p.title, $1) DESC, p.price ASC",
-    outer: 'similarity(title, $1) DESC, price ASC',
+    outer: "relevance DESC, min_price ASC",
   },
-  price_asc: { inner: "p.price ASC NULLS LAST", outer: "price ASC NULLS LAST" },
-  price_desc: { inner: "p.price DESC NULLS LAST", outer: "price DESC NULLS LAST" },
-  rating: { inner: "p.rating DESC NULLS LAST", outer: "rating DESC NULLS LAST" },
+  price_asc: { outer: "min_price ASC NULLS LAST" },
+  price_desc: { outer: "min_price DESC NULLS LAST" },
+  rating: { outer: "max_rating DESC NULLS LAST" },
 };
-
-
-////
-
 
 router.get("/products", async (req, res) => {
   const q = (req.query.q || "").trim();
@@ -36,9 +28,6 @@ router.get("/products", async (req, res) => {
 
   if (!q) return res.status(400).json({ error: "missing query param: q" });
 
-  // Build WHERE clause dynamically for the optional filters, keeping
-  // $1 reserved for the search query text (needed by the similarity()
-  // calls in both WHERE and ORDER BY).
   const params = [q];
   const conditions = ["p.title % $1"];
 
@@ -64,33 +53,41 @@ router.get("/products", async (req, res) => {
   const limitParam = params.length - 1;
   const offsetParam = params.length;
 
-  // Dedup by URL (variations across re-scrapes — protocol, trailing
-  // slash, tracking params — can in theory produce near-duplicate rows
-  // for the same listing) now happens INSIDE the query via DISTINCT ON,
-  // before LIMIT/OFFSET are applied. Doing it after pagination (as this
-  // used to) could silently shrink a page below `limit` and shift/skip
-  // rows across page boundaries.
-  //
-  // `COUNT(*) OVER()` gives us the true total match count (post-dedup,
-  // pre-pagination) in the same round trip, so `total` in the response
-  // reflects the real number of results rather than just this page's size.
   const { rows: rawRows } = await db(
-    `WITH deduped AS (
-       SELECT DISTINCT ON (p.url) p.*, s.color AS "storeColor"
+    `WITH grouped AS (
+       SELECT
+         p.fingerprint,
+         MIN(similarity(p.title, $1)) AS relevance,
+         MIN(p.price) AS min_price,
+         MAX(p.rating) AS max_rating,
+         json_agg(
+           json_build_object(
+             'store', p.store,
+             'price', p.price,
+             'url', p.url,
+             'in_stock', p.in_stock,
+             'rating', p.rating,
+             'storeColor', s.color
+           )
+           ORDER BY p.price ASC
+         ) AS offers
        FROM products p
        JOIN stores s ON s.name = p.store
        WHERE ${whereClause}
-       ORDER BY p.url, ${SORT_EXPR[sort].inner}
+       GROUP BY p.fingerprint
      )
      SELECT *, COUNT(*) OVER() AS "totalCount"
-     FROM deduped
+     FROM grouped
      ORDER BY ${SORT_EXPR[sort].outer}
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
     params
   );
 
   const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
-  const rows = rawRows.map(({ totalCount, ...r }) => r);
+  const rows = rawRows.map(({ totalCount, offers, ...r }) => ({
+    ...r,
+    offers: Array.isArray(offers) ? offers : JSON.parse(offers),
+  }));
 
   const { rows: storeCountRows } = await db(
     `SELECT COUNT(DISTINCT store) AS count FROM products WHERE title % $1`,
