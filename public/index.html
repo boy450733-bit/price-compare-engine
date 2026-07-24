@@ -116,6 +116,12 @@
 <div class="filter-bar" id="filterBar">
   <div class="filter-group"><span class="filter-label">Stores</span><div id="storeChips"></div></div>
   <div class="filter-group">
+    <span class="filter-label">Category</span>
+    <select id="categorySelect" class="filter-select">
+      <option value="">All Categories</option>
+    </select>
+  </div>
+  <div class="filter-group">
     <span class="filter-label">Brand</span>
     <select id="brandSelect" class="filter-select">
       <option value="">All Brands</option>
@@ -158,6 +164,7 @@
   const statusLine = document.getElementById("statusLine");
   const filterBar = document.getElementById("filterBar");
   const storeChipsEl = document.getElementById("storeChips");
+  const categorySelectEl = document.getElementById("categorySelect");
   const brandSelectEl = document.getElementById("brandSelect");
   const ramSelectEl = document.getElementById("ramSelect");
   const minPriceEl = document.getElementById("minPrice");
@@ -170,6 +177,7 @@
   let allStores = [];
   let excludedStores = new Set();
   let settings = null;
+  let availableCategories = new Set();
   let availableBrands = new Set();
   let availableRams = new Set();
 
@@ -189,18 +197,24 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  // Handle extraction of comprehensive data fields including image and brand from table structure
+  // Handle extraction of comprehensive data fields including category, image and brand
   function enrichProductData(p) {
     let title = p.title;
     let image = p.image;
     let brand = p.brand;
+    let category = p.category;
 
     if (!brand && title) {
       const firstWord = title.split(" ")[0];
       if (firstWord) brand = firstWord;
     }
 
+    if (!category) {
+      category = "Mobile";
+    }
+
     if (brand) availableBrands.add(brand);
+    if (category) availableCategories.add(category);
 
     if ((!title || title.startsWith("Product Series")) && p.offers && p.offers.length > 0) {
       const sampleUrl = p.offers[0].url || "";
@@ -211,7 +225,7 @@
       }
     }
 
-    return { ...p, title, image, brand };
+    return { ...p, title, image, brand, category };
   }
 
   function parseSpecs(p) {
@@ -219,7 +233,11 @@
     const title = p.title || "";
     const lower = title.toLowerCase();
 
-    // Check backend parsed specs object if available
+    // Include category as the first badge pill if present
+    if (p.category) {
+      specs.push({ label: p.category });
+    }
+
     if (p.specs && p.specs.ram) {
       specs.push({ label: `${p.specs.ram}GB RAM` });
       availableRams.add(`${p.specs.ram}gb`);
@@ -266,8 +284,13 @@
   }
 
   function updateDynamicFilters() {
+    const currentCategory = categorySelectEl.value;
     const currentBrand = brandSelectEl.value;
     const currentRam = ramSelectEl.value;
+
+    categorySelectEl.innerHTML = '<option value="">All Categories</option>' + 
+      Array.from(availableCategories).sort().map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join('');
+    categorySelectEl.value = currentCategory;
 
     brandSelectEl.innerHTML = '<option value="">All Brands</option>' + 
       Array.from(availableBrands).sort().map(b => `<option value="${b.toLowerCase()}">${b}</option>`).join('');
@@ -328,9 +351,13 @@
 
   function buildParams(query) {
     let finalQuery = query;
+    const selectedCategory = categorySelectEl.value;
     const selectedBrand = brandSelectEl.value;
     const selectedRam = ramSelectEl.value;
 
+    if (selectedCategory && !finalQuery.toLowerCase().includes(selectedCategory)) {
+      finalQuery = `${selectedCategory} ${finalQuery}`.trim();
+    }
     if (selectedBrand && !finalQuery.toLowerCase().includes(selectedBrand)) {
       finalQuery = `${selectedBrand} ${finalQuery}`.trim();
     }
@@ -463,29 +490,30 @@
   function handleSearchTrigger() {
     const query = input.value.trim();
     clearTimeout(debounceTimer); clearTimeout(pollTimer);
-    if (!query && !brandSelectEl.value && !ramSelectEl.value) {
+    if (!query && !categorySelectEl.value && !brandSelectEl.value && !ramSelectEl.value) {
       currentQuery = ""; results.innerHTML = ""; statusLine.innerHTML = ""; filterBar.classList.remove("visible");
       return;
     }
     filterBar.classList.add("visible");
     renderSkeleton();
     statusLine.innerHTML = "";
-    debounceTimer = setTimeout(() => fetchResults(query || brandSelectEl.value || "smartphone"), 300);
+    debounceTimer = setTimeout(() => fetchResults(query || categorySelectEl.value || brandSelectEl.value || "smartphone"), 300);
   }
 
   input.addEventListener("input", handleSearchTrigger);
   input.addEventListener("keyup", handleSearchTrigger);
+  categorySelectEl.addEventListener("change", handleSearchTrigger);
   brandSelectEl.addEventListener("change", handleSearchTrigger);
   ramSelectEl.addEventListener("change", handleSearchTrigger);
 
   [minPriceEl, maxPriceEl].forEach((el) => {
     el.addEventListener("input", () => {
       clearTimeout(priceDebounceTimer);
-      priceDebounceTimer = setTimeout(() => { if (currentQuery || brandSelectEl.value) fetchResults(currentQuery || brandSelectEl.value || "smartphone"); }, 500);
+      priceDebounceTimer = setTimeout(() => { if (currentQuery || brandSelectEl.value || categorySelectEl.value) fetchResults(currentQuery || categorySelectEl.value || brandSelectEl.value || "smartphone"); }, 500);
     });
   });
-  inStockOnlyEl.addEventListener("change", () => { if (currentQuery || brandSelectEl.value) fetchResults(currentQuery || brandSelectEl.value || "smartphone"); });
-  sortSelectEl.addEventListener("change", () => { if (currentQuery || brandSelectEl.value) fetchResults(currentQuery || brandSelectEl.value || "smartphone"); });
+  inStockOnlyEl.addEventListener("change", () => { if (currentQuery || brandSelectEl.value || categorySelectEl.value) fetchResults(currentQuery || categorySelectEl.value || brandSelectEl.value || "smartphone"); });
+  sortSelectEl.addEventListener("change", () => { if (currentQuery || brandSelectEl.value || categorySelectEl.value) fetchResults(currentQuery || categorySelectEl.value || brandSelectEl.value || "smartphone"); });
 
   loadSettings();
   loadStores().then(() => {
