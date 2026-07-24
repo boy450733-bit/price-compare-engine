@@ -9,7 +9,9 @@
     "dev": "node --watch src/server.js",
     "worker": "node src/queue/worker.js",
     "migrate": "node scripts/migrate.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "affiliate:add": "node scripts/affiliate-add.js",
+    "affiliate:worklist": "node scripts/affiliate-worklist.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
