@@ -108,7 +108,7 @@
   <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
   <p id="heroSubtitle">Search once, compare instantly across Pakistan's top stores.</p>
   <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search e.g. Oppo A6C" autocomplete="off" aria-label="Search for a product">
+    <input type="text" id="searchInput" placeholder="Search e.g. Vivo Y31d" autocomplete="off" aria-label="Search for a product">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
   </div>
 </div>
@@ -119,23 +119,12 @@
     <span class="filter-label">Brand</span>
     <select id="brandSelect" class="filter-select">
       <option value="">All Brands</option>
-      <option value="oppo">Oppo</option>
-      <option value="xiaomi">Xiaomi</option>
-      <option value="samsung">Samsung</option>
-      <option value="vivo">Vivo</option>
-      <option value="realme">Realme</option>
-      <option value="infinix">Infinix</option>
-      <option value="tecno">Tecno</option>
     </select>
   </div>
   <div class="filter-group">
     <span class="filter-label">RAM Spec</span>
     <select id="ramSelect" class="filter-select">
       <option value="">Any RAM</option>
-      <option value="4gb">4GB RAM</option>
-      <option value="6gb">6GB RAM</option>
-      <option value="8gb">8GB RAM</option>
-      <option value="12gb">12GB RAM</option>
     </select>
   </div>
   <div class="filter-group">
@@ -181,6 +170,8 @@
   let allStores = [];
   let excludedStores = new Set();
   let settings = null;
+  let availableBrands = new Set();
+  let availableRams = new Set();
 
   function formatPKR(n) {
     if (n === null || n === undefined) return "N/A";
@@ -198,39 +189,93 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  function parseSpecs(title = "") {
-    const specs = [];
-    const lower = title.toLowerCase();
+  // Handle extraction of comprehensive data fields including image and brand from table structure
+  function enrichProductData(p) {
+    let title = p.title;
+    let image = p.image;
+    let brand = p.brand;
 
-    const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
-    if (ramMatch) {
-      specs.push({ label: `${ramMatch[1]}GB RAM`, icon: 'memory' });
-    } else if (lower.includes('4gb')) {
-      specs.push({ label: '4GB RAM', icon: 'memory' });
-    } else if (lower.includes('6gb')) {
-      specs.push({ label: '6GB RAM', icon: 'memory' });
-    } else if (lower.includes('8gb')) {
-      specs.push({ label: '8GB RAM', icon: 'memory' });
+    if (!brand && title) {
+      const firstWord = title.split(" ")[0];
+      if (firstWord) brand = firstWord;
     }
 
-    const romMatch = title.match(/(\d+)\s*(?:gb)?\s*(?:rom|storage)/i) || title.match(/[\/\s](\d{2,3})gb/i);
-    if (romMatch && romMatch[1] !== (ramMatch ? ramMatch[1] : '')) {
-      specs.push({ label: `${romMatch[1]}GB Storage`, icon: 'hdd' });
-    } else if (lower.includes('128gb')) {
-      specs.push({ label: '128GB ROM', icon: 'hdd' });
-    } else if (lower.includes('64gb')) {
-      specs.push({ label: '64GB ROM', icon: 'hdd' });
-    } else if (lower.includes('256gb')) {
-      specs.push({ label: '256GB ROM', icon: 'hdd' });
+    if (brand) availableBrands.add(brand);
+
+    if ((!title || title.startsWith("Product Series")) && p.offers && p.offers.length > 0) {
+      const sampleUrl = p.offers[0].url || "";
+      const segments = sampleUrl.split("/").filter(Boolean);
+      const lastSegment = segments[segments.length - 1];
+      if (lastSegment && lastSegment !== "mobiles" && lastSegment !== "products") {
+        title = lastSegment.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      }
+    }
+
+    return { ...p, title, image, brand };
+  }
+
+  function parseSpecs(p) {
+    const specs = [];
+    const title = p.title || "";
+    const lower = title.toLowerCase();
+
+    // Check backend parsed specs object if available
+    if (p.specs && p.specs.ram) {
+      specs.push({ label: `${p.specs.ram}GB RAM` });
+      availableRams.add(`${p.specs.ram}gb`);
+    } else {
+      const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
+      if (ramMatch) {
+        specs.push({ label: `${ramMatch[1]}GB RAM` });
+        availableRams.add(`${ramMatch[1].toLowerCase()}gb`);
+      } else if (lower.includes('4gb')) {
+        specs.push({ label: '4GB RAM' });
+        availableRams.add('4gb');
+      } else if (lower.includes('6gb')) {
+        specs.push({ label: '6GB RAM' });
+        availableRams.add('6gb');
+      } else if (lower.includes('8gb')) {
+        specs.push({ label: '8GB RAM' });
+        availableRams.add('8gb');
+      } else if (lower.includes('12gb')) {
+        specs.push({ label: '12-16GB RAM' });
+        availableRams.add('12gb');
+      }
+    }
+
+    if (p.specs && p.specs.storage) {
+      specs.push({ label: `${p.specs.storage} ROM` });
+    } else {
+      const romMatch = title.match(/(\d+)\s*(?:gb)?\s*(?:rom|storage)/i) || title.match(/[\/\s](\d{2,3})gb/i);
+      if (romMatch) {
+        specs.push({ label: `${romMatch[1]}GB ROM` });
+      } else if (lower.includes('128gb')) {
+        specs.push({ label: '128GB ROM' });
+      } else if (lower.includes('64gb')) {
+        specs.push({ label: '64GB ROM' });
+      } else if (lower.includes('256gb')) {
+        specs.push({ label: '256GB ROM' });
+      }
     }
 
     if (specs.length === 0) {
-      specs.push({ label: 'Official PTA Approved', icon: 'shield' });
-    } else {
-      specs.push({ label: 'PTA Approved', icon: 'shield' });
+      specs.push({ label: 'PTA Approved' });
     }
 
     return specs;
+  }
+
+  function updateDynamicFilters() {
+    const currentBrand = brandSelectEl.value;
+    const currentRam = ramSelectEl.value;
+
+    brandSelectEl.innerHTML = '<option value="">All Brands</option>' + 
+      Array.from(availableBrands).sort().map(b => `<option value="${b.toLowerCase()}">${b}</option>`).join('');
+    brandSelectEl.value = currentBrand;
+
+    ramSelectEl.innerHTML = '<option value="">Any RAM</option>' + 
+      Array.from(availableRams).sort().map(r => `<option value="${r}">${r.toUpperCase()}</option>`).join('');
+    ramSelectEl.value = currentRam;
   }
 
   async function loadSettings() {
@@ -317,7 +362,8 @@
   }
 
   function renderResults(data, query) {
-    const products = data.products || [];
+    const products = (data.products || []).map(enrichProductData);
+    updateDynamicFilters();
 
     if (products.length === 0) {
       const msg = data.needsLiveScrape ? "Checking live store prices..." : "No matching products found";
@@ -333,7 +379,7 @@
       
       const displayRating = p.max_rating && p.max_rating !== "0" ? p.max_rating : null;
       const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
-      const specs = parseSpecs(titleText);
+      const specs = parseSpecs(p);
 
       const ratingHtml = displayRating 
         ? `<div class="card-rating"><span class="stars">★</span> ${Number(displayRating).toFixed(1)}</div>` 
