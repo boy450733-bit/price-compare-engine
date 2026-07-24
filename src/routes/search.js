@@ -1,130 +1,498 @@
-// search.js
-import { Router } from "express";
-import { query as db } from "../db/client.js";
-import { enqueueScrape } from "../queue/queue.js";
-
-const router = Router();
-const STALE_HOURS = Number(process.env.CACHE_STALE_HOURS || 12);
-const MIN_STORE_COUNT = Number(process.env.CACHE_MIN_STORE_COUNT || 3);
-
-const SORT_EXPR = {
-  relevance: {
-    outer: "relevance DESC, min_price ASC",
-  },
-  price_asc: { outer: "min_price ASC NULLS LAST" },
-  price_desc: { outer: "min_price DESC NULLS LAST" },
-  rating: { outer: "max_rating DESC NULLS LAST" },
-};
-
-router.get("/products", async (req, res) => {
-  const q = (req.query.q || "").trim();
-  const limit = Math.min(Number(req.query.limit) || 100, 1000);
-  const page = Math.max(Number(req.query.page) || 1, 1);
-  const sort = SORT_EXPR[req.query.sort] ? req.query.sort : "relevance";
-  const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
-  const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
-  const inStockOnly = req.query.inStockOnly === "true";
-  const stores = req.query.stores ? req.query.stores.split(",").filter(Boolean) : null;
-
-  if (!q) return res.status(400).json({ error: "missing query param: q" });
-
-  const params = [q];
-  const conditions = ["p.title % $1"];
-
-  if (minPrice !== null) {
-    params.push(minPrice);
-    conditions.push(`p.price >= $${params.length}`);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sasta.pk — Compare prices across Pakistan's top stores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link id="googleFontsLink" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-bg: #FAF7F0; --color-surface: #FFFFFF; --color-ink: #17231D;
+    --color-ink-soft: #5B6B62; --color-brand: #0B6E4F; --color-brand-dark: #094F39;
+    --color-accent: #E8A33D; --color-accent-dark: #C4841F; --color-line: #E4DDCB;
+    --color-danger: #C24B3F; --font-display: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif; --radius: 16px;
   }
-  if (maxPrice !== null) {
-    params.push(maxPrice);
-    conditions.push(`p.price <= $${params.length}`);
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+
+  header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; max-width: 1140px; margin: 0 auto; }
+  .logo { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--color-brand-dark); }
+  .logo .dot { color: var(--color-accent); }
+
+  .hero { max-width: 720px; margin: 28px auto 12px; padding: 0 24px; text-align: center; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 5vw, 38px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .hero p { color: var(--color-ink-soft); margin: 0 0 24px; font-size: 15px; }
+  .search-box { position: relative; max-width: 580px; margin: 0 auto; }
+  .search-box input { width: 100%; padding: 16px 52px 16px 22px; font-size: 16px; font-family: var(--font-body); border: 2px solid var(--color-line); border-radius: 999px; background: var(--color-surface); color: var(--color-ink); transition: all 0.2s; }
+  .search-box input:focus { border-color: var(--color-brand); box-shadow: 0 0 0 5px rgba(11, 110, 79, 0.12); }
+  .search-box svg { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--color-ink-soft); pointer-events: none; }
+
+  .filter-bar { max-width: 1140px; margin: 24px auto 0; padding: 16px 24px; display: none; gap: 18px; flex-wrap: wrap; align-items: center; background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); }
+  .filter-bar.visible { display: flex; }
+  .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-label { font-size: 12px; font-weight: 700; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .store-chip, .filter-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; user-select: none; transition: all 0.15s ease; }
+  .store-chip.off, .filter-chip.off { opacity: 0.4; background: var(--color-surface); }
+  .price-input { width: 92px; padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); }
+  .toggle-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; }
+  select#sortSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); }
+
+  .status-line { max-width: 1140px; margin: 20px auto 6px; padding: 0 24px; font-size: 13.5px; color: var(--color-ink-soft); min-height: 18px; }
+  .status-line strong { color: var(--color-ink); }
+
+  /* Results Grid */
+  .results { max-width: 1140px; margin: 0 auto; padding: 8px 24px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 24px; }
+
+  /* Product Card */
+  .card { background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); position: relative; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 12px rgba(23, 35, 29, 0.03); }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(23, 35, 29, 0.08); }
+  
+  .card-header-banner { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 3; pointer-events: none; }
+  .best-ribbon { background: var(--color-accent); color: #2A1B04; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .match-badge { background: rgba(23, 35, 29, 0.75); backdrop-filter: blur(4px); color: #fff; font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 999px; }
+
+  .card-image { height: 180px; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, #FCFAF4 0%, #F5F0E1 100%); position: relative; border-bottom: 1px solid var(--color-line); }
+  .card-image img { max-height: 100%; max-width: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform 0.3s ease; }
+  .card:hover .card-image img { transform: scale(1.05); }
+
+  .card-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  
+  .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--color-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  
+  .specs-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
+  .spec-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; background: var(--color-bg); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-line); color: var(--color-ink-soft); }
+  .spec-chip svg { width: 12px; height: 12px; color: var(--color-brand); }
+
+  .card-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--color-ink-soft); }
+  .card-rating { display: flex; align-items: center; gap: 4px; font-weight: 600; color: var(--color-ink); }
+  .card-rating .stars { color: var(--color-accent-dark); font-size: 13px; }
+
+  .offers-section { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--color-line); padding-top: 10px; }
+  .offers-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--color-ink-soft); letter-spacing: 0.04em; margin-bottom: 2px; display: flex; justify-content: space-between; }
+  
+  .offer-row-link { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--color-line); text-decoration: none; transition: all 0.15s ease; }
+  .offer-row-link:hover { border-color: var(--color-brand); background: #F4F9F6; transform: translateX(2px); }
+
+  .store-info-left { display: flex; align-items: center; gap: 8px; }
+  .store-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff; }
+  
+  .offer-price-right { display: flex; align-items: center; gap: 8px; text-align: right; }
+  .offer-price { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--color-ink); }
+  .out-of-stock-tag { font-size: 10px; color: var(--color-danger); font-weight: 600; background: #FDEDEA; padding: 2px 6px; border-radius: 4px; }
+  
+  .card-footer-info { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--color-ink-soft); margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--color-line); }
+
+  .state-panel { max-width: 440px; margin: 60px auto; text-align: center; padding: 40px 24px; grid-column: 1 / -1; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); }
+  .state-panel .icon { font-size: 40px; margin-bottom: 12px; }
+  .state-panel h3 { font-family: var(--font-display); font-size: 19px; margin: 0 0 8px; }
+  .state-panel p { color: var(--color-ink-soft); font-size: 14px; margin: 0; }
+
+  .skeleton { background: linear-gradient(90deg, #F1EDE1 25%, #E9E3D3 37%, #F1EDE1 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius); height: 350px; }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  
+  footer { text-align: center; padding: 32px 24px; font-size: 12.5px; color: var(--color-ink-soft); border-top: 1px solid var(--color-line); margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="logoSlot">Sasta<span class="dot">.pk</span></div>
+</header>
+
+<div class="hero">
+  <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
+  <p id="heroSubtitle">Search once, compare instantly across Pakistan's top stores.</p>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search e.g. Vivo Y31d" autocomplete="off" aria-label="Search for a product">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+  </div>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <div class="filter-group"><span class="filter-label">Stores</span><div id="storeChips"></div></div>
+  <div class="filter-group">
+    <span class="filter-label">Brand</span>
+    <select id="brandSelect" class="filter-select">
+      <option value="">All Brands</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">RAM Spec</span>
+    <select id="ramSelect" class="filter-select">
+      <option value="">Any RAM</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Price</span>
+    <input type="number" class="price-input" id="minPrice" placeholder="Min">
+    <input type="number" class="price-input" id="maxPrice" placeholder="Max">
+  </div>
+  <div class="filter-group"><label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label></div>
+  <div class="filter-group">
+    <span class="filter-label">Sort</span>
+    <select id="sortSelect">
+      <option value="relevance">Relevance</option>
+      <option value="price_asc">Price: Low to High</option>
+      <option value="price_desc">Price: High to Low</option>
+      <option value="rating">Rating</option>
+    </select>
+  </div>
+</div>
+
+<div class="status-line" id="statusLine"></div>
+<div class="results" id="results"></div>
+
+<footer id="footerSlot">Sasta.pk — prices are pulled directly from each store and may change without notice.</footer>
+
+<script>
+(function () {
+  const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "Sasta.pk" };
+
+  const input = document.getElementById("searchInput");
+  const results = document.getElementById("results");
+  const statusLine = document.getElementById("statusLine");
+  const filterBar = document.getElementById("filterBar");
+  const storeChipsEl = document.getElementById("storeChips");
+  const brandSelectEl = document.getElementById("brandSelect");
+  const ramSelectEl = document.getElementById("ramSelect");
+  const minPriceEl = document.getElementById("minPrice");
+  const maxPriceEl = document.getElementById("maxPrice");
+  const inStockOnlyEl = document.getElementById("inStockOnly");
+  const sortSelectEl = document.getElementById("sortSelect");
+
+  let debounceTimer = null, priceDebounceTimer = null, pollTimer = null;
+  let currentQuery = "";
+  let allStores = [];
+  let excludedStores = new Set();
+  let settings = null;
+  let availableBrands = new Set();
+  let availableRams = new Set();
+
+  function formatPKR(n) {
+    if (n === null || n === undefined) return "N/A";
+    return "Rs " + Number(n).toLocaleString("en-PK");
   }
-  if (inStockOnly) {
-    conditions.push("p.in_stock = true");
-  }
-  if (stores && stores.length > 0) {
-    params.push(stores);
-    conditions.push(`p.store = ANY($${params.length})`);
-  }
 
-  const whereClause = conditions.join(" AND ");
-
-  params.push(limit, (page - 1) * limit);
-  const limitParam = params.length - 1;
-  const offsetParam = params.length;
-
-  const { rows: rawRows } = await db(
-    `WITH grouped AS (
-       SELECT
-         p.fingerprint,
-         MIN(similarity(p.title, $1)) AS relevance,
-         MIN(p.price) AS min_price,
-         MAX(p.rating) AS max_rating,
-         json_agg(
-           json_build_object(
-             'store', p.store,
-             'price', p.price,
-             'url', p.url,
-             'in_stock', p.in_stock,
-             'rating', p.rating,
-             'storeColor', s.color
-           )
-           ORDER BY p.price ASC
-         ) AS offers
-       FROM products p
-       JOIN stores s ON s.name = p.store
-       WHERE ${whereClause}
-       GROUP BY p.fingerprint
-     )
-     SELECT *, COUNT(*) OVER() AS "totalCount"
-     FROM grouped
-     ORDER BY ${SORT_EXPR[sort].outer}
-     LIMIT $${limitParam} OFFSET $${offsetParam}`,
-    params
-  );
-
-  const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
-  const rows = rawRows.map(({ totalCount, offers, ...r }) => ({
-    ...r,
-    offers: Array.isArray(offers) ? offers : JSON.parse(offers),
-  }));
-
-  const { rows: storeCountRows } = await db(
-    `SELECT COUNT(DISTINCT store) AS count FROM products WHERE title % $1`,
-    [q]
-  );
-  const storeCount = Number(storeCountRows[0]?.count || 0);
-
-  const { rows: freshnessRows } = await db(
-    `SELECT MIN(scraped_at) AS oldest FROM products WHERE title % $1`,
-    [q]
-  );
-  const oldest = freshnessRows[0]?.oldest;
-  const isStale =
-    !oldest || (Date.now() - new Date(oldest).getTime()) / 36e5 > STALE_HOURS;
-
-  const needsLiveScrape = isStale || storeCount < MIN_STORE_COUNT;
-
-  if (needsLiveScrape) {
-    enqueueScrape(q).catch((err) =>
-      console.error("failed to enqueue scrape:", err.message)
-    );
+  function relativeTime(dateStr) {
+    if (!dateStr) return "";
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "Just updated";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
   }
 
-  await db(`INSERT INTO search_log (query, store_count) VALUES ($1, $2)`, [
-    q,
-    storeCount,
-  ]);
+  // Handle extraction of comprehensive data fields including image and brand from table structure
+  function enrichProductData(p) {
+    let title = p.title;
+    let image = p.image;
+    let brand = p.brand;
 
-  res.json({
-    total,
-    page,
-    limit,
-    products: rows,
-    filteredCount: rows.length,
-    needsLiveScrape,
-    storeCount,
+    if (!brand && title) {
+      const firstWord = title.split(" ")[0];
+      if (firstWord) brand = firstWord;
+    }
+
+    if (brand) availableBrands.add(brand);
+
+    if ((!title || title.startsWith("Product Series")) && p.offers && p.offers.length > 0) {
+      const sampleUrl = p.offers[0].url || "";
+      const segments = sampleUrl.split("/").filter(Boolean);
+      const lastSegment = segments[segments.length - 1];
+      if (lastSegment && lastSegment !== "mobiles" && lastSegment !== "products") {
+        title = lastSegment.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      }
+    }
+
+    return { ...p, title, image, brand };
+  }
+
+  function parseSpecs(p) {
+    const specs = [];
+    const title = p.title || "";
+    const lower = title.toLowerCase();
+
+    // Check backend parsed specs object if available
+    if (p.specs && p.specs.ram) {
+      specs.push({ label: `${p.specs.ram}GB RAM` });
+      availableRams.add(`${p.specs.ram}gb`);
+    } else {
+      const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
+      if (ramMatch) {
+        specs.push({ label: `${ramMatch[1]}GB RAM` });
+        availableRams.add(`${ramMatch[1].toLowerCase()}gb`);
+      } else if (lower.includes('4gb')) {
+        specs.push({ label: '4GB RAM' });
+        availableRams.add('4gb');
+      } else if (lower.includes('6gb')) {
+        specs.push({ label: '6GB RAM' });
+        availableRams.add('6gb');
+      } else if (lower.includes('8gb')) {
+        specs.push({ label: '8GB RAM' });
+        availableRams.add('8gb');
+      } else if (lower.includes('12gb')) {
+        specs.push({ label: '12-16GB RAM' });
+        availableRams.add('12gb');
+      }
+    }
+
+    if (p.specs && p.specs.storage) {
+      specs.push({ label: `${p.specs.storage} ROM` });
+    } else {
+      const romMatch = title.match(/(\d+)\s*(?:gb)?\s*(?:rom|storage)/i) || title.match(/[\/\s](\d{2,3})gb/i);
+      if (romMatch) {
+        specs.push({ label: `${romMatch[1]}GB ROM` });
+      } else if (lower.includes('128gb')) {
+        specs.push({ label: '128GB ROM' });
+      } else if (lower.includes('64gb')) {
+        specs.push({ label: '64GB ROM' });
+      } else if (lower.includes('256gb')) {
+        specs.push({ label: '256GB ROM' });
+      }
+    }
+
+    if (specs.length === 0) {
+      specs.push({ label: 'PTA Approved' });
+    }
+
+    return specs;
+  }
+
+  function updateDynamicFilters() {
+    const currentBrand = brandSelectEl.value;
+    const currentRam = ramSelectEl.value;
+
+    brandSelectEl.innerHTML = '<option value="">All Brands</option>' + 
+      Array.from(availableBrands).sort().map(b => `<option value="${b.toLowerCase()}">${b}</option>`).join('');
+    brandSelectEl.value = currentBrand;
+
+    ramSelectEl.innerHTML = '<option value="">Any RAM</option>' + 
+      Array.from(availableRams).sort().map(r => `<option value="${r}">${r.toUpperCase()}</option>`).join('');
+    ramSelectEl.value = currentRam;
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
+      settings = await res.json();
+    } catch (err) {
+      settings = { theme: {}, cardFeatures: {} };
+    }
+    applySettings();
+  }
+
+  function applySettings() {
+    if (!settings) return;
+    document.getElementById("logoSlot").textContent = settings.logoText || "Sasta.pk";
+    document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
+    document.getElementById("footerSlot").textContent = settings.footerText || "";
+  }
+
+  async function loadStores() {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/stores`);
+      const data = await res.json();
+      allStores = data.stores || [];
+      renderStoreChips();
+    } catch (err) {
+      allStores = [
+        { name: "PriceOye", color: "#0052CC" },
+        { name: "Daraz", color: "#F57224" },
+        { name: "Flashi", color: "#4A90E2" },
+        { name: "EzeePC", color: "#27AE60" }
+      ];
+      renderStoreChips();
+    }
+  }
+
+  function renderStoreChips() {
+    storeChipsEl.innerHTML = allStores
+      .map((s) => `<span class="store-chip" data-store="${s.name}" style="border-color:${s.color || '#ccc'}"><span style="width:8px;height:8px;border-radius:50%;background:${s.color || '#999'}"></span>${s.name}</span>`)
+      .join("");
+    storeChipsEl.querySelectorAll(".store-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const store = chip.dataset.store;
+        if (excludedStores.has(store)) { excludedStores.delete(store); chip.classList.remove("off"); }
+        else { excludedStores.add(store); chip.classList.add("off"); }
+        if (currentQuery) fetchResults(currentQuery);
+      });
+    });
+  }
+
+  function buildParams(query) {
+    let finalQuery = query;
+    const selectedBrand = brandSelectEl.value;
+    const selectedRam = ramSelectEl.value;
+
+    if (selectedBrand && !finalQuery.toLowerCase().includes(selectedBrand)) {
+      finalQuery = `${selectedBrand} ${finalQuery}`.trim();
+    }
+    if (selectedRam && !finalQuery.toLowerCase().includes(selectedRam)) {
+      finalQuery = `${finalQuery} ${selectedRam}`.trim();
+    }
+
+    const params = new URLSearchParams({ q: finalQuery, limit: "50" });
+    const activeStores = allStores.map((s) => s.name).filter((n) => !excludedStores.has(n));
+    if (excludedStores.size > 0 && activeStores.length > 0) params.set("stores", activeStores.join(","));
+    if (minPriceEl.value) params.set("minPrice", minPriceEl.value);
+    if (maxPriceEl.value) params.set("maxPrice", maxPriceEl.value);
+    if (inStockOnlyEl.checked) params.set("inStockOnly", "true");
+    params.set("sort", sortSelectEl.value);
+    return params;
+  }
+
+  function renderSkeleton() {
+    results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+  }
+
+  function renderEmpty(message, sub) {
+    results.innerHTML = "";
+    statusLine.innerHTML = "";
+    const panel = document.createElement("div");
+    panel.className = "state-panel";
+    panel.innerHTML = `<div class="icon">🔍</div><h3>${message}</h3><p>${sub}</p>`;
+    results.appendChild(panel);
+  }
+
+  function renderResults(data, query) {
+    const products = (data.products || []).map(enrichProductData);
+    updateDynamicFilters();
+
+    if (products.length === 0) {
+      const msg = data.needsLiveScrape ? "Checking live store prices..." : "No matching products found";
+      const sub = data.needsLiveScrape ? "We are scanning top Pakistani web stores for real-time prices. Please hold on a moment." : "Try searching with broader terms or clear your active store/price filters.";
+      renderEmpty(msg, sub);
+      if (data.needsLiveScrape) schedulePoll(query);
+      return;
+    }
+
+    results.innerHTML = products.map((p) => {
+      const sortedOffers = [...(p.offers || [])].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+      const titleText = p.title || `Product Series (${p.fingerprint.substring(0, 8)})`;
+      
+      const displayRating = p.max_rating && p.max_rating !== "0" ? p.max_rating : null;
+      const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
+      const specs = parseSpecs(p);
+
+      const ratingHtml = displayRating 
+        ? `<div class="card-rating"><span class="stars">★</span> ${Number(displayRating).toFixed(1)}</div>` 
+        : `<div class="card-rating"><span class="stars">★</span> Verified Deal</div>`;
+
+      const specsHtml = specs.map(s => `
+        <span class="spec-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          ${s.label}
+        </span>
+      `).join("");
+
+      const offersHtml = sortedOffers.map((o) => `
+        <a href="${o.url}" target="_blank" rel="noopener" class="offer-row-link">
+          <div class="store-info-left">
+            <span class="store-badge" style="background:${o.storeColor || '#0B6E4F'}">${o.store}</span>
+          </div>
+          <div class="offer-price-right">
+            ${o.in_stock === false ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
+            <span class="offer-price">${formatPKR(o.price)}</span>
+          </div>
+        </a>
+      `).join("");
+
+      return `
+        <div class="card">
+          <div class="card-header-banner">
+            <div class="best-ribbon">Best: ${formatPKR(p.min_price)}</div>
+            ${relevanceScore ? `<div class="match-badge">${relevanceScore}% match</div>` : ""}
+          </div>
+          <div class="card-image">
+            ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📱</span>`}
+          </div>
+          <div class="card-body">
+            <div class="card-title" title="${titleText}">${titleText}</div>
+            
+            <div class="specs-bar">
+              ${specsHtml}
+            </div>
+            
+            <div class="card-meta-row">
+              ${ratingHtml}
+              <span style="font-size: 11.5px; font-weight: 500; color: var(--color-ink-soft);">${sortedOffers.length} store offer${sortedOffers.length > 1 ? 's' : ''}</span>
+            </div>
+
+            <div class="offers-section">
+              <div class="offers-heading"><span>Available Stores</span><span>Price</span></div>
+              ${offersHtml}
+            </div>
+
+            <div class="card-footer-info">
+              <span>Secure checkout via partners</span>
+              <span>${p.scrapedAt ? relativeTime(p.scrapedAt) : 'Updated recently'}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    const storeText = data.storeCount === 1 ? "1 store" : `${data.storeCount || 4} stores`;
+    statusLine.innerHTML = `Found <strong>${products.length}</strong> product listings across <strong>${storeText}</strong>${data.needsLiveScrape ? " — updating live prices..." : ""}`;
+    if (data.needsLiveScrape) schedulePoll(query);
+  }
+
+  function schedulePoll(query) {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(() => { if (query === currentQuery) fetchResults(query); }, 4000);
+  }
+
+  async function fetchResults(query) {
+    currentQuery = query;
+    try {
+      const params = buildParams(query);
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`);
+      const data = await res.json();
+      if (query === currentQuery) renderResults(data, query);
+    } catch (err) {
+      if (query === currentQuery) renderEmpty("Connection Error", "Unable to reach price comparison backend. Please check your network connection.");
+    }
+  }
+
+  function handleSearchTrigger() {
+    const query = input.value.trim();
+    clearTimeout(debounceTimer); clearTimeout(pollTimer);
+    if (!query && !brandSelectEl.value && !ramSelectEl.value) {
+      currentQuery = ""; results.innerHTML = ""; statusLine.innerHTML = ""; filterBar.classList.remove("visible");
+      return;
+    }
+    filterBar.classList.add("visible");
+    renderSkeleton();
+    statusLine.innerHTML = "";
+    debounceTimer = setTimeout(() => fetchResults(query || brandSelectEl.value || "smartphone"), 300);
+  }
+
+  input.addEventListener("input", handleSearchTrigger);
+  input.addEventListener("keyup", handleSearchTrigger);
+  brandSelectEl.addEventListener("change", handleSearchTrigger);
+  ramSelectEl.addEventListener("change", handleSearchTrigger);
+
+  [minPriceEl, maxPriceEl].forEach((el) => {
+    el.addEventListener("input", () => {
+      clearTimeout(priceDebounceTimer);
+      priceDebounceTimer = setTimeout(() => { if (currentQuery || brandSelectEl.value) fetchResults(currentQuery || brandSelectEl.value || "smartphone"); }, 500);
+    });
   });
-});
+  inStockOnlyEl.addEventListener("change", () => { if (currentQuery || brandSelectEl.value) fetchResults(currentQuery || brandSelectEl.value || "smartphone"); });
+  sortSelectEl.addEventListener("change", () => { if (currentQuery || brandSelectEl.value) fetchResults(currentQuery || brandSelectEl.value || "smartphone"); });
 
-export default router;
+  loadSettings();
+  loadStores().then(() => {
+    if (input.value.trim()) handleSearchTrigger();
+  });
+})();
+</script>
+
+</body>
+</html>
