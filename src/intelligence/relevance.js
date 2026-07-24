@@ -1,5 +1,9 @@
 // src/intelligence/relevance.js
 
+// Listings scoring below this are treated as noise (wrong product,
+// unrelated accessory, etc.) and dropped by the scraper before insert.
+export const MIN_ACCEPT_SCORE = 0.1;
+
 const STOP_WORDS = new Set([
   "the","for","with","and","dual","sim","pta","official","new","latest",
   "mobile","phone","smartphone","edition","global","version","factory",
@@ -98,7 +102,7 @@ export function calculateRelevance(queryInfo, productInfo) {
 
   return {
     score,
-    accepted: true, //score >= 0.1,
+    accepted: score >= MIN_ACCEPT_SCORE,
     breakdown: {
       text,
       numbers,

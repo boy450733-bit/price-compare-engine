@@ -31,6 +31,11 @@ export function processProduct(rawProduct, searchQuery) {
   const relevance = calculateRelevance(query, product);
 
   product.relevance = relevance.score;
+  // Aliases kept in sync with `relevance`/`cleanedTitle` above — scrape.js
+  // (and the `products` table columns match_score / normalized_title)
+  // read these specific names, so keep both in sync if you rename either.
+  product.relevanceScore = relevance.score;
+  product.normalizedTitle = normalized.cleanedTitle;
   product.accepted = relevance.accepted;
 
   return product;

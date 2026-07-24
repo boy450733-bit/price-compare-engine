@@ -17,11 +17,23 @@ export function extractSpecs(title=""){
 
   const specs={};
 
-  specs.ram=find(/(\d{1,3})\s*gb\s*(?:ram)?/i,text);
+  // RAM — only match when "ram" is explicitly adjacent to the number, so
+  // a bare "128GB" (which is almost always storage, not RAM) is never
+  // mistaken for RAM just because it happens to appear first in the title.
+  const ramMatch =
+    text.match(/(\d{1,3})\s*gb\s*ram\b/i) || text.match(/\bram\s*(\d{1,3})\s*gb/i);
+  if (ramMatch) specs.ram = ramMatch[1];
 
-  const rom=text.match(/(?:\/|\+)?\s*(\d{2,4})\s*(gb|tb)\b/i);
-  if(rom){
-    specs.storage=rom[1]+" "+rom[2].toUpperCase();
+  // Storage — scan every GB/TB figure in the title and take the first one
+  // that ISN'T the figure we already claimed as RAM above. This stops
+  // titles like "6GB RAM 128GB Storage" (or the reverse order) from
+  // having the same number double-counted as both RAM and storage.
+  const romMatches = [...text.matchAll(/(\d{2,4})\s*(gb|tb)\b/gi)];
+  const romCandidate = romMatches.find(
+    (m) => !(specs.ram && m[1] === specs.ram)
+  );
+  if (romCandidate) {
+    specs.storage = romCandidate[1] + " " + romCandidate[2].toUpperCase();
   }
 
   const battery=find(/(\d{4,5})\s*mah/i,text);

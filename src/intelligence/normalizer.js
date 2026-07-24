@@ -20,10 +20,20 @@ function normalizeStorage(text) {
     .replace(/(\d+)\s*gb/gi, "$1GB");
 }
 
-function detectBrand(title) {
+function detectBrand(title, category) {
   const lower = title.toLowerCase();
 
-  for (const brands of Object.values(BRANDS_BY_CATEGORY)) {
+  // Check the detected category's own brand list first (category names
+  // here are lowercase keys like "mobile"/"laptop", while detectCategory()
+  // returns capitalized labels like "Mobile" — normalize before lookup).
+  const categoryKey = category ? category.toLowerCase() : null;
+  const priorityBrands = categoryKey ? BRANDS_BY_CATEGORY[categoryKey] : null;
+
+  const brandLists = priorityBrands
+    ? [priorityBrands, ...Object.values(BRANDS_BY_CATEGORY)]
+    : Object.values(BRANDS_BY_CATEGORY);
+
+  for (const brands of brandLists) {
     for (const brand of brands) {
       if (lower.includes(brand.toLowerCase())) {
         return brand;
@@ -67,6 +77,8 @@ export function normalizeProduct(title, category = "Other") {
   cleaned = cleanSpaces(cleaned);
 
   const brand = detectBrand(cleaned, category);
+  // (category is used inside detectBrand to prioritize that category's
+  // own brand list before falling back to the full set — see above)
   const model = detectModel(cleaned, brand);
 
   return {

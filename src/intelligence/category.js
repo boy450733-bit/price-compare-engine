@@ -65,6 +65,22 @@ const CATEGORY_KEYWORDS={
   ]
 };
 
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Cache compiled keyword regexes so we don't rebuild them on every call.
+const KEYWORD_REGEX = new Map();
+function keywordRegex(keyword) {
+  if (!KEYWORD_REGEX.has(keyword)) {
+    // \b word-boundary matching — without this, short keywords like "ac"
+    // or "tv" match as substrings inside unrelated words ("MacBook",
+    // "Black", "Track", "Native"...) and cause miscategorization.
+    KEYWORD_REGEX.set(keyword, new RegExp(`\\b${escapeRegex(keyword)}\\b`, "i"));
+  }
+  return KEYWORD_REGEX.get(keyword);
+}
+
 export function detectCategory(title=""){
   const text=title.toLowerCase();
 
@@ -75,7 +91,7 @@ export function detectCategory(title=""){
     let matches=0;
 
     for(const keyword of keywords){
-      if(text.includes(keyword.toLowerCase())){
+      if(keywordRegex(keyword).test(text)){
         matches++;
       }
     }
