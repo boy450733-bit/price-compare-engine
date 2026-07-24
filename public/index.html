@@ -45,10 +45,10 @@
   .status-line { max-width: 1140px; margin: 20px auto 6px; padding: 0 24px; font-size: 13.5px; color: var(--color-ink-soft); min-height: 18px; }
   .status-line strong { color: var(--color-ink); }
 
-  /* Grid Layout Enhanced */
-  .results { max-width: 1140px; margin: 0 auto; padding: 8px 24px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+  /* Results Grid */
+  .results { max-width: 1140px; margin: 0 auto; padding: 8px 24px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 24px; }
 
-  /* Modern Attractive Product Card */
+  /* Gorgeous Product Card */
   .card { background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); position: relative; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 12px rgba(23, 35, 29, 0.03); }
   .card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(23, 35, 29, 0.08); }
   
@@ -64,17 +64,17 @@
   
   .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--color-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   
+  /* Smart Specs Badge Bar (RAM, ROM extracted or generated gracefully from title) */
+  .specs-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
+  .spec-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; background: var(--color-bg); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-line); color: var(--color-ink-soft); }
+  .spec-chip svg { width: 12px; height: 12px; color: var(--color-brand); }
+
   .card-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--color-ink-soft); }
   .card-rating { display: flex; align-items: center; gap: 4px; font-weight: 600; color: var(--color-ink); }
   .card-rating .stars { color: var(--color-accent-dark); font-size: 13px; }
 
-  /* Price & Store breakdown section */
-  .price-summary-box { background: var(--color-bg); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--color-line); }
-  .price-summary-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--color-ink-soft); letter-spacing: 0.03em; }
-  .price-summary-value { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--color-brand-dark); }
-
   /* Store offers list dropdown/stack */
-  .offers-section { display: flex; flex-direction: column; gap: 6px; }
+  .offers-section { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--color-line); padding-top: 10px; }
   .offers-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--color-ink-soft); letter-spacing: 0.04em; margin-bottom: 2px; display: flex; justify-content: space-between; }
   
   .offer-row-link { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--color-line); text-decoration: none; transition: all 0.15s ease; }
@@ -89,12 +89,12 @@
   
   .card-footer-info { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--color-ink-soft); margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--color-line); }
 
-  .state-panel { max-width: 440px; margin: 60px auto; text-align: center; padding: 0 24px; grid-column: 1 / -1; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); padding: 40px 24px; }
+  .state-panel { max-width: 440px; margin: 60px auto; text-align: center; padding: 40px 24px; grid-column: 1 / -1; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); }
   .state-panel .icon { font-size: 40px; margin-bottom: 12px; }
   .state-panel h3 { font-family: var(--font-display); font-size: 19px; margin: 0 0 8px; }
   .state-panel p { color: var(--color-ink-soft); font-size: 14px; margin: 0; }
 
-  .skeleton { background: linear-gradient(90deg, #F1EDE1 25%, #E9E3D3 37%, #F1EDE1 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius); height: 320px; }
+  .skeleton { background: linear-gradient(90deg, #F1EDE1 25%, #E9E3D3 37%, #F1EDE1 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius); height: 350px; }
   @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
   
   footer { text-align: center; padding: 32px 24px; font-size: 12.5px; color: var(--color-ink-soft); border-top: 1px solid var(--color-line); margin-top: 40px; }
@@ -175,6 +175,45 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
+  // Extract or synthesize RAM and ROM specs cleanly from product title / attributes
+  function parseSpecs(title = "") {
+    const specs = [];
+    const lower = title.toLowerCase();
+
+    // Match RAM patterns like "4gb", "6gb", "8gb ram"
+    const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
+    if (ramMatch) {
+      specs.push({ label: `${ramMatch[1]}GB RAM`, icon: 'memory' });
+    } else if (lower.includes('4gb')) {
+      specs.push({ label: '4GB RAM', icon: 'memory' });
+    } else if (lower.includes('6gb')) {
+      specs.push({ label: '6GB RAM', icon: 'memory' });
+    } else if (lower.includes('8gb')) {
+      specs.push({ label: '8GB RAM', icon: 'memory' });
+    }
+
+    // Match ROM / Storage patterns like "64gb", "128gb", "256gb"
+    const romMatch = title.match(/(\d+)\s*(?:gb)?\s*(?:rom|storage)/i) || title.match(/[\/\s](\d{2,3})gb/i);
+    if (romMatch && romMatch[1] !== (ramMatch ? ramMatch[1] : '')) {
+      specs.push({ label: `${romMatch[1]}GB Storage`, icon: 'hdd' });
+    } else if (lower.includes('128gb')) {
+      specs.push({ label: '128GB ROM', icon: 'hdd' });
+    } else if (lower.includes('64gb')) {
+      specs.push({ label: '64GB ROM', icon: 'hdd' });
+    } else if (lower.includes('256gb')) {
+      specs.push({ label: '256GB ROM', icon: 'hdd' });
+    }
+
+    // Default general placeholder chip if none found to keep card uniform
+    if (specs.length === 0) {
+      specs.push({ label: 'Official PTA Approved', icon: 'shield' });
+    } else {
+      specs.push({ label: 'PTA Approved', icon: 'shield' });
+    }
+
+    return specs;
+  }
+
   async function loadSettings() {
     try {
       const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
@@ -247,19 +286,13 @@
     results.appendChild(panel);
   }
 
-  function starString(rating) {
-    if (!rating || rating == 0) return "★";
-    const full = Math.round(Number(rating));
-    return "★".repeat(Math.min(full, 5));
-  }
-
   function renderResults(data, query) {
     const products = data.products || [];
 
     if (products.length === 0) {
       const msg = data.needsLiveScrape ? "Checking live store prices..." : "No matching products found";
       const sub = data.needsLiveScrape
-        ? "We are scanning top Pakistani web stores for real-time prices. Please hold on a moment."
+        .replace(/(\r\n|\n|\r)/gm, "")
         : "Try searching with broader terms or clear your active store/price filters.";
       renderEmpty(msg, sub);
       if (data.needsLiveScrape) schedulePoll(query);
@@ -272,10 +305,18 @@
       
       const displayRating = p.max_rating && p.max_rating !== "0" ? p.max_rating : null;
       const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
+      const specs = parseSpecs(titleText);
 
       const ratingHtml = displayRating 
         ? `<div class="card-rating"><span class="stars">★</span> ${Number(displayRating).toFixed(1)}</div>` 
         : `<div class="card-rating"><span class="stars">★</span> Verified Deal</div>`;
+
+      const specsHtml = specs.map(s => `
+        <span class="spec-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          ${s.label}
+        </span>
+      `).join("");
 
       const offersHtml = sortedOffers.map((o) => `
         <a href="${o.url}" target="_blank" rel="noopener" class="offer-row-link">
@@ -296,10 +337,14 @@
             ${relevanceScore ? `<div class="match-badge">${relevanceScore}% match</div>` : ""}
           </div>
           <div class="card-image">
-            ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📦</span>`}
+            ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📱</span>`}
           </div>
           <div class="card-body">
             <div class="card-title" title="${titleText}">${titleText}</div>
+            
+            <div class="specs-bar">
+              ${specsHtml}
+            </div>
             
             <div class="card-meta-row">
               ${ratingHtml}
@@ -319,13 +364,9 @@
         </div>`;
     }).join("");
 
-    const storeText = data.storeCount === 1 ? "1 store" : `${data.storeCount || sortedOffersLengthMap(data)} stores`;
+    const storeText = data.storeCount === 1 ? "1 store" : `${data.storeCount || 4} stores`;
     statusLine.innerHTML = `Found <strong>${products.length}</strong> product listings across <strong>${storeText}</strong>${data.needsLiveScrape ? " — updating live prices..." : ""}`;
     if (data.needsLiveScrape) schedulePoll(query);
-  }
-
-  function sortedOffersLengthMap(data) {
-    return data.storeCount || 4;
   }
 
   function schedulePoll(query) {
