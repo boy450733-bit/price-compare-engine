@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sasta.pk — Compare prices across Pakistan's top stores</title>
+<title>Sasta.pk — Compare prices across Pakistan's top online stores</title>
+<meta name="description" content="Compare real-time prices, RAM, ROM, and specifications across Pakistan's top online shopping stores like PriceOye, Daraz, and more.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link id="googleFontsLink" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -16,24 +17,30 @@
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh; }
   a { color: inherit; text-decoration: none; }
   :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
 
-  header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; max-width: 1140px; margin: 0 auto; }
+  /* Professional Header */
+  header { background: var(--color-surface); border-bottom: 1px solid var(--color-line); padding: 16px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(23,35,29,0.02); }
+  .header-container { max-width: 1140px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
   .logo { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--color-brand-dark); }
   .logo .dot { color: var(--color-accent); }
+  .header-nav { display: flex; gap: 20px; font-size: 13.5px; font-weight: 600; color: var(--color-ink-soft); }
+  .header-nav a:hover { color: var(--color-brand); }
 
-  .hero { max-width: 720px; margin: 28px auto 12px; padding: 0 24px; text-align: center; }
+  main { flex: 1; }
+
+  .hero { max-width: 720px; margin: 36px auto 16px; padding: 0 24px; text-align: center; }
   .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 5vw, 38px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
   .hero p { color: var(--color-ink-soft); margin: 0 0 24px; font-size: 15px; }
   .search-box { position: relative; max-width: 580px; margin: 0 auto; }
-  .search-box input { width: 100%; padding: 16px 52px 16px 22px; font-size: 16px; font-family: var(--font-body); border: 2px solid var(--color-line); border-radius: 999px; background: var(--color-surface); color: var(--color-ink); transition: all 0.2s; }
+  .search-box input { width: 100%; padding: 16px 52px 16px 22px; font-size: 16px; font-family: var(--font-body); border: 2px solid var(--color-line); border-radius: 999px; background: var(--color-surface); color: var(--color-ink); transition: all 0.2s; box-shadow: 0 4px 16px rgba(0,0,0,0.03); }
   .search-box input:focus { border-color: var(--color-brand); box-shadow: 0 0 0 5px rgba(11, 110, 79, 0.12); }
   .search-box svg { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--color-ink-soft); pointer-events: none; }
 
   /* Structured Multi-line Filter Bar Layout */
-  .filter-bar { max-width: 1140px; margin: 24px auto 0; padding: 16px 24px; display: none; flex-direction: column; gap: 14px; background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); }
+  .filter-bar { max-width: 1140px; margin: 24px auto 0; padding: 16px 24px; display: none; flex-direction: column; gap: 14px; background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); box-shadow: 0 4px 12px rgba(23,35,29,0.02); }
   .filter-bar.visible { display: flex; }
   
   .filter-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; width: 100%; }
@@ -42,12 +49,19 @@
   .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .filter-label { font-size: 12px; font-weight: 700; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; min-width: 70px; }
   
-  .store-chip, .filter-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; user-select: none; transition: all 0.15s ease; }
-  .store-chip.off, .filter-chip.off { opacity: 0.4; background: var(--color-surface); }
-  
+  /* Store Filter Chips with Hover Effects & Dynamic Tiny Counts */
+  .store-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; user-select: none; transition: all 0.2s ease; }
+  .store-chip:hover { border-color: var(--color-brand); background: #F0F7F4; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(11,110,79,0.15); }
+  .store-chip.off { opacity: 0.4; background: var(--color-surface); text-decoration: line-through; }
+  .store-count-badge { font-size: 10px; background: var(--color-surface); padding: 1px 5px; border-radius: 999px; border: 1px solid var(--color-line); color: var(--color-ink-soft); font-weight: 700; }
+
   .price-input { width: 92px; padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); }
   .toggle-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; }
-  select#sortSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); }
+  select#sortSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); cursor: pointer; }
+
+  /* Clear All Filters Button Style */
+  .clear-filters-btn { background: #FDEDEA; color: var(--color-danger); border: 1px solid rgba(194,75,63,0.3); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-left: auto; }
+  .clear-filters-btn:hover { background: var(--color-danger); color: #fff; }
 
   .status-line { max-width: 1140px; margin: 20px auto 6px; padding: 0 24px; font-size: 13.5px; color: var(--color-ink-soft); min-height: 18px; }
   .status-line strong { color: var(--color-ink); }
@@ -69,9 +83,7 @@
 
   .card-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
   
-  /* Category Pill Badge style located right above title */
   .category-pill { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-brand); background: #E6F4EA; padding: 3px 8px; border-radius: 6px; width: fit-content; }
-
   .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--color-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   
   .specs-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
@@ -105,87 +117,112 @@
   .skeleton { background: linear-gradient(90deg, #F1EDE1 25%, #E9E3D3 37%, #F1EDE1 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius); height: 350px; }
   @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
   
-  footer { text-align: center; padding: 32px 24px; font-size: 12.5px; color: var(--color-ink-soft); border-top: 1px solid var(--color-line); margin-top: 40px; }
+  /* Professional Footer */
+  footer { background: var(--color-surface); border-top: 1px solid var(--color-line); padding: 36px 24px; font-size: 13px; color: var(--color-ink-soft); margin-top: 60px; }
+  .footer-container { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center; }
+  .footer-links { display: flex; gap: 24px; font-weight: 500; font-size: 13.5px; }
+  .footer-links a:hover { color: var(--color-brand); }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo" id="logoSlot">Sasta<span class="dot">.pk</span></div>
+  <div class="header-container">
+    <div class="logo" id="logoSlot">Sasta<span class="dot">.pk</span></div>
+    <nav class="header-nav" aria-label="Main Navigation">
+      <a href="#">Home</a>
+      <a href="#">Compare Prices</a>
+      <a href="#">Top Deals</a>
+      <a href="#">Contact</a>
+    </nav>
+  </div>
 </header>
 
-<div class="hero">
-  <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
-  <p id="heroSubtitle">Search once, compare instantly across Pakistan's top stores.</p>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search e.g. Vivo Y31d" autocomplete="off" aria-label="Search for a product">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-  </div>
-</div>
+<main>
+  <section class="hero">
+    <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
+    <p id="heroSubtitle">Search once, compare instantly across Pakistan's top online stores.</p>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search e.g. Vivo Y31d" autocomplete="off" aria-label="Search for a product">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </div>
+  </section>
 
-<div class="filter-bar" id="filterBar">
-  <!-- Line 1: Stores Filter -->
-  <div class="filter-row">
-    <div class="filter-group" style="width: 100%;">
-      <span class="filter-label">Stores</span>
-      <div id="storeChips" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+  <div class="filter-bar" id="filterBar">
+    <!-- Line 1: Stores Filter -->
+    <div class="filter-row">
+      <div class="filter-group" style="width: 100%;">
+        <span class="filter-label">Stores</span>
+        <div id="storeChips" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
     </div>
-  </div>
-  
-  <!-- Line 2: Dropdown Filters (Category, Brand, RAM, ROM) -->
-  <div class="filter-row">
-    <div class="filter-group">
-      <span class="filter-label">Category</span>
-      <select id="categorySelect" class="filter-select">
-        <option value="">All Categories</option>
-      </select>
+    
+    <!-- Line 2: Dropdown Filters (Category, Brand, RAM, ROM) -->
+    <div class="filter-row">
+      <div class="filter-group">
+        <span class="filter-label">Category</span>
+        <select id="categorySelect" class="filter-select">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Brand</span>
+        <select id="brandSelect" class="filter-select">
+          <option value="">All Brands</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">RAM</span>
+        <select id="ramSelect" class="filter-select">
+          <option value="">Any RAM</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">ROM</span>
+        <select id="romSelect" class="filter-select">
+          <option value="">Any ROM</option>
+        </select>
+      </div>
     </div>
-    <div class="filter-group">
-      <span class="filter-label">Brand</span>
-      <select id="brandSelect" class="filter-select">
-        <option value="">All Brands</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">RAM</span>
-      <select id="ramSelect" class="filter-select">
-        <option value="">Any RAM</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">ROM</span>
-      <select id="romSelect" class="filter-select">
-        <option value="">Any ROM</option>
-      </select>
+
+    <!-- Line 3: Price, In-stock, Sort, Clear Filters -->
+    <div class="filter-row">
+      <div class="filter-group">
+        <span class="filter-label">Price</span>
+        <input type="number" class="price-input" id="minPrice" placeholder="Min">
+        <input type="number" class="price-input" id="maxPrice" placeholder="Max">
+      </div>
+      <div class="filter-group">
+        <label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" style="min-width: unset;">Sort</span>
+        <select id="sortSelect">
+          <option value="relevance">Relevance</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="rating">Rating</option>
+        </select>
+      </div>
+      <button class="clear-filters-btn" id="clearFiltersBtn" type="button">Clear All Filters</button>
     </div>
   </div>
 
-  <!-- Line 3: Price, In-stock, Sort -->
-  <div class="filter-row">
-    <div class="filter-group">
-      <span class="filter-label">Price</span>
-      <input type="number" class="price-input" id="minPrice" placeholder="Min">
-      <input type="number" class="price-input" id="maxPrice" placeholder="Max">
+  <div class="status-line" id="statusLine"></div>
+  <div class="results" id="results"></div>
+</main>
+
+<footer id="footerSlot">
+  <div class="footer-container">
+    <div class="footer-links">
+      <a href="#">About Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Store Partner Program</a>
     </div>
-    <div class="filter-group">
-      <label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label>
-    </div>
-    <div class="filter-group" style="margin-left: auto;">
-      <span class="filter-label" style="min-width: unset;">Sort</span>
-      <select id="sortSelect">
-        <option value="relevance">Relevance</option>
-        <option value="price_asc">Price: Low to High</option>
-        <option value="price_desc">Price: High to Low</option>
-        <option value="rating">Rating</option>
-      </select>
-    </div>
+    <div>Sasta.pk — prices are pulled directly from each store and may change without notice.</div>
   </div>
-</div>
-
-<div class="status-line" id="statusLine"></div>
-<div class="results" id="results"></div>
-
-<footer id="footerSlot">Sasta.pk — prices are pulled directly from each store and may change without notice.</footer>
+</footer>
 
 <script>
 (function () {
@@ -204,8 +241,9 @@
   const maxPriceEl = document.getElementById("maxPrice");
   const inStockOnlyEl = document.getElementById("inStockOnly");
   const sortSelectEl = document.getElementById("sortSelect");
+  const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
-  let debounceTimer = null, pollTimer = null;
+  let debounceTimer = null;
   let currentQuery = "";
   let allStores = [];
   let excludedStores = new Set();
@@ -248,7 +286,7 @@
     if (brand) dynamicBrands.add(brand);
     if (category) dynamicCategories.add(category);
 
-    // Parse RAM
+    // Robust RAM parsing
     let ramVal = null;
     if (p.specs && p.specs.ram) {
       ramVal = String(p.specs.ram).replace(/[^0-9]/g, '');
@@ -256,7 +294,7 @@
     if (!ramVal) {
       const ramMatch = title.match(/(\d+)\s*(?:gb)?\s*ram/i) || title.match(/(\d+)\s*gb[\/\s]/i);
       if (ramMatch) ramVal = ramMatch[1];
-      else if (title.toLowerCase().includes('4gb')) ramVal = '4';
+      else if (title.toLowerCase().includes('4gb') || title.toLowerCase().includes(' 4g ')) ramVal = '4';
       else if (title.toLowerCase().includes('6gb')) ramVal = '6';
       else if (title.toLowerCase().includes('8gb')) ramVal = '8';
       else if (title.toLowerCase().includes('12gb')) ramVal = '12';
@@ -266,7 +304,7 @@
       dynamicRams.add(ramVal);
     }
 
-    // Parse ROM
+    // Robust ROM parsing
     let romVal = null;
     if (p.specs && p.specs.storage) {
       romVal = String(p.specs.storage).replace(/[^0-9]/g, '');
@@ -297,28 +335,41 @@
 
   function getCardChips(p) {
     const chips = [];
+    const titleLower = (p.title || "").toLowerCase();
     if (p.parsedRam) {
       chips.push({ label: `${p.parsedRam}GB RAM` });
     }
     if (p.parsedRom) {
       chips.push({ label: `${p.parsedRom}GB ROM` });
     }
-    chips.push({ label: 'PTA Approved' });
+    // Conditional PTA Approved chip rule check
+    if (titleLower.includes('pta approved') || titleLower.includes('pta')) {
+      chips.push({ label: 'PTA Approved' });
+    }
     return chips;
   }
 
   function populateFilterDropdowns() {
+    const curCat = categorySelectEl.value;
+    const curBrand = brandSelectEl.value;
+    const curRam = ramSelectEl.value;
+    const curRom = romSelectEl.value;
+
     categorySelectEl.innerHTML = '<option value="">All Categories</option>' + 
       Array.from(dynamicCategories).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+    categorySelectEl.value = curCat;
 
     brandSelectEl.innerHTML = '<option value="">All Brands</option>' + 
       Array.from(dynamicBrands).sort().map(b => `<option value="${b}">${b}</option>`).join('');
+    brandSelectEl.value = curBrand;
 
     ramSelectEl.innerHTML = '<option value="">Any RAM</option>' + 
       Array.from(dynamicRams).sort((a,b)=>Number(a)-Number(b)).map(r => `<option value="${r}">${r}GB</option>`).join('');
+    ramSelectEl.value = curRam;
 
     romSelectEl.innerHTML = '<option value="">Any ROM</option>' + 
       Array.from(dynamicRoms).sort((a,b)=>Number(a)-Number(b)).map(r => `<option value="${r}">${r}GB</option>`).join('');
+    romSelectEl.value = curRom;
   }
 
   async function loadSettings() {
@@ -333,9 +384,9 @@
 
   function applySettings() {
     if (!settings) return;
-    document.getElementById("logoSlot").textContent = settings.logoText || "Sasta.pk";
+    document.getElementById("logoSlot").innerHTML = `${settings.logoText || "Sasta"}<span class="dot">.pk</span>`;
     document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
-    document.getElementById("footerSlot").textContent = settings.footerText || "";
+    document.getElementById("footerSlot").innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${settings.footerText || ""}</div></div>`;
   }
 
   async function loadStores() {
@@ -355,15 +406,24 @@
     }
   }
 
-  function renderStoreChips() {
+  // Render store chips with dynamic tiny product count badges updated on filter change
+  function renderStoreChips(storeCounts = {}) {
     storeChipsEl.innerHTML = allStores
-      .map((s) => `<span class="store-chip" data-store="${s.name}" style="border-color:${s.color || '#ccc'}"><span style="width:8px;height:8px;border-radius:50%;background:${s.color || '#999'}"></span>${s.name}</span>`)
+      .map((s) => {
+        const count = storeCounts[s.name] || 0;
+        const isOff = excludedStores.has(s.name);
+        return `<span class="store-chip ${isOff ? 'off' : ''}" data-store="${s.name}" style="border-color:${s.color || '#ccc'}">
+          <span style="width:8px;height:8px;border-radius:50%;background:${s.color || '#999'}"></span>
+          ${s.name} <span class="store-count-badge">${count}</span>
+        </span>`;
+      })
       .join("");
+
     storeChipsEl.querySelectorAll(".store-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         const store = chip.dataset.store;
-        if (excludedStores.has(store)) { excludedStores.delete(store); chip.classList.remove("off"); }
-        else { excludedStores.add(store); chip.classList.add("off"); }
+        if (excludedStores.has(store)) { excludedStores.delete(store); }
+        else { excludedStores.add(store); }
         applyClientFiltersAndRender();
       });
     });
@@ -422,6 +482,18 @@
         return (b.relevance ?? 0) - (a.relevance ?? 0);
       }
     });
+
+    // Calculate dynamic store product counts based on currently matching filtered products
+    const storeCounts = {};
+    allStores.forEach(s => storeCounts[s.name] = 0);
+    list.forEach(p => {
+      (p.offers || []).forEach(o => {
+        if (storeCounts[o.store] !== undefined) {
+          storeCounts[o.store]++;
+        }
+      });
+    });
+    renderStoreChips(storeCounts);
 
     if (list.length === 0) {
       renderEmpty("No matching products found", "Try broadening your filter criteria or price range.");
@@ -489,11 +561,18 @@
         </div>`;
     }).join("");
 
-    const activeStoresCount = allStores.length - excludedStores.size;
-    const storeText = activeStoresCount === 1 ? "1 store" : `${activeStoresCount} stores`;
+    // Calculate exact distinct stores present across filtered results items
+    const activeDistinctStores = new Set();
+    list.forEach(p => {
+      (p.offers || []).forEach(o => {
+        if (!excludedStores.has(o.store)) activeDistinctStores.add(o.store);
+      });
+    });
+    const storeText = activeDistinctStores.size === 1 ? "1 store" : `${activeDistinctStores.size} stores`;
     statusLine.innerHTML = `Found <strong>${list.length}</strong> product listings across <strong>${storeText}</strong>`;
   }
 
+  // Fetch only once per distinct search query string to preserve server quota
   async function fetchNewSearch(query) {
     currentQuery = query;
     try {
@@ -511,21 +590,15 @@
         
         populateFilterDropdowns();
         applyClientFiltersAndRender();
-        if (data.needsLiveScrape) schedulePoll(query);
       }
     } catch (err) {
       if (query === currentQuery) renderEmpty("Connection Error", "Unable to reach price comparison backend. Please check your network connection.");
     }
   }
 
-  function schedulePoll(query) {
-    clearTimeout(pollTimer);
-    pollTimer = setTimeout(() => { if (query === currentQuery) fetchNewSearch(query); }, 4000);
-  }
-
   input.addEventListener("input", (e) => {
     const query = e.target.value.trim();
-    clearTimeout(debounceTimer); clearTimeout(pollTimer);
+    clearTimeout(debounceTimer);
     if (!query) {
       currentQuery = ""; cachedProducts = []; results.innerHTML = ""; statusLine.innerHTML = ""; filterBar.classList.remove("visible");
       return;
@@ -533,7 +606,21 @@
     filterBar.classList.add("visible");
     results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
     statusLine.innerHTML = "";
-    debounceTimer = setTimeout(() => fetchNewSearch(query), 350);
+    debounceTimer = setTimeout(() => fetchNewSearch(query), 400);
+  });
+
+  // Clear All Filters Button Action
+  clearFiltersBtn.addEventListener("click", () => {
+    categorySelectEl.value = "";
+    brandSelectEl.value = "";
+    ramSelectEl.value = "";
+    romSelectEl.value = "";
+    minPriceEl.value = "";
+    maxPriceEl.value = "";
+    inStockOnlyEl.checked = false;
+    sortSelectEl.value = "relevance";
+    excludedStores.clear();
+    applyClientFiltersAndRender();
   });
 
   categorySelectEl.addEventListener("change", applyClientFiltersAndRender);
