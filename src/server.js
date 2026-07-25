@@ -13,6 +13,8 @@ import adminRoutes from "./routes/admin.js";
 import settingsRoutes from "./routes/settings.js";
 import historyRoutes from "./routes/history.js";
 import alertsRoutes from "./routes/alerts.js";
+import cron from "node-cron";
+import { checkAndSendPriceAlerts } from "./utils/notifier.js";
 
 // Runs the schema + seeds every store listed in
 // src/adapters/stores/index.js automatically on boot. Safe to run every
@@ -31,18 +33,18 @@ async function autoSetup() {
   for (const config of allStoreConfigs) {
     await pool.query(
       `INSERT INTO stores (name, color, base_url, search_url_template, affiliate_param)
-       VALUES ($1,$2,$3,$4,$5)
-       ON CONFLICT (name) DO UPDATE SET
-         color = EXCLUDED.color,
-         base_url = EXCLUDED.base_url,
-         search_url_template = EXCLUDED.search_url_template,
-         -- COALESCE, not a blind overwrite: affiliate_param can also be
-         -- set later via the admin panel (PATCH /admin/api/stores/:name),
-         -- and this runs on every boot — an unconditional overwrite here
-         -- would silently wipe out those admin edits on every deploy.
-         -- Only fill it in from the code config when the DB doesn't
-         -- already have a value.
-         affiliate_param = COALESCE(stores.affiliate_param, EXCLUDED.affiliate_param)`,
+        VALUES ($1,$2,$3,$4,$5)
+        ON CONFLICT (name) DO UPDATE SET
+          color = EXCLUDED.color,
+          base_url = EXCLUDED.base_url,
+          search_url_template = EXCLUDED.search_url_template,
+          -- COALESCE, not a blind overwrite: affiliate_param can also be
+          -- set later via the admin panel (PATCH /admin/api/stores/:name),
+          -- and this runs on every boot — an unconditional overwrite here
+          -- would silently wipe out those admin edits on every deploy.
+          -- Only fill it in from the code config when the DB doesn't
+          -- already have a value.
+          affiliate_param = COALESCE(stores.affiliate_param, EXCLUDED.affiliate_param)`,
       [
         config.name,
         config.color || getRandomColor(),
@@ -74,8 +76,18 @@ app.use("/api", storesRoutes);
 app.use("/api", settingsRoutes);
 app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
-app.use("/api", alertsRoutes); // <-- Add this line here
+app.use("/api", alertsRoutes);
 app.use("/", redirectRoutes);
+
+// Optional manual trigger route for admin
+app.post("/admin/api/trigger-alerts", async (_req, res) => {
+  try {
+    await checkAndSendPriceAlerts();
+    res.json({ success: true, message: "Price alerts check triggered manually." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
@@ -83,7 +95,15 @@ const port = process.env.PORT || 3000;
 
 autoSetup()
   .then(() => {
-    app.listen(port, () => console.log(`API running on :${port}`));
+    app.listen(port, () => {
+      console.log(`API running on :${port}`);
+
+      // Schedule background cron job to check and dispatch price drop alerts every 6 hours
+      cron.schedule("0 */6 * * *", () => {
+        checkAndSendPriceAlerts();
+      });
+      console.log("Price alert background cron worker scheduled.");
+    });
   })
   .catch((err) => {
     console.error("Startup failed:", err.message);

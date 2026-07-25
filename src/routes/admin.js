@@ -106,6 +106,22 @@ router.post("/affiliate-links", async (req, res) => {
   res.json({ ok: true });
 });
 
+// Price Alert Subscriptions list for admin monitoring.
+router.get("/alerts", async (_req, res) => {
+  try {
+    const { rows } = await db(`
+      SELECT a.id, a.email, a.target_price, a.notified, a.created_at, p.title as product_title 
+      FROM price_alerts a
+      JOIN products p ON a.product_id = p.id
+      ORDER BY a.created_at DESC
+      LIMIT 100
+    `);
+    res.json({ alerts: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Site settings — branding, theme, and which optional card fields show
 // on the storefront. Admin sees/edits the raw stored row (which may be
 // partial); the PUBLIC /api/settings endpoint is what merges it with
