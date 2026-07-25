@@ -53,10 +53,11 @@ router.get("/products", async (req, res) => {
   const limitParam = params.length - 1;
   const offsetParam = params.length;
 
-  const { rows: rawRows } = await db(
+ const { rows: rawRows } = await db(
     `WITH grouped AS (
        SELECT
          p.fingerprint,
+         MIN(p.id) AS id, -- Added ID aggregation here
          MIN(similarity(p.title, $1)) AS relevance,
          MIN(p.price) AS min_price,
          MAX(p.rating) AS max_rating,
@@ -103,6 +104,7 @@ router.get("/products", async (req, res) => {
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
     params
   );
+  
   const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
   const rows = rawRows.map(({ totalCount, offers, ...r }) => ({
     ...r,
