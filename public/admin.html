@@ -153,7 +153,7 @@
 
       <!-- Site Settings -->
       <div class="page" id="page-settings">
-        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, and which optional card details show on the storefront.</p></div>
+        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, and card details shown on the storefront.</p></div>
 
         <h3 style="font-size:14px;margin-bottom:10px">Branding</h3>
         <table style="margin-bottom:24px">
@@ -161,7 +161,7 @@
             <tr><td style="width:160px">Logo text</td><td><input type="text" class="cell-input" id="s-logoText"></td></tr>
             <tr><td>Hero subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
             <tr><td>Footer text</td><td><input type="text" class="cell-input" id="s-footerText"></td></tr>
-            <tr><td>Hero quotes<br><span class="muted">one per line, one is shown at random per visit</span></td>
+            <tr><td>Hero quotes<br><span class="muted">one per line, random per visit</span></td>
               <td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
           </tbody>
         </table>
@@ -175,12 +175,14 @@
             <tr><td>Body font</td><td><input type="text" class="cell-input" id="s-fontBody" placeholder="e.g. Inter"></td></tr>
           </tbody>
         </table>
-        <p class="muted" style="margin-top:-14px;margin-bottom:24px">Fonts must be a Google Fonts family name already loaded by the page, or the browser falls back to a default sans-serif.</p>
 
         <h3 style="font-size:14px;margin-bottom:10px">Product card fields</h3>
         <table style="margin-bottom:24px">
           <tbody>
-            <tr><td style="width:220px">Rating &amp; review count</td><td><input type="checkbox" id="s-showRating"></td></tr>
+            <tr><td style="width:220px">Product image</td><td><input type="checkbox" id="s-showImage"></td></tr>
+            <tr><td>Product title</td><td><input type="checkbox" id="s-showTitle"></td></tr>
+            <tr><td>Major specs bar (RAM, ROM)</td><td><input type="checkbox" id="s-showSpecs"></td></tr>
+            <tr><td>Rating &amp; review count</td><td><input type="checkbox" id="s-showRating"></td></tr>
             <tr><td>Discount badge</td><td><input type="checkbox" id="s-showDiscountBadge"></td></tr>
             <tr><td>Original (struck-through) price</td><td><input type="checkbox" id="s-showOriginalPrice"></td></tr>
             <tr><td>Out of stock tag</td><td><input type="checkbox" id="s-showOutOfStock"></td></tr>
@@ -231,7 +233,6 @@
     }
   }
 
-  // Persistent login: check for a saved token on page load.
   const savedToken = localStorage.getItem(STORAGE_KEY);
   if (savedToken) tryLogin(savedToken, false);
 
@@ -246,7 +247,6 @@
     location.reload();
   });
 
-  // ---------- Tab switching ----------
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
@@ -264,7 +264,6 @@
     });
   });
 
-  // ---------- Load everything ----------
   async function loadAll() {
     const stats = await api("/stats");
     document.getElementById("statGrid").innerHTML = `
@@ -288,7 +287,6 @@
     loadSettings();
   }
 
-  // ---------- Site Settings tab ----------
   async function loadSettings() {
     const data = await api("/settings");
     document.getElementById("s-logoText").value = data.logoText || "";
@@ -303,6 +301,9 @@
     document.getElementById("s-fontBody").value = t.fontBody || "";
 
     const cf = data.cardFeatures || {};
+    document.getElementById("s-showImage").checked = cf.showImage !== false;
+    document.getElementById("s-showTitle").checked = cf.showTitle !== false;
+    document.getElementById("s-showSpecs").checked = cf.showSpecs !== false;
     document.getElementById("s-showRating").checked = cf.showRating !== false;
     document.getElementById("s-showDiscountBadge").checked = cf.showDiscountBadge !== false;
     document.getElementById("s-showOriginalPrice").checked = cf.showOriginalPrice !== false;
@@ -323,6 +324,9 @@
         fontBody: document.getElementById("s-fontBody").value,
       },
       cardFeatures: {
+        showImage: document.getElementById("s-showImage").checked,
+        showTitle: document.getElementById("s-showTitle").checked,
+        showSpecs: document.getElementById("s-showSpecs").checked,
         showRating: document.getElementById("s-showRating").checked,
         showDiscountBadge: document.getElementById("s-showDiscountBadge").checked,
         showOriginalPrice: document.getElementById("s-showOriginalPrice").checked,
@@ -338,7 +342,6 @@
     setTimeout(() => (document.getElementById("settingsSavedMsg").textContent = ""), 2000);
   });
 
-  // ---------- Stores tab ----------
   function renderStores(list) {
     document.getElementById("storeCount").textContent = `${list.length} of ${storesData.length}`;
     const tbody = document.querySelector("#storesTable tbody");
@@ -380,7 +383,6 @@
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
   });
 
-  // ---------- Affiliate: pending worklist ----------
   function renderWorklist(list) {
     document.getElementById("worklistCount").textContent = `${list.length} of ${worklistData.length}`;
     const tbody = document.querySelector("#worklistTable tbody");
@@ -421,7 +423,6 @@
     renderWorklist(worklistData.filter((w) => w.title.toLowerCase().includes(q) || w.store.toLowerCase().includes(q)));
   });
 
-  // ---------- Affiliate: already linked ----------
   function renderLinked(list) {
     document.getElementById("linkedCount").textContent = `${list.length} of ${linkedData.length}`;
     const tbody = document.querySelector("#linkedTable tbody");
@@ -440,8 +441,6 @@
       )
       .join("");
 
-    // Editing an existing link auto-saves on blur (fewer clicks needed
-    // for a review/cleanup pass across many rows).
     tbody.querySelectorAll(".f-affiliate-url").forEach((input) => {
       input.addEventListener("blur", async (e) => {
         const row = e.target.closest("tr");

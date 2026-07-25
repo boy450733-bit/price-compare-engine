@@ -11,7 +11,8 @@ const CATEGORY_KEYWORDS={
     "laptop","notebook","macbook","thinkpad","ideapad","vivobook",
     "zenbook","victus","omen","legion","inspiron","latitude",
     "elitebook","probook","rog","tuf","surface","chromebook",
-    "helios","triton","stealth","blade","swift","aspire"
+    "helios","triton","stealth","blade","swift","aspire","hp 15",
+    "hp pavilion","asus vivobook","acer aspire"
   ],
   Tablet:[
     "tablet","ipad","tab","galaxy tab","xiaomi pad","lenovo tab",
@@ -44,7 +45,7 @@ const CATEGORY_KEYWORDS={
   CPU:[
     "processor","cpu","ryzen","core i3","core i5","core i7","core i9",
     "intel","athlon","pentium","celeron","threadripper","xeon",
-    "ryzen 3","ryzen 5","ryzen 7","ryzen 9"
+    "ryzen 3","ryzen 5","ryzen 7","ryzen 9","ultra 7","ultra 5","ultra 9"
   ],
   Motherboard:[
     "motherboard","mainboard","b650","b550","z790","h610","x670",
@@ -83,15 +84,28 @@ const CATEGORY_KEYWORDS={
   ]
 };
 
-// Exclusion terms: If these appear in the title, they strictly block category matches like Mobile
+// Strict Exclusion terms: Prevents internal specs from hijacking main systems
 const EXCLUSIONS = {
   Mobile: [
     "buds", "earbuds", "earbud", "airpods", "airdots", "tws", "headphone", 
     "headphones", "headset", "watch", "smartwatch", "band", "tablet", "ipad", 
-    "cover", "case", "glass", "charger", "adapter", "cable"
+    "cover", "case", "glass", "charger", "adapter", "cable", "laptop", "notebook"
   ],
   Laptop: [
     "sleeve", "bag", "charger", "adapter", "keyboard", "mouse"
+  ],
+  // Component categories like SSD, RAM, CPU should NOT match if a full system noun is present
+  SSD: [
+    "laptop", "notebook", "macbook", "phone", "smartphone", "mobile", "tablet", "ipad", "ultra 7", "core i7"
+  ],
+  HDD: [
+    "laptop", "notebook", "macbook", "phone", "smartphone", "mobile", "tablet", "ipad"
+  ],
+  RAM: [
+    "laptop", "notebook", "macbook", "phone", "smartphone", "mobile", "tablet", "ipad", "ultra 7"
+  ],
+  CPU: [
+    "laptop", "notebook", "macbook", "phone", "smartphone", "mobile", "tablet", "ipad"
   ]
 };
 
@@ -110,15 +124,23 @@ function keywordRegex(keyword) {
 export function detectCategory(title=""){
   const text=title.toLowerCase();
 
+  // Pre-check for clear system indicators to guarantee correct high-level categorization
+  if (/\b(laptop|notebook|macbook|thinkpad|ideapad|vivobook|zenbook|victus|omen|legion|chromebook|hp\s*\d+)\b/i.test(text)) {
+    return "Laptop";
+  }
+  if (/\b(smartphone|iphone|galaxy\s*[a-z]\d|redmi|oppo|vivo|realme|infinix|tecno)\b/i.test(text)) {
+    return "Mobile";
+  }
+
   let best="Other";
   let score=0;
 
   for(const [category,keywords] of Object.entries(CATEGORY_KEYWORDS)){
-    // Dual Check 1: Check if any exclusion word blocks this category
+    // Dual Check: Block category if an exclusion rule matches
     const exclusions = EXCLUSIONS[category] || [];
     const isExcluded = exclusions.some(ex => keywordRegex(ex).test(text));
     if (isExcluded) {
-      continue; // Skip evaluating this category if a conflict/exclusion exists
+      continue; 
     }
 
     let matches=0;
