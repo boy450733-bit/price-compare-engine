@@ -116,3 +116,12 @@ CREATE TABLE IF NOT EXISTS search_log (
   store_count INTEGER,
   searched_at TIMESTAMPTZ DEFAULT now()
 ); -- powers "trending query" pre-warming
+
+-- capture subscription email
+CREATE TABLE IF NOT EXISTS price_alerts (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    product_id VARCHAR(255) REFERENCES products(id) ON DELETE CASCADE,
+    target_price DECIMAL(10, 2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
