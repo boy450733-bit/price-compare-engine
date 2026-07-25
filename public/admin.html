@@ -94,6 +94,7 @@
       <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
       <button class="tab-btn" data-tab="stores">🏬 Store Config</button>
       <button class="tab-btn" data-tab="affiliate">🔗 Affiliate</button>
+      <button class="tab-btn" data-tab="alerts">🔔 Alerts</button>
       <button class="tab-btn" data-tab="settings">🎨 Site Settings</button>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logoutBtn">Log out</button>
@@ -151,6 +152,19 @@
         </div>
       </div>
 
+      <!-- Alerts -->
+      <div class="page" id="page-alerts">
+        <div class="page-header"><h2>Price Drop Alerts</h2><p>Monitor users who subscribed for automated price drop updates.</p></div>
+        <div class="toolbar">
+          <input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product...">
+          <span class="result-count" id="alertsCount"></span>
+        </div>
+        <table id="alertsTable">
+          <thead><tr><th>Email</th><th>Product Title</th><th>Target Price</th><th>Status</th><th>Subscribed Date</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
       <!-- Site Settings -->
       <div class="page" id="page-settings">
         <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, and card details shown on the storefront.</p></div>
@@ -193,6 +207,7 @@
         <button class="btn-sm" id="saveSettingsBtn">Save Settings</button>
         <span class="muted" id="settingsSavedMsg" style="margin-left:10px"></span>
       </div>
+      
     </div>
   </div>
 </div>
@@ -204,6 +219,7 @@
   let storesData = [];
   let worklistData = [];
   let linkedData = [];
+  let alertsData = [];
 
   function api(path, options = {}) {
     return fetch(`/admin/api${path}`, {
@@ -283,6 +299,10 @@
     const linkedRes = await api("/affiliate-links");
     linkedData = linkedRes.links;
     renderLinked(linkedData);
+
+    const alertsRes = await api("/alerts");
+    alertsData = alertsRes.alerts || [];
+    renderAlerts(alertsData);
 
     loadSettings();
   }
@@ -455,6 +475,32 @@
   document.getElementById("linkedFilter").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderLinked(linkedData.filter((l) => l.title.toLowerCase().includes(q) || l.store.toLowerCase().includes(q)));
+  });
+
+  function renderAlerts(list) {
+    document.getElementById("alertsCount").textContent = `${list.length} of ${alertsData.length}`;
+    const tbody = document.querySelector("#alertsTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">No price alert subscriptions found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list
+      .map(
+        (a) => `
+      <tr>
+        <td><strong>${a.email}</strong></td>
+        <td>${a.product_title || 'Unknown Product'}</td>
+        <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
+        <td>${a.notified ? '<span style="color:var(--ok); font-weight:600;">Notified</span>' : '<span style="color:var(--accent); font-weight:600;">Pending</span>'}</td>
+        <td class="muted">${new Date(a.created_at).toLocaleDateString()}</td>
+      </tr>`
+      )
+      .join("");
+  }
+
+  document.getElementById("alertsFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
   });
 })();
 </script>
