@@ -568,7 +568,33 @@
           </div>
         </div>`;
     }).join("");
-
+  async function loadCardPriceTrends() {
+      document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
+        const productId = el.dataset.productId;
+        if (!productId) return;
+        
+        try {
+          const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
+          const data = await res.json();
+          const history = data.history || [];
+          
+          if (history.length >= 2) {
+            const firstPrice = Number(history[0].price);
+            const latestPrice = Number(history[history.length - 1].price);
+            
+            if (latestPrice < firstPrice) {
+              el.innerHTML = `<span style="color: var(--color-brand);">↓ Price Dropped</span>`;
+            } else if (latestPrice > firstPrice) {
+              el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
+            } else {
+              el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
+            }
+          }
+        } catch (e) {
+          // Fail silently if history is unavailable
+        }
+      });
+    }
     const activeDistinctStores = new Set();
     list.forEach(p => {
       (p.offers || []).forEach(o => {
@@ -580,33 +606,7 @@
   }
 
   // Update price trends
-  async function loadCardPriceTrends() {
-    document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
-      const productId = el.dataset.productId;
-      if (!productId) return;
-      
-      try {
-        const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
-        const data = await res.json();
-        const history = data.history || [];
-        
-        if (history.length >= 2) {
-          const firstPrice = Number(history[0].price);
-          const latestPrice = Number(history[history.length - 1].price);
-          
-          if (latestPrice < firstPrice) {
-            el.innerHTML = `<span style="color: var(--color-brand);">↓ Price Dropped</span>`;
-          } else if (latestPrice > firstPrice) {
-            el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
-          } else {
-            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
-          }
-        }
-      } catch (e) {
-        // Fail silently if history is unavailable
-      }
-    });
-  }
+  
   async function fetchNewSearch(query) {
     currentQuery = query;
     try {
