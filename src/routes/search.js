@@ -1,4 +1,4 @@
-// search.js
+// src/routes/search.js
 import { Router } from "express";
 import { query as db } from "../db/client.js";
 import { enqueueScrape } from "../queue/queue.js";
@@ -53,11 +53,11 @@ router.get("/products", async (req, res) => {
   const limitParam = params.length - 1;
   const offsetParam = params.length;
 
- const { rows: rawRows } = await db(
+  const { rows: rawRows } = await db(
     `WITH grouped AS (
        SELECT
          p.fingerprint,
-         MIN(p.id) AS id, -- Added ID aggregation here
+         MIN(p.id) AS id,
          MIN(similarity(p.title, $1)) AS relevance,
          MIN(p.price) AS min_price,
          MAX(p.rating) AS max_rating,
