@@ -4,8 +4,8 @@ const CATEGORY_KEYWORDS={
   Mobile:[
     "iphone","galaxy","redmi","xiaomi","oppo","vivo","realme","infinix",
     "tecno","oneplus","pixel","honor","huawei","nokia","motorola",
-    "itel","tecno","spark","infinix hot","poco","iqoo","zte","asus rog phone",
-    "phone","smartphone","mobile","cellphone","feature phone"
+    "itel","spark","poco","iqoo","zte","asus rog phone",
+    "phone","smartphone","mobile","cellphone"
   ],
   Laptop:[
     "laptop","notebook","macbook","thinkpad","ideapad","vivobook",
@@ -83,17 +83,25 @@ const CATEGORY_KEYWORDS={
   ]
 };
 
+// Exclusion terms: If these appear in the title, they strictly block category matches like Mobile
+const EXCLUSIONS = {
+  Mobile: [
+    "buds", "earbuds", "earbud", "airpods", "airdots", "tws", "headphone", 
+    "headphones", "headset", "watch", "smartwatch", "band", "tablet", "ipad", 
+    "cover", "case", "glass", "charger", "adapter", "cable"
+  ],
+  Laptop: [
+    "sleeve", "bag", "charger", "adapter", "keyboard", "mouse"
+  ]
+};
+
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Cache compiled keyword regexes so we don't rebuild them on every call.
 const KEYWORD_REGEX = new Map();
 function keywordRegex(keyword) {
   if (!KEYWORD_REGEX.has(keyword)) {
-    // \b word-boundary matching — without this, short keywords like "ac"
-    // or "tv" match as substrings inside unrelated words ("MacBook",
-    // "Black", "Track", "Native"...) and cause miscategorization.
     KEYWORD_REGEX.set(keyword, new RegExp(`\\b${escapeRegex(keyword)}\\b`, "i"));
   }
   return KEYWORD_REGEX.get(keyword);
@@ -106,6 +114,13 @@ export function detectCategory(title=""){
   let score=0;
 
   for(const [category,keywords] of Object.entries(CATEGORY_KEYWORDS)){
+    // Dual Check 1: Check if any exclusion word blocks this category
+    const exclusions = EXCLUSIONS[category] || [];
+    const isExcluded = exclusions.some(ex => keywordRegex(ex).test(text));
+    if (isExcluded) {
+      continue; // Skip evaluating this category if a conflict/exclusion exists
+    }
+
     let matches=0;
 
     for(const keyword of keywords){
