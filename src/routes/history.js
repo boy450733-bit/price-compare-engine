@@ -4,7 +4,7 @@ import { query as db } from "../db/client.js";
 
 const router = Router();
 
-router.get("/products/:id/history", async (req, res) => {
+router.get("/api/products/:id/history", async (req, res) => {
   try {
     const { id } = req.params;
     const { rows } = await db(
