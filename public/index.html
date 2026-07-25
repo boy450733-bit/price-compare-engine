@@ -85,6 +85,7 @@
   .card-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
   
   .category-pill { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-brand); background: #E6F4EA; padding: 3px 8px; border-radius: 6px; width: fit-content; }
+  .meta-container { display: flex; justify-content: space-between; align-items: center; width: 100%; }
   .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--color-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   
   .specs-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
@@ -241,7 +242,7 @@
     <div>Sasta.pk — prices are pulled directly from each store and may change without notice.</div>
   </div>
 </footer>
-<!-- ADD THE MODAL HTML HERE -->
+
 <div class="alert-modal-overlay" id="alertModalOverlay">
   <div class="alert-modal">
     <button class="alert-close" id="closeAlertModal">✕ Close</button>
@@ -272,14 +273,21 @@
   const sortSelectEl = document.getElementById("sortSelect");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
+  const alertModalOverlay = document.getElementById("alertModalOverlay");
+  const closeAlertModal = document.getElementById("closeAlertModal");
+  const submitAlertBtn = document.getElementById("submitAlertBtn");
+  const alertEmailInput = document.getElementById("alertEmailInput");
+  const alertProductTitle = document.getElementById("alertProductTitle");
+
   let debounceTimer = null;
   let currentQuery = "";
   let allStores = [];
   let excludedStores = new Set();
   let settings = null;
+  let selectedProductIdForAlert = null;
 
   let cachedProducts = [];
-  const historyCache = new Map(); // Cache to store fetched price histories
+  const historyCache = new Map();
 
   let dynamicCategories = new Set();
   let dynamicBrands = new Set();
@@ -359,7 +367,7 @@
       parsedRom: romVal, 
       brand: brand || "General", 
       category: category || "Mobile",
-      trendState: null // Will be populated after history fetch
+      trendState: null 
     };
   }
 
@@ -512,7 +520,6 @@
           stableCount++;
         }
 
-        // Attach trend state to product cache for filtering
         const prod = cachedProducts.find(p => p.id === productId);
         if (prod) prod.trendState = trend;
 
@@ -546,7 +553,6 @@
       }
     }
 
-    // Update dynamic trend count chips inside the dropdown labels
     updateTrendDropdownCounts(droppedCount, increasedCount, stableCount);
   }
 
@@ -775,19 +781,7 @@
   inStockOnlyEl.addEventListener("change", applyClientFiltersAndRender);
   sortSelectEl.addEventListener("change", applyClientFiltersAndRender);
 
-  loadSettings();
-  loadStores();
-})();
-
-  /* Subscription Model*/
-  let selectedProductIdForAlert = null;
-  const alertModalOverlay = document.getElementById("alertModalOverlay");
-  const closeAlertModal = document.getElementById("closeAlertModal");
-  const submitAlertBtn = document.getElementById("submitAlertBtn");
-  const alertEmailInput = document.getElementById("alertEmailInput");
-  const alertProductTitle = document.getElementById("alertProductTitle");
-
-  // Open modal delegation
+  // Subscription Modal Event Listeners (Moved safely inside IIFE scope)
   results.addEventListener("click", (e) => {
     const btn = e.target.closest(".track-price-btn");
     if (btn) {
@@ -813,7 +807,7 @@
     }
 
     try {
-      const res = await fetch(`${CFG.API_BASE_URL}/alerts/subscribe`, {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/alerts/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, productId: selectedProductIdForAlert })
@@ -827,9 +821,13 @@
         alert(data.error || "Subscription failed.");
       }
     } catch (err) {
-      alert(json.stringify(err)+"Network error. Please try again.");
+      alert("Network error. Please try again.");
     }
   });
+
+  loadSettings();
+  loadStores();
+})();
 </script>
 
 </body>
