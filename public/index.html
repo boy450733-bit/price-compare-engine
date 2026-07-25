@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sasta.pk — Compare prices across Pakistan's top online stores</title>
 <meta name="description" content="Compare real-time prices, RAM, ROM, and specifications across Pakistan's top online shopping stores like PriceOye, Daraz, and more.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%230B6E4F'/%3E%3Crect x='12' y='11' width='20' height='38' rx='2' fill='%23ffffff'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23ffffff'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%23E8A33D' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%23E8A33D'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link id="googleFontsLink" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -57,7 +58,7 @@
 
   .price-input { width: 92px; padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); }
   .toggle-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; }
-  select#sortSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); cursor: pointer; }
+  select#sortSelect, select#trendSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); cursor: pointer; }
 
   /* Clear All Filters Button Style */
   .clear-filters-btn { background: #FDEDEA; color: var(--color-danger); border: 1px solid rgba(194,75,63,0.3); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-left: auto; }
@@ -193,6 +194,15 @@
         <label class="toggle-chip"><input type="checkbox" id="inStockOnly" style="margin:0"> In stock only</label>
       </div>
       <div class="filter-group">
+        <span class="filter-label" style="min-width: unset;">Trend</span>
+        <select id="trendSelect" class="filter-select">
+          <option value="">All Trends</option>
+          <option value="dropped">Price Dropped <span id="countDropped"></span></option>
+          <option value="increased">Price Increased</option>
+          <option value="stable">Stable Price</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <span class="filter-label" style="min-width: unset;">Sort</span>
         <select id="sortSelect">
           <option value="relevance">Relevance</option>
@@ -237,6 +247,7 @@
   const minPriceEl = document.getElementById("minPrice");
   const maxPriceEl = document.getElementById("maxPrice");
   const inStockOnlyEl = document.getElementById("inStockOnly");
+  const trendSelectEl = document.getElementById("trendSelect");
   const sortSelectEl = document.getElementById("sortSelect");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
@@ -247,6 +258,8 @@
   let settings = null;
 
   let cachedProducts = [];
+  const historyCache = new Map(); // Cache to store fetched price histories
+
   let dynamicCategories = new Set();
   let dynamicBrands = new Set();
   let dynamicRams = new Set();
@@ -324,7 +337,8 @@
       parsedRam: ramVal, 
       parsedRom: romVal, 
       brand: brand || "General", 
-      category: category || "Mobile" 
+      category: category || "Mobile",
+      trendState: null // Will be populated after history fetch
     };
   }
 
@@ -348,6 +362,7 @@
     const curBrand = brandSelectEl.value;
     const curRam = ramSelectEl.value;
     const curRom = romSelectEl.value;
+    const curTrend = trendSelectEl.value;
 
     categorySelectEl.innerHTML = '<option value="">All Categories</option>' + 
       Array.from(dynamicCategories).sort().map(c => `<option value="${c}">${c}</option>`).join('');
@@ -364,6 +379,8 @@
     romSelectEl.innerHTML = '<option value="">Any ROM</option>' + 
       Array.from(dynamicRoms).sort((a,b)=>Number(a)-Number(b)).map(r => `<option value="${r}">${r}GB</option>`).join('');
     romSelectEl.value = curRom;
+
+    trendSelectEl.value = curTrend;
   }
 
   async function loadSettings() {
@@ -430,86 +447,98 @@
     panel.innerHTML = `<div class="icon">🔍</div><h3>${message}</h3><p>${sub}</p>`;
     results.appendChild(panel);
   }
-  //
-  async function loadCardPriceTrends() {
-    document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
-      const productId = el.dataset.productId;
-      if (!productId) return;
-      
-      try {
-        const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
-        const data = await res.json();
-        const history = data.history || [];
-        
-        if (history.length >= 2) {
-          const prices = history.map(h => Number(h.price));
-          const firstPrice = prices[0];
-          const latestPrice = prices[prices.length - 1];
-          
-          // Generate tiny SVG sparkline coordinates (width: 60px, height: 16px)
-          const minP = Math.min(...prices);
-          const maxP = Math.max(...prices);
-          const rangeP = maxP - minP || 1;
-          const width = 60;
-          const height = 16;
-          
-          const points = prices.map((p, i) => {
-            const x = (i / (prices.length - 1)) * width;
-            // Invert Y because SVG coordinates start from top
-            const y = height - ((p - minP) / rangeP) * (height - 4) - 2;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-          }).join(" ");
 
-          const strokeColor = latestPrice < firstPrice ? "var(--color-brand)" : (latestPrice > firstPrice ? "var(--color-danger)" : "var(--color-ink-soft)");
-          
-          const sparklineSvg = `
-            <svg width="${width}" height="${height}" style="display:inline-block; vertical-align:middle; margin-left:6px;">
-              <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
-            </svg>
-          `;
+  async function fetchProductHistory(productId) {
+    if (historyCache.has(productId)) {
+      return historyCache.get(productId);
+    }
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
+      const data = await res.json();
+      const history = data.history || [];
+      historyCache.set(productId, history);
+      return history;
+    } catch (e) {
+      return [];
+    }
+  }
 
-          if (latestPrice < firstPrice) {
-            el.innerHTML = `<span style="color: var(--color-brand);">↓ Dropped</span>${sparklineSvg}`;
-          } else if (latestPrice > firstPrice) {
-            el.innerHTML = `<span style="color: var(--color-danger);">↑ Increased</span>${sparklineSvg}`;
-          } else {
-            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable</span>${sparklineSvg}`;
-          }
-        }
-      } catch (e) {
-        // Fail silently if history is unavailable
-      }
-    });
-  }
-  /*
   async function loadCardPriceTrends() {
-    document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
+    const badges = document.querySelectorAll(".price-trend-badge");
+    let droppedCount = 0;
+    let increasedCount = 0;
+    let stableCount = 0;
+
+    for (const el of badges) {
       const productId = el.dataset.productId;
-      if (!productId) return;
+      if (!productId) continue;
       
-      try {
-        const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
-        const data = await res.json();
-        const history = data.history || [];
+      const history = await fetchProductHistory(productId);
+      
+      if (history.length >= 2) {
+        const prices = history.map(h => Number(h.price));
+        const firstPrice = prices[0];
+        const latestPrice = prices[prices.length - 1];
         
-        if (history.length >= 2) {
-          const firstPrice = Number(history[0].price);
-          const latestPrice = Number(history[history.length - 1].price);
-          
-          if (latestPrice < firstPrice) {
-            el.innerHTML = `<span style="color: var(--color-brand);">↓ Price Dropped</span>`;
-          } else if (latestPrice > firstPrice) {
-            el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
-          } else {
-            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
-          }
+        let trend = "stable";
+        if (latestPrice < firstPrice) {
+          trend = "dropped";
+          droppedCount++;
+        } else if (latestPrice > firstPrice) {
+          trend = "increased";
+          increasedCount++;
+        } else {
+          stableCount++;
         }
-      } catch (e) {
-        // Fail silently if history is unavailable
+
+        // Attach trend state to product cache for filtering
+        const prod = cachedProducts.find(p => p.id === productId);
+        if (prod) prod.trendState = trend;
+
+        const minP = Math.min(...prices);
+        const maxP = Math.max(...prices);
+        const rangeP = maxP - minP || 1;
+        const width = 60;
+        const height = 16;
+        
+        const points = prices.map((p, i) => {
+          const x = (i / (prices.length - 1)) * width;
+          const y = height - ((p - minP) / rangeP) * (height - 4) - 2;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+
+        const strokeColor = latestPrice < firstPrice ? "var(--color-brand)" : (latestPrice > firstPrice ? "var(--color-danger)" : "var(--color-ink-soft)");
+        
+        const sparklineSvg = `
+          <svg width="${width}" height="${height}" style="display:inline-block; vertical-align:middle; margin-left:6px;">
+            <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+          </svg>
+        `;
+
+        if (latestPrice < firstPrice) {
+          el.innerHTML = `<span style="color: var(--color-brand);">↓ Dropped</span>${sparklineSvg}`;
+        } else if (latestPrice > firstPrice) {
+          el.innerHTML = `<span style="color: var(--color-danger);">↑ Increased</span>${sparklineSvg}`;
+        } else {
+          el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable</span>${sparklineSvg}`;
+        }
       }
-    });
+    }
+
+    // Update dynamic trend count chips inside the dropdown labels
+    updateTrendDropdownCounts(droppedCount, increasedCount, stableCount);
   }
-  */
+
+  function updateTrendDropdownCounts(dropped, increased, stable) {
+    const opts = trendSelectEl.options;
+    for (let i = 0; i < opts.length; i++) {
+      const val = opts[i].value;
+      if (val === "dropped") opts[i].text = `Price Dropped (${dropped})`;
+      else if (val === "increased") opts[i].text = `Price Increased (${increased})`;
+      else if (val === "stable") opts[i].text = `Stable Price (${stable})`;
+    }
+  }
+  
   function applyClientFiltersAndRender() {
     if (!cachedProducts.length) return;
 
@@ -517,6 +546,7 @@
     const selBrand = brandSelectEl.value;
     const selRam = ramSelectEl.value;
     const selRom = romSelectEl.value;
+    const selTrend = trendSelectEl.value;
     const minPrice = minPriceEl.value ? Number(minPriceEl.value) : null;
     const maxPrice = maxPriceEl.value ? Number(maxPriceEl.value) : null;
     const inStockOnly = inStockOnlyEl.checked;
@@ -530,6 +560,7 @@
       if (selBrand && p.brand !== selBrand) return false;
       if (selRam && p.parsedRam !== selRam) return false;
       if (selRom && p.parsedRom !== selRom) return false;
+      if (selTrend && p.trendState !== selTrend) return false;
 
       const effectivePrice = p.min_price != null ? Number(p.min_price) : null;
       if (minPrice !== null && effectivePrice !== null && effectivePrice < minPrice) return false;
@@ -697,6 +728,7 @@
     brandSelectEl.value = "";
     ramSelectEl.value = "";
     romSelectEl.value = "";
+    trendSelectEl.value = "";
     minPriceEl.value = "";
     maxPriceEl.value = "";
     inStockOnlyEl.checked = false;
@@ -709,6 +741,7 @@
   brandSelectEl.addEventListener("change", applyClientFiltersAndRender);
   ramSelectEl.addEventListener("change", applyClientFiltersAndRender);
   romSelectEl.addEventListener("change", applyClientFiltersAndRender);
+  trendSelectEl.addEventListener("change", applyClientFiltersAndRender);
   minPriceEl.addEventListener("input", applyClientFiltersAndRender);
   maxPriceEl.addEventListener("input", applyClientFiltersAndRender);
   inStockOnlyEl.addEventListener("change", applyClientFiltersAndRender);
