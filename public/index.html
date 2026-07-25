@@ -810,7 +810,7 @@
     }
 
     try {
-      const res = await fetch(`${CFG.API_BASE_URL}/api/alerts/subscribe`, {
+      const res = await fetch(`${CFG.API_BASE_URL}/alerts/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, productId: selectedProductIdForAlert })
