@@ -84,6 +84,7 @@ router.get("/products", async (req, res) => {
        GROUP BY p.fingerprint
      )
      SELECT 
+       id,
        fingerprint,
        relevance,
        min_price,
