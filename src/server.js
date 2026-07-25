@@ -76,7 +76,8 @@ app.use("/api", storesRoutes);
 app.use("/api", settingsRoutes);
 app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
-app.use("/api", alertsRoutes);
+app.use("/api", alertsRoutes); // Keep this for user subscription POST requests
+app.use("/admin/api", alertsRoutes); // <-- ADD THIS LINE so GET /admin/api/alerts works for your admin panel
 app.use("/", redirectRoutes);
 
 // Optional manual trigger route for admin
