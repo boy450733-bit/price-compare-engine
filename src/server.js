@@ -12,7 +12,7 @@ import storesRoutes from "./routes/stores.js";
 import adminRoutes from "./routes/admin.js";
 import settingsRoutes from "./routes/settings.js";
 import historyRoutes from "./routes/history.js";
-import alertRoutes from "./routes/alert.js";
+import alertsRoutes from "./routes/alerts.js";
 
 // Runs the schema + seeds every store listed in
 // src/adapters/stores/index.js automatically on boot. Safe to run every
@@ -73,7 +73,7 @@ app.use("/api", storesRoutes);
 app.use("/api", settingsRoutes);
 app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
-app.use("/api", alertRoutes);
+app.use("/api", alertsRoutes);
 app.use("/", redirectRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
