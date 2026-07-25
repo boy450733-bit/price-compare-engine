@@ -4,64 +4,82 @@ const CATEGORY_KEYWORDS={
   Mobile:[
     "iphone","galaxy","redmi","xiaomi","oppo","vivo","realme","infinix",
     "tecno","oneplus","pixel","honor","huawei","nokia","motorola",
-    "phone","smartphone","mobile"
+    "itel","tecno","spark","infinix hot","poco","iqoo","zte","asus rog phone",
+    "phone","smartphone","mobile","cellphone","feature phone"
   ],
   Laptop:[
     "laptop","notebook","macbook","thinkpad","ideapad","vivobook",
     "zenbook","victus","omen","legion","inspiron","latitude",
-    "elitebook","probook","rog","tuf","surface"
+    "elitebook","probook","rog","tuf","surface","chromebook",
+    "helios","triton","stealth","blade","swift","aspire"
   ],
   Tablet:[
-    "tablet","ipad","tab","galaxy tab","xiaomi pad","lenovo tab"
+    "tablet","ipad","tab","galaxy tab","xiaomi pad","lenovo tab",
+    "pad","matepad","surface pro","ipad air","ipad pro","ipad mini"
   ],
   Smartwatch:[
-    "watch","smartwatch","apple watch","galaxy watch","watch fit"
+    "watch","smartwatch","apple watch","galaxy watch","watch fit",
+    "smart band","fitness band","miband","amazfit","garmin","fitbit"
   ],
   Earbuds:[
-    "earbuds","earbud","buds","airpods","airdots","tws","buds pro"
+    "earbuds","earbud","buds","airpods","airdots","tws","buds pro",
+    "wireless earphones","bluetooth earphones","in-ear wireless"
   ],
   Headphones:[
-    "headphone","headphones","headset","gaming headset"
+    "headphone","headphones","headset","gaming headset",
+    "wireless headphone","over-ear","on-ear"
   ],
   Monitor:[
-    "monitor","display","ips","oled monitor","gaming monitor"
+    "monitor","display","ips","oled monitor","gaming monitor",
+    "ultrawide","curved monitor","flat screen monitor","lcd display"
   ],
   TV:[
-    "tv","smart tv","android tv","google tv","oled tv","qled"
+    "tv","smart tv","android tv","google tv","oled tv","qled",
+    "led tv","miniled","uhd tv","4k tv","8k tv","television"
   ],
   GPU:[
-    "rtx","gtx","radeon","graphics card","graphic card","rx "
+    "rtx","gtx","radeon","graphics card","graphic card","rx ",
+    "rtx 30","rtx 40","rtx 50","rx 6000","rx 7000","gt 1030","arc a770"
   ],
   CPU:[
     "processor","cpu","ryzen","core i3","core i5","core i7","core i9",
-    "intel","athlon","pentium","celeron"
+    "intel","athlon","pentium","celeron","threadripper","xeon",
+    "ryzen 3","ryzen 5","ryzen 7","ryzen 9"
   ],
   Motherboard:[
-    "motherboard","mainboard","b650","b550","z790","h610","x670"
+    "motherboard","mainboard","b650","b550","z790","h610","x670",
+    "z690","b450","x570","h670","lga1700","am5","am4"
   ],
   RAM:[
-    "ddr4","ddr5","memory","ram module","sodimm","udimm"
+    "ddr4","ddr5","memory","ram module","sodimm","udimm",
+    "desktop ram","laptop ram","ddr3"
   ],
   SSD:[
-    "ssd","nvme","m.2","solid state drive"
+    "ssd","nvme","m.2","solid state drive","pcie ssd","sata ssd",
+    "portable ssd","m.2 nvme"
   ],
   HDD:[
-    "hard drive","hdd","hard disk"
+    "hard drive","hdd","hard disk","external hard drive",
+    "desktop hdd","nas hdd"
   ],
   Refrigerator:[
-    "refrigerator","fridge","deep freezer","freezer"
+    "refrigerator","fridge","deep freezer","freezer",
+    "double door fridge","single door fridge","inverter refrigerator"
   ],
   WashingMachine:[
-    "washing machine","washer"
+    "washing machine","washer","front load","top load",
+    "washer dryer","semi automatic washer","fully automatic washing machine"
   ],
   AirConditioner:[
-    "air conditioner","ac","split ac","inverter ac"
+    "air conditioner","ac","split ac","inverter ac",
+    "window ac","portable ac","floor standing ac"
   ],
   Microwave:[
-    "microwave","oven"
+    "microwave","oven","microwave oven","convection oven","grill microwave"
   ],
   Camera:[
-    "camera","dslr","mirrorless","gopro"
+    "camera","dslr","mirrorless","gopro","action camera",
+    "vlog camera","security camera","cctv"
   ]
 };
 
