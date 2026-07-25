@@ -1,4 +1,9 @@
-app.post("/api/alerts/subscribe", async (req, res) => {
+import { Router } from "express";
+import { pool } from "../db/client.js";
+
+const router = Router();
+
+router.post("/alerts/subscribe", async (req, res) => {
   try {
     const { email, productId, targetPrice } = req.body;
     if (!email || !productId) {
@@ -15,3 +20,5 @@ app.post("/api/alerts/subscribe", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+export default router; // <-- Must have this exact line
