@@ -286,7 +286,6 @@
     if (brand) dynamicBrands.add(brand);
     if (category) dynamicCategories.add(category);
 
-    // Robust RAM parsing
     let ramVal = null;
     if (p.specs && p.specs.ram) {
       ramVal = String(p.specs.ram).replace(/[^0-9]/g, '');
@@ -304,7 +303,6 @@
       dynamicRams.add(ramVal);
     }
 
-    // Robust ROM parsing
     let romVal = null;
     if (p.specs && p.specs.storage) {
       romVal = String(p.specs.storage).replace(/[^0-9]/g, '');
@@ -342,7 +340,6 @@
     if (p.parsedRom) {
       chips.push({ label: `${p.parsedRom}GB ROM` });
     }
-    // Conditional PTA Approved chip rule check
     if (titleLower.includes('pta approved') || titleLower.includes('pta')) {
       chips.push({ label: 'PTA Approved' });
     }
@@ -406,7 +403,6 @@
     }
   }
 
-  // Render store chips with dynamic tiny product count badges updated on filter change
   function renderStoreChips(storeCounts = {}) {
     storeChipsEl.innerHTML = allStores
       .map((s) => {
@@ -483,7 +479,6 @@
       }
     });
 
-    // Calculate dynamic store product counts based on currently matching filtered products
     const storeCounts = {};
     allStores.forEach(s => storeCounts[s.name] = 0);
     list.forEach(p => {
@@ -520,8 +515,9 @@
         </span>
       `).join("");
 
+      // Updated click tracking redirection route pointing to /out/${p.id}
       const offersHtml = sortedOffers.map((o) => `
-        <a href="${o.url}" target="_blank" rel="noopener" class="offer-row-link">
+        <a href="${CFG.API_BASE_URL}/out/${p.id}" target="_blank" rel="noopener" class="offer-row-link">
           <div class="store-info-left">
             <span class="store-badge" style="background:${o.storeColor || '#0B6E4F'}">${o.store}</span>
           </div>
@@ -561,7 +557,6 @@
         </div>`;
     }).join("");
 
-    // Calculate exact distinct stores present across filtered results items
     const activeDistinctStores = new Set();
     list.forEach(p => {
       (p.offers || []).forEach(o => {
@@ -572,7 +567,6 @@
     statusLine.innerHTML = `Found <strong>${list.length}</strong> product listings across <strong>${storeText}</strong>`;
   }
 
-  // Fetch only once per distinct search query string to preserve server quota
   async function fetchNewSearch(query) {
     currentQuery = query;
     try {
@@ -609,7 +603,6 @@
     debounceTimer = setTimeout(() => fetchNewSearch(query), 400);
   });
 
-  // Clear All Filters Button Action
   clearFiltersBtn.addEventListener("click", () => {
     categorySelectEl.value = "";
     brandSelectEl.value = "";
