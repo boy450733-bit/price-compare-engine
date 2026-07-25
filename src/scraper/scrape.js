@@ -17,9 +17,9 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
     const product = processProduct(listing, searchQuery, storeName);
 
     //
-    console.log("FINAL PRODUCT START");
-    console.log(JSON.stringify(product, null, 2));
-    console.log("FINAL PRODUCT ENDS");
+    //console.log("FINAL PRODUCT START");
+    //console.log(JSON.stringify(product, null, 2));
+    //console.log("FINAL PRODUCT ENDS");
 
     // If the intelligence layer flags this item as noise/irrelevant, skip it
     if (!product.accepted) continue;

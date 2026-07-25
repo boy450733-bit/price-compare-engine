@@ -26,6 +26,7 @@ async function autoSetup() {
   const sql = fs.readFileSync(schemaPath, "utf8");
   await pool.query(sql);
   console.log("Schema ready.");
+  const getRandomColor = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
   for (const config of allStoreConfigs) {
     await pool.query(
@@ -44,7 +45,7 @@ async function autoSetup() {
          affiliate_param = COALESCE(stores.affiliate_param, EXCLUDED.affiliate_param)`,
       [
         config.name,
-        config.color || "#666666",
+        config.color || getRandomColor(),
         config.baseUrl,
         config.searchUrl("{query}"),
         config.affiliateParam || null,
