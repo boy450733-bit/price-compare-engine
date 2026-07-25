@@ -149,7 +149,6 @@
   </section>
 
   <div class="filter-bar" id="filterBar">
-    <!-- Line 1: Stores Filter -->
     <div class="filter-row">
       <div class="filter-group" style="width: 100%;">
         <span class="filter-label">Stores</span>
@@ -157,7 +156,6 @@
       </div>
     </div>
     
-    <!-- Line 2: Dropdown Filters (Category, Brand, RAM, ROM) -->
     <div class="filter-row">
       <div class="filter-group">
         <span class="filter-label">Category</span>
@@ -185,7 +183,6 @@
       </div>
     </div>
 
-    <!-- Line 3: Price, In-stock, Sort, Clear Filters -->
     <div class="filter-row">
       <div class="filter-group">
         <span class="filter-label">Price</span>
@@ -434,6 +431,34 @@
     results.appendChild(panel);
   }
 
+  async function loadCardPriceTrends() {
+    document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
+      const productId = el.dataset.productId;
+      if (!productId) return;
+      
+      try {
+        const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
+        const data = await res.json();
+        const history = data.history || [];
+        
+        if (history.length >= 2) {
+          const firstPrice = Number(history[0].price);
+          const latestPrice = Number(history[history.length - 1].price);
+          
+          if (latestPrice < firstPrice) {
+            el.innerHTML = `<span style="color: var(--color-brand);">↓ Price Dropped</span>`;
+          } else if (latestPrice > firstPrice) {
+            el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
+          } else {
+            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
+          }
+        }
+      } catch (e) {
+        // Fail silently if history is unavailable
+      }
+    });
+  }
+
   function applyClientFiltersAndRender() {
     if (!cachedProducts.length) return;
 
@@ -496,7 +521,7 @@
       return;
     }
 
-  results.innerHTML = list.map((p) => {
+    results.innerHTML = list.map((p) => {
       const validOffers = (p.offers || []).filter(o => !excludedStores.has(o.store));
       const sortedOffers = [...validOffers].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
       const titleText = p.title || `Product Series`;
@@ -504,7 +529,6 @@
       const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
       const cardChips = getCardChips(p);
 
-      // Extract card features configuration (defaulting to true if not set)
       const cf = settings && settings.cardFeatures ? settings.cardFeatures : {};
 
       const showImage = cf.showImage !== false;
@@ -568,33 +592,9 @@
           </div>
         </div>`;
     }).join("");
-  async function loadCardPriceTrends() {
-      document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
-        const productId = el.dataset.productId;
-        if (!productId) return;
-        
-        try {
-          const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
-          const data = await res.json();
-          const history = data.history || [];
-          
-          if (history.length >= 2) {
-            const firstPrice = Number(history[0].price);
-            const latestPrice = Number(history[history.length - 1].price);
-            
-            if (latestPrice < firstPrice) {
-              el.innerHTML = `<span style="color: var(--color-brand);">↓ Price Dropped</span>`;
-            } else if (latestPrice > firstPrice) {
-              el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
-            } else {
-              el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
-            }
-          }
-        } catch (e) {
-          // Fail silently if history is unavailable
-        }
-      });
-    }
+
+    loadCardPriceTrends();
+
     const activeDistinctStores = new Set();
     list.forEach(p => {
       (p.offers || []).forEach(o => {
@@ -605,8 +605,6 @@
     statusLine.innerHTML = `Found <strong>${list.length}</strong> product listings across <strong>${storeText}</strong>`;
   }
 
-  // Update price trends
-  
   async function fetchNewSearch(query) {
     currentQuery = query;
     try {
