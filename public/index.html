@@ -450,7 +450,7 @@
           } else if (latestPrice > firstPrice) {
             el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
           } else {
-            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
+            el.innerHTML = `<span style="color: var(--color-ink-soft);">${latestPrice}Stable Price${firstPrice}</span>`;
           }
         }
       } catch (e) {
