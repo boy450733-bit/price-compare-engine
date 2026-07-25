@@ -92,9 +92,12 @@
   .spec-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; background: var(--color-bg); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-line); color: var(--color-ink-soft); }
   .spec-chip svg { width: 12px; height: 12px; color: var(--color-brand); }
 
-  .card-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--color-ink-soft); }
+  .card-divider { border: none; border-top: 1px solid var(--color-line); margin: 2px 0; }
+
+  .card-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--color-ink-soft); }
   .card-rating { display: flex; align-items: center; gap: 4px; font-weight: 600; color: var(--color-ink); }
   .card-rating .stars { color: var(--color-accent-dark); font-size: 13px; }
+  .meta-separator { color: var(--color-line); font-weight: 400; margin: 0 2px; }
 
   .offers-section { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--color-line); padding-top: 10px; }
   .offers-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--color-ink-soft); letter-spacing: 0.04em; margin-bottom: 2px; display: flex; justify-content: space-between; }
@@ -125,7 +128,7 @@
   .footer-links { display: flex; gap: 24px; font-weight: 500; font-size: 13.5px; }
   .footer-links a:hover { color: var(--color-brand); }
   
-  /* Subscription Model */
+  /* Subscription Modal */
   .alert-modal-overlay { position: fixed; inset: 0; background: rgba(23,35,29,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; }
   .alert-modal-overlay.active { display: flex; }
   .alert-modal { background: var(--color-surface); padding: 28px; border-radius: var(--radius); width: 100%; max-width: 400px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--color-line); }
@@ -135,6 +138,14 @@
   .alert-btn { background: var(--color-brand); color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
   .alert-btn:hover { background: var(--color-brand-dark); }
   .alert-close { background: transparent; border: none; color: var(--color-ink-soft); font-size: 12px; cursor: pointer; text-align: right; }
+
+  /* Toast Notification */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+  .toast { pointer-events: auto; background: var(--color-surface); color: var(--color-ink); padding: 14px 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 1px solid var(--color-line); display: flex; align-items: center; gap: 12px; font-size: 13.5px; font-weight: 500; min-width: 300px; animation: slideIn 0.25s ease forwards; }
+  .toast.success { border-left: 4px solid var(--color-brand); }
+  .toast.error { border-left: 4px solid var(--color-danger); }
+  .toast-close { background: transparent; border: none; color: var(--color-ink-soft); cursor: pointer; margin-left: auto; font-size: 14px; font-weight: 700; }
+  @keyframes slideIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>
 </head>
 <body>
@@ -253,6 +264,8 @@
   </div>
 </div>
 
+<div class="toast-container" id="toastContainer"></div>
+
 <script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "Sasta.pk" };
@@ -272,6 +285,7 @@
   const trendSelectEl = document.getElementById("trendSelect");
   const sortSelectEl = document.getElementById("sortSelect");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+  const toastContainer = document.getElementById("toastContainer");
 
   const alertModalOverlay = document.getElementById("alertModalOverlay");
   const closeAlertModal = document.getElementById("closeAlertModal");
@@ -285,6 +299,7 @@
   let excludedStores = new Set();
   let settings = null;
   let selectedProductIdForAlert = null;
+  let selectedProductTargetPrice = null;
 
   let cachedProducts = [];
   const historyCache = new Map();
@@ -308,6 +323,28 @@
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+  }
+
+  function showToast(message, type = "success") {
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+      <span>${type === "success" ? "✓" : "✕"}</span>
+      <span>${message}</span>
+      <button class="toast-close">✕</button>
+    `;
+
+    const closeBtn = toast.querySelector(".toast-close");
+    const timeout = setTimeout(() => {
+      toast.remove();
+    }, 5000);
+
+    closeBtn.addEventListener("click", () => {
+      clearTimeout(timeout);
+      toast.remove();
+    });
+
+    toastContainer.appendChild(toast);
   }
 
   function extractSpecsAndMetadata(p) {
@@ -538,7 +575,7 @@
         const strokeColor = latestPrice < firstPrice ? "var(--color-brand)" : (latestPrice > firstPrice ? "var(--color-danger)" : "var(--color-ink-soft)");
         
         const sparklineSvg = `
-          <svg width="${width}" height="${height}" style="display:inline-block; vertical-align:middle; margin-left:6px;">
+          <svg width="${width}" height="${height}" style="display:inline-block; vertical-align:middle; margin-left:4px;">
             <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
           </svg>
         `;
@@ -685,17 +722,20 @@
             <div>
               <div class="meta-container">
               <span class="category-pill">${p.category}</span>
-              <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
+              <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText}" data-product-min-price="${p.min_price || ''}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
                 🔔 Track Price Drop
               </button>
               </div>
             </div>
             ${showTitle ? `<div class="card-title" title="${titleText}">${titleText}</div>` : ``}
             ${showSpecs ? `<div class="specs-bar">${specsHtml}</div>` : ``}
+            <hr class="card-divider">
             <div class="card-meta-row">
               ${ratingHtml}
-              <span class="price-trend-badge" data-product-id="${p.id}" style="font-size: 11px; font-weight: 700;"></span>
-              <span style="font-size: 11.5px; font-weight: 500; color: var(--color-ink-soft);">${sortedOffers.length} store offer${sortedOffers.length > 1 ? 's' : ''}</span>
+              <span class="meta-separator">|</span>
+              <span class="price-trend-badge" data-product-id="${p.id}" style="font-weight: 700;"></span>
+              <span class="meta-separator">|</span>
+              <span style="font-weight: 500; color: var(--color-ink-soft);">${sortedOffers.length} store offer${sortedOffers.length > 1 ? 's' : ''}</span>
             </div>
             <div class="offers-section">
               <div class="offers-heading"><span>Available Stores</span><span>Price</span></div>
@@ -781,11 +821,11 @@
   inStockOnlyEl.addEventListener("change", applyClientFiltersAndRender);
   sortSelectEl.addEventListener("change", applyClientFiltersAndRender);
 
-  // Subscription Modal Event Listeners (Moved safely inside IIFE scope)
   results.addEventListener("click", (e) => {
     const btn = e.target.closest(".track-price-btn");
     if (btn) {
       selectedProductIdForAlert = btn.dataset.productId;
+      selectedProductTargetPrice = btn.dataset.productMinPrice ? Number(btn.dataset.productMinPrice) : null;
       alertProductTitle.textContent = `Get notified when "${btn.dataset.productTitle}" drops in price.`;
       alertModalOverlay.classList.add("active");
     }
@@ -802,7 +842,7 @@
   submitAlertBtn.addEventListener("click", async () => {
     const email = alertEmailInput.value.trim();
     if (!email || !email.includes("@")) {
-      alert("Please enter a valid email address.");
+      showToast("Please enter a valid email address.", "error");
       return;
     }
 
@@ -810,18 +850,22 @@
       const res = await fetch(`${CFG.API_BASE_URL}/api/alerts/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, productId: selectedProductIdForAlert })
+        body: JSON.stringify({ 
+          email, 
+          productId: selectedProductIdForAlert, 
+          targetPrice: selectedProductTargetPrice 
+        })
       });
       const data = await res.json();
       if (data.success) {
-        alert("Successfully subscribed! We'll notify you on price drops.");
+        showToast("Successfully subscribed! We'll notify you on price drops.", "success");
         alertEmailInput.value = "";
         alertModalOverlay.classList.remove("active");
       } else {
-        alert(data.error || "Subscription failed.");
+        showToast(data.error || "Subscription failed.", "error");
       }
     } catch (err) {
-      alert("Network error. Please try again.");
+      showToast("Network error. Please try again.", "error");
     }
   });
 
