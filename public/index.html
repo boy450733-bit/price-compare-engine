@@ -430,7 +430,58 @@
     panel.innerHTML = `<div class="icon">🔍</div><h3>${message}</h3><p>${sub}</p>`;
     results.appendChild(panel);
   }
+  //
+  async function loadCardPriceTrends() {
+    document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
+      const productId = el.dataset.productId;
+      if (!productId) return;
+      
+      try {
+        const res = await fetch(`${CFG.API_BASE_URL}/api/products/${productId}/history`);
+        const data = await res.json();
+        const history = data.history || [];
+        
+        if (history.length >= 2) {
+          const prices = history.map(h => Number(h.price));
+          const firstPrice = prices[0];
+          const latestPrice = prices[prices.length - 1];
+          
+          // Generate tiny SVG sparkline coordinates (width: 60px, height: 16px)
+          const minP = Math.min(...prices);
+          const maxP = Math.max(...prices);
+          const rangeP = maxP - minP || 1;
+          const width = 60;
+          const height = 16;
+          
+          const points = prices.map((p, i) => {
+            const x = (i / (prices.length - 1)) * width;
+            // Invert Y because SVG coordinates start from top
+            const y = height - ((p - minP) / rangeP) * (height - 4) - 2;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          }).join(" ");
 
+          const strokeColor = latestPrice < firstPrice ? "var(--color-brand)" : (latestPrice > firstPrice ? "var(--color-danger)" : "var(--color-ink-soft)");
+          
+          const sparklineSvg = `
+            <svg width="${width}" height="${height}" style="display:inline-block; vertical-align:middle; margin-left:6px;">
+              <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+            </svg>
+          `;
+
+          if (latestPrice < firstPrice) {
+            el.innerHTML = `<span style="color: var(--color-brand);">↓ Dropped</span>${sparklineSvg}`;
+          } else if (latestPrice > firstPrice) {
+            el.innerHTML = `<span style="color: var(--color-danger);">↑ Increased</span>${sparklineSvg}`;
+          } else {
+            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable</span>${sparklineSvg}`;
+          }
+        }
+      } catch (e) {
+        // Fail silently if history is unavailable
+      }
+    });
+  }
+  /*
   async function loadCardPriceTrends() {
     document.querySelectorAll(".price-trend-badge").forEach(async (el) => {
       const productId = el.dataset.productId;
@@ -450,7 +501,7 @@
           } else if (latestPrice > firstPrice) {
             el.innerHTML = `<span style="color: var(--color-danger);">↑ Price Increased</span>`;
           } else {
-            el.innerHTML = `<span style="color: var(--color-ink-soft);">${latestPrice}Stable Price${firstPrice}</span>`;
+            el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable Price</span>`;
           }
         }
       } catch (e) {
@@ -458,7 +509,7 @@
       }
     });
   }
-
+  */
   function applyClientFiltersAndRender() {
     if (!cachedProducts.length) return;
 
