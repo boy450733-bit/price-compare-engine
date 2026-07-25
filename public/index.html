@@ -676,10 +676,13 @@
             </div>
           ` : ``}
           <div class="card-body">
-            <div><span class="category-pill">${p.category}</span>
+            <div>
+              <div class="meta-container">
+              <span class="category-pill">${p.category}</span>
               <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
                 🔔 Track Price Drop
               </button>
+              </div>
             </div>
             ${showTitle ? `<div class="card-title" title="${titleText}">${titleText}</div>` : ``}
             ${showSpecs ? `<div class="specs-bar">${specsHtml}</div>` : ``}
@@ -824,7 +827,7 @@
         alert(data.error || "Subscription failed.");
       }
     } catch (err) {
-      alert("Network error. Please try again.");
+      alert(json.stringify(err)+"Network error. Please try again.");
     }
   });
 </script>

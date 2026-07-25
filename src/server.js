@@ -73,7 +73,7 @@ app.use("/api", storesRoutes);
 app.use("/api", settingsRoutes);
 app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
-app.use("/api", alertsRoutes);
+app.use("/api", alertsRoutes); // <-- Add this line here
 app.use("/", redirectRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
