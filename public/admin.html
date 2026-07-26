@@ -31,6 +31,19 @@
   .toast.error { border-left-color: var(--danger); }
   .toast.success { border-left-color: var(--ok); }
 
+  /* ---------- Modal Dialog ---------- */
+  #modalOverlay {
+    position: fixed; inset: 0; background: rgba(23, 35, 29, 0.5); z-index: 9998;
+    display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);
+  }
+  #customModal {
+    background: var(--surface); width: 100%; max-width: 420px; border-radius: 14px;
+    padding: 24px; border: 1px solid var(--line); box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+  #customModal h3 { font-size: 16px; margin-bottom: 8px; color: var(--ink); }
+  #customModal p { color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; margin-bottom: 20px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
   /* ---------- Auth gate ---------- */
   #authGate { max-width: 380px; margin: 90px auto; text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 32px; }
   #authGate h1 { font-size: 20px; margin-bottom: 4px; }
@@ -108,6 +121,18 @@
 
 <!-- Toast Notification Container -->
 <div id="toastContainer"></div>
+
+<!-- Custom Confirmation Modal -->
+<div id="modalOverlay">
+  <div id="customModal">
+    <h3 id="modalTitle">Confirm Action</h3>
+    <p id="modalMessage">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn-sm" id="modalCancelBtn" style="background: var(--ink-soft);">Cancel</button>
+      <button class="btn-sm" id="modalConfirmBtn" style="background: var(--danger);">Delete Store</button>
+    </div>
+  </div>
+</div>
 
 <div id="authGate">
   <h1>Sasta.pk Admin</h1>
@@ -413,6 +438,32 @@
       toast.classList.remove("show");
       setTimeout(() => toast.remove(), 300);
     }, 3000);
+  }
+
+  // Custom Modal Dialog Helper
+  function showConfirmModal(message, onConfirm) {
+    const overlay = document.getElementById("modalOverlay");
+    const msgEl = document.getElementById("modalMessage");
+    const confirmBtn = document.getElementById("modalConfirmBtn");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+
+    msgEl.textContent = message;
+    overlay.style.display = "flex";
+
+    // Clean up previous event listeners by cloning
+    const newConfirm = confirmBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+    document.getElementById("modalConfirmBtn").addEventListener("click", () => {
+      overlay.style.display = "none";
+      onConfirm();
+    });
+
+    document.getElementById("modalCancelBtn").addEventListener("click", () => {
+      overlay.style.display = "none";
+    });
   }
 
   function api(path, options = {}) {
@@ -818,17 +869,17 @@
           ? `Are you sure you want to delete store "${name}" AND permanently purge all allied products and click records?`
           : `Are you sure you want to delete store "${name}"? (Cached products will be kept)`;
 
-        if (!confirm(confirmMsg)) return;
-
-        try {
-          await api(`/stores/${encodeURIComponent(name)}?purgeProducts=${purgeProducts}`, { 
-            method: "DELETE" 
-          });
-          showToast(`Store "${name}" deleted successfully!`, "success");
-          loadAll();
-        } catch (err) {
-          showToast("Failed to delete store: " + err.message, "error");
-        }
+        showConfirmModal(confirmMsg, async () => {
+          try {
+            await api(`/stores/${encodeURIComponent(name)}?purgeProducts=${purgeProducts}`, { 
+              method: "DELETE" 
+            });
+            showToast(`Store "${name}" deleted successfully!`, "success");
+            loadAll();
+          } catch (err) {
+            showToast("Failed to delete store: " + err.message, "error");
+          }
+        });
       });
     });
   }

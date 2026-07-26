@@ -230,17 +230,14 @@ router.delete("/stores/:name", async (req, res) => {
 
   try {
     if (purgeProducts) {
-      // Find product IDs belonging to this store
       const { rows: prodRows } = await db(`SELECT id FROM products WHERE store = $1`, [name]);
       const productIds = prodRows.map(p => p.id);
 
       if (productIds.length > 0) {
-        // Delete dependent child records first to satisfy foreign key constraints
-        await db(`DELETE FROM clicks WHERE product_id = ANY($1::int[])`, [productIds]);
-        await db(`DELETE FROM affiliate_links WHERE product_id = ANY($1::int[])`, [productIds]);
-        await db(`DELETE FROM price_alerts WHERE product_id = ANY($1::int[])`, [productIds]);
-        
-        // Now safe to delete the products
+        // Explicitly cast productIds to INTEGER[] for PostgreSQL compatibility
+        await db(`DELETE FROM clicks WHERE product_id = ANY($1::integer[])`, [productIds]);
+        await db(`DELETE FROM affiliate_links WHERE product_id = ANY($1::integer[])`, [productIds]);
+        await db(`DELETE FROM price_alerts WHERE product_id = ANY($1::integer[])`, [productIds]);
         await db(`DELETE FROM products WHERE store = $1`, [name]);
       }
     }
