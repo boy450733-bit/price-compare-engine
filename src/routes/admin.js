@@ -223,16 +223,26 @@ router.post("/stores", async (req, res) => {
   }
 });
 
-
-// Delete a store from the database (with optional allied data purge)
+// Delete a store from the database (with safe cascade purging of allied product data)
 router.delete("/stores/:name", async (req, res) => {
   const { name } = req.params;
   const purgeProducts = req.query.purgeProducts === "true";
 
   try {
-    // Optionally delete cached products belonging to this store if requested
     if (purgeProducts) {
-      await db(`DELETE FROM products WHERE store = $1`, [name]);
+      // Find product IDs belonging to this store
+      const { rows: prodRows } = await db(`SELECT id FROM products WHERE store = $1`, [name]);
+      const productIds = prodRows.map(p => p.id);
+
+      if (productIds.length > 0) {
+        // Delete dependent child records first to satisfy foreign key constraints
+        await db(`DELETE FROM clicks WHERE product_id = ANY($1::int[])`, [productIds]);
+        await db(`DELETE FROM affiliate_links WHERE product_id = ANY($1::int[])`, [productIds]);
+        await db(`DELETE FROM price_alerts WHERE product_id = ANY($1::int[])`, [productIds]);
+        
+        // Now safe to delete the products
+        await db(`DELETE FROM products WHERE store = $1`, [name]);
+      }
     }
 
     const { rowCount } = await db(`DELETE FROM stores WHERE name = $1`, [name]);

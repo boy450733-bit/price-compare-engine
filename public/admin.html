@@ -16,6 +16,21 @@
   h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; }
   button { font-family: inherit; cursor: pointer; border: none; }
 
+  /* ---------- Toast Notification ---------- */
+  #toastContainer {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast {
+    background: #17231D; color: #fff; padding: 12px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0; transform: translateY(10px); transition: all 0.25s ease; pointer-events: auto;
+    display: flex; align-items: center; gap: 8px; border-left: 4px solid var(--brand);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.success { border-left-color: var(--ok); }
+
   /* ---------- Auth gate ---------- */
   #authGate { max-width: 380px; margin: 90px auto; text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 32px; }
   #authGate h1 { font-size: 20px; margin-bottom: 4px; }
@@ -90,6 +105,9 @@
 </style>
 </head>
 <body>
+
+<!-- Toast Notification Container -->
+<div id="toastContainer"></div>
 
 <div id="authGate">
   <h1>Sasta.pk Admin</h1>
@@ -382,12 +400,30 @@
   let chartClicksInstance = null;
   let chartSearchesInstance = null;
 
+  // Toast Notification System
+  function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add("show"), 10);
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
   function api(path, options = {}) {
     return fetch(`/admin/api${path}`, {
       ...options,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}`, ...(options.headers || {}) },
     }).then(async (res) => {
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `HTTP ${res.status}`);
+      }
       return res.json();
     });
   }
@@ -610,12 +646,12 @@
         showUpdatedAt: document.getElementById("s-showUpdatedAt").checked,
       },
     };
-    const btn = document.getElementById("saveSettingsBtn");
-    btn.textContent = "Saving...";
-    await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
-    btn.textContent = "Save Settings";
-    document.getElementById("settingsSavedMsg").textContent = "Saved ✓";
-    setTimeout(() => (document.getElementById("settingsSavedMsg").textContent = ""), 2000);
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
+      showToast("Site settings saved successfully!", "success");
+    } catch (err) {
+      showToast("Error saving settings: " + err.message, "error");
+    }
   });
 
   document.getElementById("saveAlertConfigBtn").addEventListener("click", async () => {
@@ -626,22 +662,20 @@
       emailBody: document.getElementById("alertEmailBody").value,
     };
     const payload = { ...existing, alertsConfig };
-    const btn = document.getElementById("saveAlertConfigBtn");
-    btn.textContent = "Saving...";
-    await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
-    btn.textContent = "Save Configurations";
-    document.getElementById("alertConfigSavedMsg").textContent = "Saved ✓";
-    setTimeout(() => (document.getElementById("alertConfigSavedMsg").textContent = ""), 2000);
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
+      showToast("Alert configurations saved successfully!", "success");
+    } catch (err) {
+      showToast("Error saving alert config: " + err.message, "error");
+    }
   });
 
   document.getElementById("updateTokenBtn").addEventListener("click", async () => {
     const newToken = document.getElementById("newAdminTokenInput").value.trim();
-    if (!newToken) {
-      alert("Please enter a valid new admin token.");
+    if (!newToken || newToken.length < 6) {
+      showToast("Token must be at least 6 characters long.", "error");
       return;
     }
-    const btn = document.getElementById("updateTokenBtn");
-    btn.textContent = "Updating...";
     try {
       const res = await fetch("/admin/api/token", {
         method: "PUT",
@@ -652,12 +686,10 @@
       if (!res.ok) throw new Error(data.error || "Failed to update token");
       TOKEN = newToken;
       localStorage.setItem(STORAGE_KEY, newToken);
-      btn.textContent = "Updated ✓";
       document.getElementById("newAdminTokenInput").value = "";
-      setTimeout(() => { btn.textContent = "Update Token"; }, 2000);
+      showToast("Admin token updated successfully!", "success");
     } catch (err) {
-      alert("Error: " + err.message);
-      btn.textContent = "Update Token";
+      showToast("Error: " + err.message, "error");
     }
   });
 
@@ -681,17 +713,15 @@
     try {
       selectors = JSON.parse(document.getElementById("newStoreSelectors").value);
     } catch (err) {
-      alert("Invalid JSON format in Selectors field.");
+      showToast("Invalid JSON format in Selectors field.", "error");
       return;
     }
 
     if (!name || !base_url) {
-      alert("Store Name and Base URL are required.");
+      showToast("Store Name and Base URL are required.", "error");
       return;
     }
 
-    const btn = document.getElementById("submitNewStoreBtn");
-    btn.textContent = "Creating...";
     try {
       await api("/stores", {
         method: "POST",
@@ -702,11 +732,10 @@
       document.getElementById("newStoreBaseUrl").value = "";
       document.getElementById("newStoreTemplate").value = "";
       document.getElementById("newStoreAffiliate").value = "";
-      btn.textContent = "Save & Enable Store";
+      showToast(`Store "${name}" created successfully!`, "success");
       loadAll();
     } catch (err) {
-      alert("Error creating store: " + err.message);
-      btn.textContent = "Save & Enable Store";
+      showToast("Error creating store: " + err.message, "error");
     }
   });
 
@@ -734,7 +763,7 @@
             <textarea class="cell-input f-selectors" rows="3" style="font-family: monospace; font-size: 11px;">${s.selectors ? JSON.stringify(s.selectors, null, 2) : "{}"}</textarea>
           </div>
         </td>
-       <td>
+        <td>
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <button class="btn-sm save-store">Save</button>
             <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
@@ -762,18 +791,19 @@
         try {
           selectors = JSON.parse(row.querySelector(".f-selectors").value);
         } catch (err) {
-          alert("Invalid JSON format in Selectors field.");
+          showToast("Invalid JSON format in Selectors field.", "error");
           return;
         }
 
-        btn.textContent = "Saving...";
-        await api(`/stores/${encodeURIComponent(name)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ enabled, color, affiliate_param, base_url, search_url_template, selectors }),
-        });
-        btn.textContent = "Saved";
-        btn.classList.add("saved");
-        setTimeout(() => { btn.textContent = "Save"; btn.classList.remove("saved"); }, 1200);
+        try {
+          await api(`/stores/${encodeURIComponent(name)}`, {
+            method: "PATCH",
+            body: JSON.stringify({ enabled, color, affiliate_param, base_url, search_url_template, selectors }),
+          });
+          showToast(`Store "${name}" saved successfully!`, "success");
+        } catch (err) {
+          showToast("Failed to save store: " + err.message, "error");
+        }
       });
     });
 
@@ -785,24 +815,24 @@
         const purgeProducts = purgeCheckbox ? purgeCheckbox.checked : false;
 
         const confirmMsg = purgeProducts
-          ? `Are you sure you want to delete store "${name}" AND permanently purge all its cached products from the database?`
+          ? `Are you sure you want to delete store "${name}" AND permanently purge all allied products and click records?`
           : `Are you sure you want to delete store "${name}"? (Cached products will be kept)`;
 
         if (!confirm(confirmMsg)) return;
 
-        btn.textContent = "Deleting...";
         try {
           await api(`/stores/${encodeURIComponent(name)}?purgeProducts=${purgeProducts}`, { 
             method: "DELETE" 
           });
+          showToast(`Store "${name}" deleted successfully!`, "success");
           loadAll();
         } catch (err) {
-          alert("Failed to delete store: " + err.message);
-          btn.textContent = "Delete";
+          showToast("Failed to delete store: " + err.message, "error");
         }
       });
     });
   }
+
   document.getElementById("storeFilter").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
@@ -834,11 +864,13 @@
         const productId = row.dataset.productId;
         const affiliateUrl = row.querySelector(".f-affiliate-url").value.trim();
         if (!affiliateUrl) return;
-        btn.textContent = "Saving...";
-        await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
-        btn.textContent = "Saved";
-        btn.classList.add("saved");
-        row.style.opacity = "0.5";
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link saved!", "success");
+          row.style.opacity = "0.5";
+        } catch (err) {
+          showToast("Error saving link: " + err.message, "error");
+        }
       });
     });
   }
@@ -872,7 +904,12 @@
         const productId = row.dataset.productId;
         const affiliateUrl = e.target.value.trim();
         if (!affiliateUrl) return;
-        await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link updated!", "success");
+        } catch (err) {
+          showToast("Error updating link: " + err.message, "error");
+        }
       });
     });
   }
@@ -909,9 +946,6 @@
   });
 
   document.getElementById("triggerAlertsBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("triggerAlertsBtn");
-    const originalText = btn.textContent;
-    btn.textContent = "Running Check...";
     try {
       const res = await fetch("/admin/api/trigger-alerts", {
         method: "POST",
@@ -919,11 +953,9 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to trigger alerts");
-      btn.textContent = "Check Completed ✓";
-      setTimeout(() => { btn.textContent = originalText; }, 2500);
+      showToast("Price alerts check completed successfully!", "success");
     } catch (err) {
-      alert("Error: " + err.message);
-      btn.textContent = originalText;
+      showToast("Error: " + err.message, "error");
     }
   });
 })();
