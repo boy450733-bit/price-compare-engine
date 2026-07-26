@@ -1,8 +1,22 @@
 import * as cheerio from "cheerio";
 import stringSimilarity from "string-similarity";
 
-const DEFAULT_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+// --- STEP 1: Anti-Bot Evasion (Rotating User-Agents) ---
+const USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
+  "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0"
+];
+
+function getRandomUserAgent() {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export function createAdapter(config) {
   return config.parseJson ? createJsonAdapter(config) : createHtmlAdapter(config);
@@ -14,13 +28,20 @@ async function performFetch(config, query) {
     method = "GET",
     body,
     headers = {},
-    userAgent = DEFAULT_USER_AGENT,
   } = config;
+
+  // --- STEP 1: Human-like randomized delay (0.5s to 2s) to prevent WAF blocks ---
+  await sleep(Math.floor(Math.random() * 1500) + 500);
 
   const url = searchUrl(query);
   const fetchOptions = {
     method,
-    headers: { "User-Agent": userAgent, ...headers },
+    headers: { 
+      "User-Agent": getRandomUserAgent(), 
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      ...headers 
+    },
   };
 
   if (method !== "GET" && body) {
@@ -68,7 +89,7 @@ function createHtmlAdapter(config) {
     const $ = cheerio.load(html);
     const results = [];
 
-    // --- STEP 2: Optional JSON-LD Schema.org Extraction (Robust against DOM changes) ---
+    // --- STEP 2: JSON-LD Schema.org Extraction Fallback ---
     const jsonLdProducts = [];
     $('script[type="application/ld+json"]').each((_, el) => {
       try {
@@ -81,19 +102,15 @@ function createHtmlAdapter(config) {
             if (prod) jsonLdProducts.push(prod);
           }
         }
-      } catch (e) {
-        // Skip invalid JSON blocks
-      }
+      } catch (e) {}
     });
 
-    // Process standard container elements from DOM selectors
     $(container).each((index, el) => {
       const $el = $(el);
 
       let titleText = getFirstText($el, title);
       let href = getFirstAttrFromSelector($el, link, linkAttr);
       
-      // Fallback to JSON-LD index if DOM text is missing
       if (!titleText && jsonLdProducts[index]?.name) {
         titleText = jsonLdProducts[index].name;
       }
@@ -121,7 +138,6 @@ function createHtmlAdapter(config) {
       }
 
       let numericPrice = parsePrice(priceBox.text());
-      // Fallback to JSON-LD offers price if DOM price failed
       if ((!numericPrice || numericPrice === 0) && jsonLdProducts[index]?.offers) {
         const offer = Array.isArray(jsonLdProducts[index].offers) 
           ? jsonLdProducts[index].offers[0] 
@@ -192,16 +208,15 @@ function getFirstAttrValue($el, attrs) {
   return null;
 }
 
-// --- STEP 3: Sanitization Engine ---
+// --- STEP 3: Price Sanitization Engine ---
 function defaultParsePrice(text) {
   if (!text) return null;
-  // Strip out everything except digits and decimal points (e.g., "Rs. 14,999/-" -> 14999)
   const cleaned = text.replace(/[^0-9.]/g, "");
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? null : parsed;
 }
 
-// --- STEP 4: Fuzzy Matching Utility for Deduplication ---
+// --- STEP 4: Fuzzy Matching Utility ---
 export function findBestProductMatch(incomingTitle, existingProducts, threshold = 0.82) {
   if (!existingProducts || existingProducts.length === 0) return null;
   const titles = existingProducts.map(p => p.title);

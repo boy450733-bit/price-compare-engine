@@ -70,7 +70,7 @@
   tr:last-child td { border-bottom: none; }
   th { background: #F1ECDE; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); font-weight: 600; }
   tbody tr:hover { background: #FBFAF6; }
-  input[type="text"].cell-input { width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: inherit; }
+  input[type="text"].cell-input, textarea.cell-input { width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: inherit; }
   input[type="color"] { width: 40px; height: 26px; border: 1px solid var(--line); border-radius: 6px; padding: 0; }
   .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .status-dot.on { background: var(--ok); }
@@ -149,13 +149,13 @@
 
       <!-- Stores -->
       <div class="page" id="page-stores">
-        <div class="page-header"><h2>Store Config</h2><p>Enable/disable stores, edit badge colors and affiliate tracking params.</p></div>
+        <div class="page-header"><h2>Store Config</h2><p>Enable/disable stores, edit base URLs, search URL templates, and JSON selectors.</p></div>
         <div class="toolbar">
           <input type="text" class="search-input" id="storeFilter" placeholder="Filter stores by name...">
           <span class="result-count" id="storeCount"></span>
         </div>
         <table id="storesTable">
-          <thead><tr><th>Status</th><th>Name</th><th>Color</th><th>Affiliate param</th><th></th></tr></thead>
+          <thead><tr><th>Status</th><th>Store Details &amp; Selectors</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -453,7 +453,6 @@
       multiplier = 1;
     }
 
-    // Chart 1: Products
     const ctxProd = document.getElementById('chartProducts').getContext('2d');
     if (chartProductsInstance) chartProductsInstance.destroy();
     chartProductsInstance = new Chart(ctxProd, {
@@ -472,7 +471,6 @@
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // Chart 2: Clicks
     const ctxClicks = document.getElementById('chartClicks').getContext('2d');
     if (chartClicksInstance) chartClicksInstance.destroy();
     chartClicksInstance = new Chart(ctxClicks, {
@@ -489,7 +487,6 @@
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // Chart 3: Searches
     const ctxSearches = document.getElementById('chartSearches').getContext('2d');
     if (chartSearchesInstance) chartSearchesInstance.destroy();
     chartSearchesInstance = new Chart(ctxSearches, {
@@ -623,9 +620,21 @@
       <tr data-store="${s.name}">
         <td><span class="status-dot ${s.enabled ? "on" : "off"}"></span>${s.enabled ? "Enabled" : "Disabled"}
           <input type="checkbox" class="f-enabled" ${s.enabled ? "checked" : ""} style="margin-left:8px"></td>
-        <td><strong>${s.name}</strong></td>
-        <td><input type="color" class="f-color" value="${s.color || "#666666"}"></td>
-        <td><input type="text" class="cell-input f-affiliate" value="${s.affiliate_param || ""}" placeholder="e.g. aff_id=123"></td>
+        <td>
+          <div style="margin-bottom: 6px;"><strong>${s.name}</strong></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px;">
+            <div><span class="muted" style="font-size:11px">Base URL</span><input type="text" class="cell-input f-base-url" value="${s.base_url || ""}"></div>
+            <div><span class="muted" style="font-size:11px">Search URL Template</span><input type="text" class="cell-input f-search-template" value="${s.search_url_template || ""}"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px;">
+            <div><span class="muted" style="font-size:11px">Badge Color</span><input type="color" class="f-color" value="${s.color || "#666666"}"></div>
+            <div><span class="muted" style="font-size:11px">Affiliate Param</span><input type="text" class="cell-input f-affiliate" value="${s.affiliate_param || ""}"></div>
+          </div>
+          <div>
+            <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
+            <textarea class="cell-input f-selectors" rows="3" style="font-family: monospace; font-size: 11px;">${s.selectors ? JSON.stringify(s.selectors, null, 2) : "{}"}</textarea>
+          </div>
+        </td>
         <td><button class="btn-sm save-store">Save</button></td>
       </tr>`
       )
@@ -638,10 +647,21 @@
         const enabled = row.querySelector(".f-enabled").checked;
         const color = row.querySelector(".f-color").value;
         const affiliate_param = row.querySelector(".f-affiliate").value || null;
+        const base_url = row.querySelector(".f-base-url").value || null;
+        const search_url_template = row.querySelector(".f-search-template").value || null;
+        
+        let selectors = null;
+        try {
+          selectors = JSON.parse(row.querySelector(".f-selectors").value);
+        } catch (err) {
+          alert("Invalid JSON format in Selectors field.");
+          return;
+        }
+
         btn.textContent = "Saving...";
         await api(`/stores/${encodeURIComponent(name)}`, {
           method: "PATCH",
-          body: JSON.stringify({ enabled, color, affiliate_param }),
+          body: JSON.stringify({ enabled, color, affiliate_param, base_url, search_url_template, selectors }),
         });
         btn.textContent = "Saved";
         btn.classList.add("saved");

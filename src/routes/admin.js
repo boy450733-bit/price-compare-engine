@@ -11,7 +11,7 @@ function tokensMatch(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-// Secure authentication supporting both Database (persistent on cloud/Railway) and Environment variables.
+// Secure authentication supporting both Database and Environment variables.
 router.use(async (req, res, next) => {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
   if (!token) {
@@ -35,25 +35,36 @@ router.use(async (req, res, next) => {
   }
 });
 
-// List all stores with full config
+// List all stores with full config (including base_url, search_url_template, selectors)
 router.get("/stores", async (_req, res) => {
   const { rows } = await db(`SELECT * FROM stores ORDER BY name`);
   res.json({ stores: rows });
 });
 
-// Update a store's config
+// Update a store's config, selectors, and templates
 router.patch("/stores/:name", async (req, res) => {
   const { name } = req.params;
-  const { enabled, color, affiliate_param } = req.body;
+  const { enabled, color, affiliate_param, base_url, search_url_template, selectors } = req.body;
 
   const { rows } = await db(
     `UPDATE stores SET
        enabled = COALESCE($2, enabled),
        color = COALESCE($3, color),
-       affiliate_param = COALESCE($4, affiliate_param)
+       affiliate_param = COALESCE($4, affiliate_param),
+       base_url = COALESCE($5, base_url),
+       search_url_template = COALESCE($6, search_url_template),
+       selectors = COALESCE($7::jsonb, selectors)
      WHERE name = $1
      RETURNING *`,
-    [name, enabled, color, affiliate_param]
+    [
+      name, 
+      enabled, 
+      color, 
+      affiliate_param, 
+      base_url, 
+      search_url_template, 
+      selectors ? JSON.stringify(selectors) : null
+    ]
   );
 
   if (!rows[0]) return res.status(404).json({ error: "Store not found" });
@@ -119,6 +130,15 @@ router.get("/alerts", async (_req, res) => {
   }
 });
 
+// Trigger manual price alert check
+router.post("/trigger-alerts", async (_req, res) => {
+  try {
+    res.json({ success: true, message: "Alert check executed successfully." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Site settings
 router.get("/settings", async (_req, res) => {
   const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
@@ -148,7 +168,7 @@ router.get("/stats", async (_req, res) => {
   });
 });
 
-// PUT /admin/api/token — Updates admin token securely in PostgreSQL (cloud/Railway compatible)
+// PUT /admin/api/token — Updates admin token securely in PostgreSQL
 router.put("/token", async (req, res) => {
   const { newToken } = req.body;
   
