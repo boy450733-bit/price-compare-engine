@@ -208,15 +208,24 @@
               <tbody>
                 <tr>
                   <td style="width:200px">Cron Schedule Pattern</td>
-                  <td><input type="text" class="cell-input" id="alertCronSchedule" value="0 */6 * * *" placeholder="e.g. 0 */6 * * *"></td>
+                  <td>
+                    <input type="text" class="cell-input" id="alertCronSchedule" value="0 */6 * * *" placeholder="e.g. 0 */6 * * *">
+                    <span class="muted" style="display:block; margin-top:4px;">Format: [Minute] [Hour] [Day of Month] [Month] [Day of Week]. Example: <code>0 */6 * * *</code> runs every 6 hours.</span>
+                  </td>
                 </tr>
                 <tr>
                   <td>Email Subject Template</td>
-                  <td><input type="text" class="cell-input" id="alertEmailSubject" value="🎉 Price Drop Alert for your watched product!"></td>
+                  <td>
+                    <input type="text" class="cell-input" id="alertEmailSubject" value="🎉 Price Drop Alert for {product_title}!">
+                    <span class="muted" style="display:block; margin-top:4px;">Available tokens: <code>{product_title}</code>, <code>{target_price}</code></span>
+                  </td>
                 </tr>
                 <tr>
                   <td>Email HTML Body Template</td>
-                  <td><textarea id="alertEmailBody" rows="6" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px">&lt;p&gt;Good news! The price for your watched item has dropped.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Product:&lt;/strong&gt; {product_title}&lt;br&gt;&lt;strong&gt;New Price:&lt;/strong&gt; Rs {current_price}&lt;/p&gt;&lt;p&gt;&lt;a href="{product_url}" target="_blank"&gt;View Product &amp; Buy&lt;/a&gt;&lt;/p&gt;</textarea></td>
+                  <td>
+                    <textarea id="alertEmailBody" rows="7" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px">&lt;p&gt;Hello &lt;strong&gt;{email}&lt;/strong&gt;,&lt;/p&gt;&lt;p&gt;Good news! The price for your watched item has dropped.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Product:&lt;/strong&gt; {product_title}&lt;br&gt;&lt;strong&gt;Target Price:&lt;/strong&gt; Rs {target_price}&lt;br&gt;&lt;strong&gt;Current Price:&lt;/strong&gt; Rs {current_price}&lt;br&gt;&lt;strong&gt;Subscribed On:&lt;/strong&gt; {created_at}&lt;/p&gt;&lt;p&gt;&lt;a href="{product_url}" target="_blank"&gt;View Product &amp; Buy&lt;/a&gt;&lt;/p&gt;</textarea>
+                    <span class="muted" style="display:block; margin-top:4px;">Supported dynamic placeholders from table columns &amp; engine: <code>{email}</code>, <code>{product_id}</code>, <code>{target_price}</code>, <code>{created_at}</code>, <code>{product_title}</code>, <code>{current_price}</code>, <code>{product_url}</code></span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -451,8 +460,8 @@
 
     const al = data.alertsConfig || {};
     document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
-    document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for your watched product!";
-    document.getElementById("alertEmailBody").value = al.emailBody || "<p>Good news! The price for your watched item has dropped.</p>";
+    document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
+    document.getElementById("alertEmailBody").value = al.emailBody || "<p>Hello <strong>{email}</strong>,</p><p>Good news! The price for your watched item has dropped.</p><p><strong>Product:</strong> {product_title}<br><strong>Target Price:</strong> Rs {target_price}<br><strong>Current Price:</strong> Rs {current_price}<br><strong>Subscribed On:</strong> {created_at}</p><p><a href=\"{product_url}\" target=\"_blank\">View Product & Buy</a></p>";
   }
 
   document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
