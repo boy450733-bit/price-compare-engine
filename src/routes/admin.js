@@ -1,46 +1,47 @@
 import { Router } from "express";
 import crypto from "node:crypto";
-import { query as db } from "../db/client.js";
+import { query as db, pool } from "../db/client.js";
 
 const router = Router();
 
 function tokensMatch(a, b) {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
-  // timingSafeEqual throws if lengths differ, so check that first —
-  // that early-exit isn't a meaningful timing leak (it's a fixed
-  // property of the secret's length, not derived byte-by-byte).
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-// Simple shared-secret auth — fine for a single-operator admin panel.
-// Set ADMIN_TOKEN in your environment (Railway → Variables). Every
-// request below requires `Authorization: Bearer <ADMIN_TOKEN>`.
-router.use((req, res, next) => {
+// Secure authentication supporting both Database (persistent on cloud/Railway) and Environment variables.
+router.use(async (req, res, next) => {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
-  if (!process.env.ADMIN_TOKEN) {
-    return res.status(500).json({ error: "ADMIN_TOKEN not configured on the server" });
-  }
-  if (!token || !tokensMatch(token, process.env.ADMIN_TOKEN)) {
+  if (!token) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  next();
+
+  try {
+    const { rows } = await pool.query(`SELECT data->>'adminToken' as token FROM site_settings WHERE id = 1`);
+    const validToken = rows[0]?.token || process.env.ADMIN_TOKEN;
+
+    if (!validToken) {
+      return res.status(500).json({ error: "ADMIN_TOKEN not configured on the server" });
+    }
+
+    if (!tokensMatch(token, validToken)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Authentication check failed: " + err.message });
+  }
 });
 
-// List all stores with full config (including disabled ones, unlike the
-// public /api/stores endpoint which only shows enabled ones).
+// List all stores with full config
 router.get("/stores", async (_req, res) => {
   const { rows } = await db(`SELECT * FROM stores ORDER BY name`);
   res.json({ stores: rows });
 });
 
-// Update a store's enabled flag, color, or affiliate_param.
-// Note: this only affects the DATABASE row — it does not touch the
-// store's code config (adapters/stores/*.config.js). Disabling a store
-// here stops it being scraped (scrape.js only queries enabled stores)
-// and stops it appearing in the public store list/marquee, but the code
-// file still exists for when you want to re-enable it.
+// Update a store's config
 router.patch("/stores/:name", async (req, res) => {
   const { name } = req.params;
   const { enabled, color, affiliate_param } = req.body;
@@ -59,9 +60,7 @@ router.patch("/stores/:name", async (req, res) => {
   res.json({ store: rows[0] });
 });
 
-// Worklist: products that have been clicked but have no manually-converted
-// affiliate link yet, sorted by click volume — same data as
-// scripts/affiliate-worklist.js, just exposed over HTTP for the panel.
+// Affiliate worklist
 router.get("/affiliate-worklist", async (_req, res) => {
   const { rows } = await db(`
     SELECT p.id, p.title, p.store, p.url, COUNT(c.id) AS clicks
@@ -76,9 +75,7 @@ router.get("/affiliate-worklist", async (_req, res) => {
   res.json({ worklist: rows });
 });
 
-// Existing manually-converted affiliate links, for review/editing —
-// separate from the worklist above (which only shows products still
-// missing a link).
+// Existing affiliate links
 router.get("/affiliate-links", async (_req, res) => {
   const { rows } = await db(`
     SELECT al.product_id, al.affiliate_url, al.created_at, p.title, p.store, p.url
@@ -90,7 +87,7 @@ router.get("/affiliate-links", async (_req, res) => {
   res.json({ links: rows });
 });
 
-// Save a manually-converted affiliate link for a product.
+// Save affiliate link
 router.post("/affiliate-links", async (req, res) => {
   const { productId, affiliateUrl } = req.body;
   if (!productId || !affiliateUrl) {
@@ -106,7 +103,7 @@ router.post("/affiliate-links", async (req, res) => {
   res.json({ ok: true });
 });
 
-// Price Alert Subscriptions list for admin monitoring.
+// Price Alert Subscriptions list
 router.get("/alerts", async (_req, res) => {
   try {
     const { rows } = await db(`
@@ -122,10 +119,7 @@ router.get("/alerts", async (_req, res) => {
   }
 });
 
-// Site settings — branding, theme, and which optional card fields show
-// on the storefront. Admin sees/edits the raw stored row (which may be
-// partial); the PUBLIC /api/settings endpoint is what merges it with
-// defaults for the frontend, so this one can just return what's saved.
+// Site settings
 router.get("/settings", async (_req, res) => {
   const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
   res.json(rows[0]?.data || {});
@@ -140,7 +134,7 @@ router.put("/settings", async (req, res) => {
   res.json({ ok: true });
 });
 
-// Basic stats for the admin dashboard header.
+// Basic stats
 router.get("/stats", async (_req, res) => {
   const [{ rows: productRows }, { rows: clickRows }, { rows: searchRows }] = await Promise.all([
     db(`SELECT COUNT(*) AS count FROM products`),
@@ -154,10 +148,7 @@ router.get("/stats", async (_req, res) => {
   });
 });
 
-import fs from "node:fs";
-import path from "node:path";
-
-// PUT /admin/api/token — Updates or resets the admin security token
+// PUT /admin/api/token — Updates admin token securely in PostgreSQL (cloud/Railway compatible)
 router.put("/token", async (req, res) => {
   const { newToken } = req.body;
   
@@ -168,27 +159,15 @@ router.put("/token", async (req, res) => {
   const cleanToken = newToken.trim();
 
   try {
-    // 1. Update the in-memory runtime environment variable immediately
+    await pool.query(
+      `INSERT INTO site_settings (id, data) 
+       VALUES (1, json_build_object('adminToken', $1)::jsonb)
+       ON CONFLICT (id) DO UPDATE SET 
+       data = jsonb_set(COALESCE(site_settings.data, '{}'::jsonb), '{adminToken}', to_jsonb($1::text))`,
+      [cleanToken]
+    );
+
     process.env.ADMIN_TOKEN = cleanToken;
-
-    // 2. Persist the change to the local .env file (if running locally or on a persistent volume)
-    const envPath = path.resolve(process.cwd(), ".env");
-    let envContent = "";
-    
-    if (fs.existsSync(envPath)) {
-      envContent = fs.readFileSync(envPath, "utf8");
-    }
-
-    if (envContent.includes("ADMIN_TOKEN=")) {
-      // Replace existing ADMIN_TOKEN line
-      envContent = envContent.replace(/^ADMIN_TOKEN=.*$/m, `ADMIN_TOKEN=${cleanToken}`);
-    } else {
-      // Append if it doesn't exist
-      envContent += `\nADMIN_TOKEN=${cleanToken}\n`;
-    }
-
-    fs.writeFileSync(envPath, envContent, "utf8");
-
     res.json({ success: true, message: "Admin token updated successfully!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
