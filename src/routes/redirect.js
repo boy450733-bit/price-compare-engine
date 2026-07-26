@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { query as db } from "../db/client.js";
-import { pool } from "../db/client.js";
 
 const router = Router();
 
@@ -47,15 +46,10 @@ router.get("/out/:id", async (req, res) => {
       }
     }
 
-    // 4. Log the click asynchronously for admin analytics & worklists
+    // 4. Log the click asynchronously matching the clicks table schema
     db(
-      `INSERT INTO clicks (product_id, store, ip, user_agent) VALUES ($1, $2, $3, $4)`,
-      [
-        product.id,
-        product.store,
-        req.headers["x-forwarded-for"] || req.socket.remoteAddress || null,
-        req.headers["user-agent"] || null,
-      ]
+      `INSERT INTO clicks (product_id, clicked_at) VALUES ($1, now())`,
+      [product.id]
     ).catch((err) => console.error("Failed to log click:", err.message));
 
     // 5. Perform the final redirect
