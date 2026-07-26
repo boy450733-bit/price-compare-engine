@@ -4,7 +4,6 @@ import fs from "node:fs";
 import path from "node:path";
 import "dotenv/config";
 import { pool } from "./db/client.js";
-import { allStoreConfigs } from "./adapters/stores/index.js";
 import { defaultSettings } from "./config/defaultSettings.js";
 import searchRoutes from "./routes/search.js";
 import redirectRoutes from "./routes/redirect.js";
@@ -16,13 +15,25 @@ import alertsRoutes from "./routes/alerts.js";
 import cron from "node-cron";
 import { checkAndSendPriceAlerts } from "./utils/notifier.js";
 
-// Runs the schema + seeds every store listed in
-// src/adapters/stores/index.js automatically on boot. Safe to run every
-// time the app starts: schema.sql uses CREATE TABLE IF NOT EXISTS, and
-// the store insert uses ON CONFLICT, so re-running this on every deploy
-// never duplicates or breaks anything. This removes the need to run
-// `npm run migrate` / `npm run seed` manually from a console — and means
-// adding a store to stores/index.js is the ONLY step needed to register it.
+// Import store configs individually for initial database seeding
+import { megaConfig } from "./adapters/stores/mega.config.js";
+import { priceOyeConfig } from "./adapters/stores/priceoye.config.js";
+import { iShoppingConfig } from "./adapters/stores/ishopping.config.js";
+import { darazConfig } from "./adapters/stores/daraz.config.js";
+import { eezepcConfig } from "./adapters/stores/eezepc.config.js";
+import { shophiveConfig } from "./adapters/stores/shophive.config.js";
+import { flashiConfig } from "./adapters/stores/flashi.config.js";
+
+const initialStoreConfigs = [
+  megaConfig,
+  priceOyeConfig,
+  iShoppingConfig,
+  darazConfig,
+  eezepcConfig,
+  shophiveConfig,
+  flashiConfig,
+];
+
 async function autoSetup() {
   const schemaPath = path.resolve("src/db/schema.sql");
   const sql = fs.readFileSync(schemaPath, "utf8");
@@ -30,20 +41,15 @@ async function autoSetup() {
   console.log("Schema ready.");
   const getRandomColor = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
-  for (const config of allStoreConfigs) {
+  for (const config of initialStoreConfigs) {
     await pool.query(
-      `INSERT INTO stores (name, color, base_url, search_url_template, affiliate_param)
-        VALUES ($1,$2,$3,$4,$5)
+      `INSERT INTO stores (name, color, base_url, search_url_template, affiliate_param, selectors)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb)
         ON CONFLICT (name) DO UPDATE SET
-          color = EXCLUDED.color,
-          base_url = EXCLUDED.base_url,
-          search_url_template = EXCLUDED.search_url_template,
-          -- COALESCE, not a blind overwrite: affiliate_param can also be
-          -- set later via the admin panel (PATCH /admin/api/stores/:name),
-          -- and this runs on every boot — an unconditional overwrite here
-          -- would silently wipe out those admin edits on every deploy.
-          -- Only fill it in from the code config when the DB doesn't
-          -- already have a value.
+          color = COALESCE(stores.color, EXCLUDED.color),
+          base_url = COALESCE(stores.base_url, EXCLUDED.base_url),
+          search_url_template = COALESCE(stores.search_url_template, EXCLUDED.search_url_template),
+          selectors = COALESCE(stores.selectors, EXCLUDED.selectors),
           affiliate_param = COALESCE(stores.affiliate_param, EXCLUDED.affiliate_param)`,
       [
         config.name,
@@ -51,13 +57,12 @@ async function autoSetup() {
         config.baseUrl,
         config.searchUrl("{query}"),
         config.affiliateParam || null,
+        config.selectors ? JSON.stringify(config.selectors) : null,
       ]
     );
   }
-  console.log(`Stores seeded: ${allStoreConfigs.map((c) => c.name).join(", ")}`);
+  console.log(`Stores seeded: ${initialStoreConfigs.map((c) => c.name).join(", ")}`);
 
-  // Only seeds if no row exists yet — never overwrites settings you've
-  // already customized via the admin panel.
   await pool.query(
     `INSERT INTO site_settings (id, data) VALUES (1, $1)
      ON CONFLICT (id) DO NOTHING`,
@@ -67,20 +72,19 @@ async function autoSetup() {
 }
 
 const app = express();
-app.use(cors()); // still useful if you ever host the frontend separately later
+app.use(cors());
 app.use(express.json());
-app.use(express.static("public")); // serves public/index.html at "/"
+app.use(express.static("public"));
 
 app.use("/api", searchRoutes);
 app.use("/api", storesRoutes);
 app.use("/api", settingsRoutes);
 app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
-app.use("/api", alertsRoutes); // Keep this for user subscription POST requests
-app.use("/admin/api", alertsRoutes); // <-- ADD THIS LINE so GET /admin/api/alerts works for your admin panel
+app.use("/api", alertsRoutes);
+app.use("/admin/api", alertsRoutes);
 app.use("/", redirectRoutes);
 
-// Optional manual trigger route for admin
 app.post("/admin/api/trigger-alerts", async (_req, res) => {
   try {
     await checkAndSendPriceAlerts();
@@ -99,7 +103,6 @@ autoSetup()
     app.listen(port, () => {
       console.log(`API running on :${port}`);
 
-      // Schedule background cron job to check and dispatch price drop alerts every 6 hours
       cron.schedule("0 */6 * * *", () => {
         checkAndSendPriceAlerts();
       });
@@ -110,3 +113,4 @@ autoSetup()
     console.error("Startup failed:", err.message);
     process.exit(1);
   });
+  
