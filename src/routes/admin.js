@@ -230,16 +230,13 @@ router.delete("/stores/:name", async (req, res) => {
 
   try {
     if (purgeProducts) {
-      const { rows: prodRows } = await db(`SELECT id FROM products WHERE store = $1`, [name]);
-      const productIds = prodRows.map(p => p.id);
-
-      if (productIds.length > 0) {
-        // Explicitly cast productIds to INTEGER[] for PostgreSQL compatibility
-        await db(`DELETE FROM clicks WHERE product_id = ANY($1::integer[])`, [productIds]);
-        await db(`DELETE FROM affiliate_links WHERE product_id = ANY($1::integer[])`, [productIds]);
-        await db(`DELETE FROM price_alerts WHERE product_id = ANY($1::integer[])`, [productIds]);
-        await db(`DELETE FROM products WHERE store = $1`, [name]);
-      }
+      // Delete dependent child records using subqueries where product_id is TEXT
+      await db(`DELETE FROM clicks WHERE product_id IN (SELECT id FROM products WHERE store = $1)`, [name]);
+      await db(`DELETE FROM affiliate_links WHERE product_id IN (SELECT id FROM products WHERE store = $1)`, [name]);
+      await db(`DELETE FROM price_alerts WHERE product_id IN (SELECT id FROM products WHERE store = $1)`, [name]);
+      
+      // Delete the cached products for this store
+      await db(`DELETE FROM products WHERE store = $1`, [name]);
     }
 
     const { rowCount } = await db(`DELETE FROM stores WHERE name = $1`, [name]);
