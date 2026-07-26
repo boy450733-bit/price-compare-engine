@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sasta.pk Admin</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%230B6E4F'/%3E%3Crect x='12' y='11' width='20' height='38' rx='2' fill='%23ffffff'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23ffffff'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%23E8A33D' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%23E8A33D'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -154,7 +155,15 @@
 
       <!-- Alerts -->
       <div class="page" id="page-alerts">
-        <div class="page-header"><h2>Price Drop Alerts</h2><p>Monitor users who subscribed for automated price drop updates.</p></div>
+        <div class="page-header">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2>Price Drop Alerts</h2>
+              <p>Monitor users who subscribed for automated price drop updates.</p>
+            </div>
+            <button class="btn-sm" id="triggerAlertsBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">Run Alert Check Now</button>
+          </div>
+        </div>
         <div class="toolbar">
           <input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product...">
           <span class="result-count" id="alertsCount"></span>
@@ -501,6 +510,24 @@
   document.getElementById("alertsFilter").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
+  });
+
+  document.getElementById("triggerAlertsBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("triggerAlertsBtn");
+    btn.textContent = "Running Check...";
+    try {
+      const res = await fetch("/admin/api/trigger-alerts", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${TOKEN}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to trigger alerts");
+      btn.textContent = "Check Completed ✓";
+      setTimeout(() => { btn.textContent = "Run Alert Check Now"; }, 2500);
+    } catch (err) {
+      alert("Error: " + err.message);
+      btn.textContent = "Run Alert Check Now";
+    }
   });
 })();
 </script>
