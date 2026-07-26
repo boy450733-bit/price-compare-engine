@@ -49,6 +49,9 @@
   .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
   .stat-card .num { font-family: "Space Grotesk", sans-serif; font-size: 26px; font-weight: 700; }
   .stat-card .label { font-size: 11.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.02em; margin-top: 2px; }
+  .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+  .chart-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .chart-box h3 { font-size: 14px; margin-bottom: 12px; color: var(--ink-soft); }
 
   /* ---------- Toolbar / filter ---------- */
   .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
@@ -107,6 +110,19 @@
       <div class="page active" id="page-dashboard">
         <div class="page-header"><h2>Dashboard</h2><p>Overview of your price comparison engine.</p></div>
         <div class="stat-grid" id="statGrid"></div>
+        
+        <div class="charts-container">
+          <div class="chart-box">
+            <h3>Engine Activity Summary</h3>
+            <canvas id="overviewChart" width="100" height="60"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>Quick Engine Actions</h3>
+            <p class="muted" style="margin-bottom: 16px;">Perform quick operational tasks or test alert loops.</p>
+            <button class="btn-sm" id="dashboardTriggerAlertsBtn" style="background: var(--brand);">Run Price Drop Alert Check</button>
+            <span class="muted" id="dashboardActionMsg" style="margin-left: 10px;"></span>
+          </div>
+        </div>
       </div>
 
       <!-- Stores -->
@@ -159,24 +175,74 @@
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <h2>Price Drop Alerts</h2>
-              <p>Monitor users who subscribed for automated price drop updates.</p>
+              <p>Monitor users who subscribed for automated price drop updates, cron behavior, and templates.</p>
             </div>
             <button class="btn-sm" id="triggerAlertsBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">Run Alert Check Now</button>
           </div>
         </div>
-        <div class="toolbar">
-          <input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product...">
-          <span class="result-count" id="alertsCount"></span>
+
+        <div class="sub-tabs">
+          <button class="sub-tab-btn-alerts active" data-alertsub="subscriptions">Subscriptions</button>
+          <button class="sub-tab-btn-alerts" data-alertsub="settings">Cron &amp; Templates</button>
         </div>
-        <table id="alertsTable">
-          <thead><tr><th>Email</th><th>Product Title</th><th>Target Price</th><th>Status</th><th>Subscribed Date</th></tr></thead>
-          <tbody></tbody>
-        </table>
+
+        <div id="alertsub-subscriptions">
+          <div class="toolbar">
+            <input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product...">
+            <span class="result-count" id="alertsCount"></span>
+          </div>
+          <table id="alertsTable">
+            <thead><tr><th>Email</th><th>Product Title</th><th>Target Price</th><th>Status</th><th>Subscribed Date</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div id="alertsub-settings" style="display:none">
+          <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
+            <h3 style="font-size:15px; margin-bottom: 6px;">Background Cron Configuration</h3>
+            <p class="muted" style="margin-bottom: 16px;">Configure execution patterns and email messaging templates for price tracking.</p>
+            
+            <table style="margin-bottom:20px">
+              <tbody>
+                <tr>
+                  <td style="width:200px">Cron Schedule Pattern</td>
+                  <td><input type="text" class="cell-input" id="alertCronSchedule" value="0 */6 * * *" placeholder="e.g. 0 */6 * * *"></td>
+                </tr>
+                <tr>
+                  <td>Email Subject Template</td>
+                  <td><input type="text" class="cell-input" id="alertEmailSubject" value="🎉 Price Drop Alert for your watched product!"></td>
+                </tr>
+                <tr>
+                  <td>Email HTML Body Template</td>
+                  <td><textarea id="alertEmailBody" rows="6" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px">&lt;p&gt;Good news! The price for your watched item has dropped.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Product:&lt;/strong&gt; {product_title}&lt;br&gt;&lt;strong&gt;New Price:&lt;/strong&gt; Rs {current_price}&lt;/p&gt;&lt;p&gt;&lt;a href="{product_url}" target="_blank"&gt;View Product &amp; Buy&lt;/a&gt;&lt;/p&gt;</textarea></td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn-sm" id="saveAlertConfigBtn">Save Configurations</button>
+            <span class="muted" id="alertConfigSavedMsg" style="margin-left:10px"></span>
+          </div>
+        </div>
       </div>
 
       <!-- Site Settings -->
       <div class="page" id="page-settings">
-        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, and card details shown on the storefront.</p></div>
+        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, card details, and administrative security tokens.</p></div>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Administrative Security</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr>
+              <td style="width:200px">Change Admin Token</td>
+              <td>
+                <div style="display: flex; gap: 10px;">
+                  <input type="password" class="cell-input" id="newAdminTokenInput" placeholder="Enter new secure admin token">
+                  <button class="btn-sm" id="updateTokenBtn" style="background: var(--danger);">Update Token</button>
+                </div>
+                <span class="muted" style="display:block; margin-top:4px;">Updates your session and stores a new administrative authorization secret.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
         <h3 style="font-size:14px;margin-bottom:10px">Branding</h3>
         <table style="margin-bottom:24px">
@@ -221,6 +287,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
   const STORAGE_KEY = "sastapk_admin_token";
@@ -229,6 +296,7 @@
   let worklistData = [];
   let linkedData = [];
   let alertsData = [];
+  let overviewChartInstance = null;
 
   function api(path, options = {}) {
     return fetch(`/admin/api${path}`, {
@@ -280,12 +348,22 @@
       document.getElementById(`page-${btn.dataset.tab}`).classList.add("active");
     });
   });
+
   document.querySelectorAll(".sub-tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".sub-tab-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       document.getElementById("subpage-pending").style.display = btn.dataset.subtab === "pending" ? "block" : "none";
       document.getElementById("subpage-linked").style.display = btn.dataset.subtab === "linked" ? "block" : "none";
+    });
+  });
+
+  document.querySelectorAll(".sub-tab-btn-alerts").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sub-tab-btn-alerts").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("alertsub-subscriptions").style.display = btn.dataset.alertsub === "subscriptions" ? "block" : "none";
+      document.getElementById("alertsub-settings").style.display = btn.dataset.alertsub === "settings" ? "block" : "none";
     });
   });
 
@@ -296,6 +374,8 @@
       <div class="stat-card"><div class="num">${stats.totalClicks}</div><div class="label">Total clicks</div></div>
       <div class="stat-card"><div class="num">${stats.totalSearches}</div><div class="label">Total searches</div></div>
     `;
+
+    renderOverviewChart(stats);
 
     const storesRes = await api("/stores");
     storesData = storesRes.stores;
@@ -314,6 +394,34 @@
     renderAlerts(alertsData);
 
     loadSettings();
+  }
+
+  function renderOverviewChart(stats) {
+    const ctx = document.getElementById('overviewChart').getContext('2d');
+    if (overviewChartInstance) {
+      overviewChartInstance.destroy();
+    }
+    overviewChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Products Cached', 'Total Clicks', 'Total Searches'],
+        datasets: [{
+          label: 'Engine Metrics',
+          data: [stats.totalProducts, stats.totalClicks, stats.totalSearches],
+          backgroundColor: ['#0B6E4F', '#E8A33D', '#6B7A70'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
   }
 
   async function loadSettings() {
@@ -338,10 +446,17 @@
     document.getElementById("s-showOriginalPrice").checked = cf.showOriginalPrice !== false;
     document.getElementById("s-showOutOfStock").checked = cf.showOutOfStock !== false;
     document.getElementById("s-showUpdatedAt").checked = cf.showUpdatedAt !== false;
+
+    const al = data.alertsConfig || {};
+    document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
+    document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for your watched product!";
+    document.getElementById("alertEmailBody").value = al.emailBody || "<p>Good news! The price for your watched item has dropped.</p>";
   }
 
   document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+    const existing = await api("/settings");
     const payload = {
+      ...existing,
       logoText: document.getElementById("s-logoText").value,
       heroSubtitle: document.getElementById("s-heroSubtitle").value,
       footerText: document.getElementById("s-footerText").value,
@@ -369,6 +484,49 @@
     btn.textContent = "Save Settings";
     document.getElementById("settingsSavedMsg").textContent = "Saved ✓";
     setTimeout(() => (document.getElementById("settingsSavedMsg").textContent = ""), 2000);
+  });
+
+  document.getElementById("saveAlertConfigBtn").addEventListener("click", async () => {
+    const existing = await api("/settings");
+    const alertsConfig = {
+      cronSchedule: document.getElementById("alertCronSchedule").value,
+      emailSubject: document.getElementById("alertEmailSubject").value,
+      emailBody: document.getElementById("alertEmailBody").value,
+    };
+    const payload = { ...existing, alertsConfig };
+    const btn = document.getElementById("saveAlertConfigBtn");
+    btn.textContent = "Saving...";
+    await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
+    btn.textContent = "Save Configurations";
+    document.getElementById("alertConfigSavedMsg").textContent = "Saved ✓";
+    setTimeout(() => (document.getElementById("alertConfigSavedMsg").textContent = ""), 2000);
+  });
+
+  document.getElementById("updateTokenBtn").addEventListener("click", async () => {
+    const newToken = document.getElementById("newAdminTokenInput").value.trim();
+    if (!newToken) {
+      alert("Please enter a valid new admin token.");
+      return;
+    }
+    const btn = document.getElementById("updateTokenBtn");
+    btn.textContent = "Updating...";
+    try {
+      const res = await fetch("/admin/api/token", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
+        body: JSON.stringify({ newToken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update token");
+      TOKEN = newToken;
+      localStorage.setItem(STORAGE_KEY, newToken);
+      btn.textContent = "Updated ✓";
+      document.getElementById("newAdminTokenInput").value = "";
+      setTimeout(() => { btn.textContent = "Update Token"; }, 2000);
+    } catch (err) {
+      alert("Error: " + err.message);
+      btn.textContent = "Update Token";
+    }
   });
 
   function renderStores(list) {
@@ -512,9 +670,12 @@
     renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
   });
 
-  document.getElementById("triggerAlertsBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("triggerAlertsBtn");
+  async function handleTriggerAlerts(buttonId, msgId) {
+    const btn = document.getElementById(buttonId);
+    const msg = msgId ? document.getElementById(msgId) : null;
+    const originalText = btn.textContent;
     btn.textContent = "Running Check...";
+    if (msg) msg.textContent = "";
     try {
       const res = await fetch("/admin/api/trigger-alerts", {
         method: "POST",
@@ -523,12 +684,19 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to trigger alerts");
       btn.textContent = "Check Completed ✓";
-      setTimeout(() => { btn.textContent = "Run Alert Check Now"; }, 2500);
+      if (msg) {
+        msg.textContent = "Alert check finished successfully.";
+        setTimeout(() => { msg.textContent = ""; }, 3000);
+      }
+      setTimeout(() => { btn.textContent = originalText; }, 2500);
     } catch (err) {
       alert("Error: " + err.message);
-      btn.textContent = "Run Alert Check Now";
+      btn.textContent = originalText;
     }
-  });
+  }
+
+  document.getElementById("triggerAlertsBtn").addEventListener("click", () => handleTriggerAlerts("triggerAlertsBtn"));
+  document.getElementById("dashboardTriggerAlertsBtn").addEventListener("click", () => handleTriggerAlerts("dashboardTriggerAlertsBtn", "dashboardActionMsg"));
 })();
 </script>
 
