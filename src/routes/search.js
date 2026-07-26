@@ -81,7 +81,7 @@ router.get("/products", async (req, res) => {
          ) AS offers
        FROM products p
        JOIN stores s ON s.name = p.store
-       WHERE ${whereClause}
+       WHERE s.enabled = true AND ${whereClause}
        GROUP BY p.fingerprint
      )
      SELECT 
