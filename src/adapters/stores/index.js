@@ -1,30 +1,42 @@
 import { pool } from "../../db/client.js";
 import { createAdapter } from "../createAdapter.js";
 
+// Cache variables
+let cachedAdapters = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 /**
- * Dynamically loads active store configurations and selectors from PostgreSQL,
- * wrapping them into working scrapers using createAdapter.
+ * Dynamically fetches active store configurations from the database and compiles their adapters,
+ * with in-memory caching to optimize performance.
  */
 export async function getActiveAdapters() {
-  try {
-    const { rows } = await pool.query(`SELECT * FROM stores WHERE enabled = true`);
-    
-    if (rows.length === 0) {
-      console.warn("No active stores found in database.");
-      return [];
-    }
+  const now = Date.now();
 
-    return rows.map(store => {
+  // Return cached adapters if they are still fresh
+  if (cachedAdapters && (now - cacheTimestamp < CACHE_TTL)) {
+    return cachedAdapters;
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT name, color, base_url, search_url_template, affiliate_param, selectors 
+       FROM stores 
+       WHERE enabled = true`
+    );
+
+    cachedAdapters = rows.map((store) => {
       const config = {
         name: store.name,
+        color: store.color,
         baseUrl: store.base_url,
         searchUrl: (q) => {
           const formattedQuery = encodeURIComponent(q.trim().split(/\s+/).join("+"));
-          // Uses the stored template (e.g., "https://www.mega.pk/search/{query}/")
           return store.search_url_template 
             ? store.search_url_template.replace("{query}", formattedQuery)
             : `${store.base_url}/search/${formattedQuery}/`;
         },
+        affiliateParam: store.affiliate_param,
         selectors: store.selectors || {}
       };
 
@@ -33,9 +45,21 @@ export async function getActiveAdapters() {
         adapter: createAdapter(config)
       };
     });
+
+    cacheTimestamp = now;
+    return cachedAdapters;
   } catch (err) {
-    console.error("Failed to load adapters from database:", err.message);
-    return [];
+    console.error("Failed to load active store adapters from database:", err.message);
+    // Fallback to expired cache if database has a temporary hiccup, or return empty array
+    return cachedAdapters || [];
   }
 }
 
+/**
+ * Instantly invalidates the cache. 
+ * Call this function whenever stores are modified, added, or deleted via the admin panel.
+ */
+export function invalidateStoreCache() {
+  cachedAdapters = null;
+  cacheTimestamp = 0;
+}

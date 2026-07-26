@@ -200,6 +200,45 @@
           <button class="btn-sm" id="openAddStoreModalBtn" style="background: var(--brand); font-weight: 600;">+ Add New Store</button>
         </div>
 
+        <!-- Live Scraper Testing Sandbox Card -->
+        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 24px;">
+          <h3 style="font-size: 15px; margin-bottom: 6px; color: var(--brand-dark);">🧪 Live Scraper Sandbox</h3>
+          <p class="muted" style="margin-bottom: 14px;">Test your store selectors and search templates live before saving them.</p>
+          
+          <div style="display: grid; grid-template-columns: 2fr 2fr 1fr auto; gap: 10px; margin-bottom: 12px; align-items: end;">
+            <div>
+              <span class="muted" style="font-size:11px">Base URL</span>
+              <input type="text" class="cell-input" id="testBaseUrl" placeholder="https://www.daraz.pk">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Search URL Template</span>
+              <input type="text" class="cell-input" id="testTemplate" placeholder="https://www.daraz.pk/catalog/?q={query}">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Test Query</span>
+              <input type="text" class="cell-input" id="testQueryInput" value="phone">
+            </div>
+            <div>
+              <button class="btn-sm" id="runTestScraperBtn" style="height: 30px; background: var(--accent); color: #2A1B04; font-weight: 700;">Run Test</button>
+            </div>
+          </div>
+          <div>
+            <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
+            <textarea class="cell-input" id="testSelectorsJson" rows="3" style="font-family: monospace; font-size: 11px;">{
+  "container": ".box--ujhwb",
+  "title": ".title--wFjAI",
+  "image": "img",
+  "price": ".price--NVaji"
+}</textarea>
+          </div>
+
+          <!-- Test Results Preview Container -->
+          <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 250px; overflow-y: auto;">
+            <span class="muted" style="font-size:11px; font-weight: 600; display:block; margin-bottom:6px;">Live Scrape Preview Output:</span>
+            <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap;"></pre>
+          </div>
+        </div>
+
         <!-- Add Store Form Drawer -->
         <div id="addStoreFormCard" style="display: none; background: var(--surface); border: 1.5px solid var(--brand); border-radius: var(--radius); padding: 20px; margin-bottom: 20px;">
           <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--brand-dark);">Register New Store Scraper</h3>
@@ -750,6 +789,49 @@
   });
   document.getElementById("cancelAddStoreBtn").addEventListener("click", () => {
     document.getElementById("addStoreFormCard").style.display = "none";
+  });
+
+  // Live Scraper Sandbox Trigger
+  document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl").value.trim();
+    const search_url_template = document.getElementById("testTemplate").value.trim();
+    const query = document.getElementById("testQueryInput").value.trim() || "phone";
+    
+    let selectors = {};
+    try {
+      selectors = JSON.parse(document.getElementById("testSelectorsJson").value);
+    } catch (err) {
+      showToast("Invalid JSON format in Sandbox Selectors field.", "error");
+      return;
+    }
+
+    if (!base_url) {
+      showToast("Please enter a Base URL to test.", "error");
+      return;
+    }
+
+    const btn = document.getElementById("runTestScraperBtn");
+    const container = document.getElementById("testResultsContainer");
+    const output = document.getElementById("testOutputJson");
+
+    btn.textContent = "Scraping...";
+    container.style.display = "block";
+    output.textContent = "Connecting to target store and executing selectors...";
+
+    try {
+      const res = await api("/test-store", {
+        method: "POST",
+        body: JSON.stringify({ base_url, search_url_template, selectors, query })
+      });
+
+      output.textContent = JSON.stringify(res, null, 2);
+      showToast(`Scrape test completed! Found ${res.count} items.`, "success");
+    } catch (err) {
+      output.textContent = "Error: " + err.message;
+      showToast("Scraper test failed.", "error");
+    } finally {
+      btn.textContent = "Run Test";
+    }
   });
 
   // Submit New Store

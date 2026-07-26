@@ -1,6 +1,7 @@
 import { Router } from "express";
 import crypto from "node:crypto";
 import { query as db, pool } from "../db/client.js";
+import { invalidateStoreCache } from "../adapters/stores/index.js";
 
 const router = Router();
 
@@ -68,6 +69,10 @@ router.patch("/stores/:name", async (req, res) => {
   );
 
   if (!rows[0]) return res.status(404).json({ error: "Store not found" });
+
+  // Invalidate in-memory adapter cache immediately
+  invalidateStoreCache();
+
   res.json({ store: rows[0] });
 });
 
@@ -217,6 +222,10 @@ router.post("/stores", async (req, res) => {
         enabled !== false
       ]
     );
+
+    // Invalidate in-memory adapter cache immediately
+    invalidateStoreCache();
+
     res.json({ store: rows[0] });
   } catch (err) {
     res.status(500).json({ error: "Failed to create store: " + err.message });
@@ -242,9 +251,50 @@ router.delete("/stores/:name", async (req, res) => {
     const { rowCount } = await db(`DELETE FROM stores WHERE name = $1`, [name]);
     if (rowCount === 0) return res.status(404).json({ error: "Store not found" });
 
+    // Invalidate in-memory adapter cache immediately
+    invalidateStoreCache();
+
     res.json({ success: true, purged: purgeProducts });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete store: " + err.message });
+  }
+});
+
+import { createAdapter } from "../adapters/createAdapter.js";
+import { genericAdapter } from "../adapters/generic.js";
+
+// Test a store configuration live against a search term
+router.post("/test-store", async (req, res) => {
+  const { base_url, search_url_template, selectors } = req.body;
+  const testQuery = req.body.query || "laptop";
+
+  if (!base_url) {
+    return res.status(400).json({ error: "Base URL is required for testing." });
+  }
+
+  try {
+    const config = {
+      name: "TestStore",
+      baseUrl: base_url,
+      searchUrl: (q) => {
+        const formattedQuery = encodeURIComponent(q.trim().split(/\s+/).join("+"));
+        return search_url_template 
+          ? search_url_template.replace("{query}", formattedQuery)
+          : `${base_url}/search/${formattedQuery}/`;
+      },
+      selectors: selectors || {}
+    };
+
+    const adapter = createAdapter(config);
+    const results = await adapter(testQuery);
+
+    res.json({ 
+      success: true, 
+      count: results.length, 
+      results: results.slice(0, 5) // Return top 5 scraped items for preview
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Scraping test failed: " + err.message });
   }
 });
 

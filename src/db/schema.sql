@@ -11,47 +11,47 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 
 CREATE TABLE IF NOT EXISTS products (
-  id                 TEXT PRIMARY KEY,      -- md5(store || '|' || url)
+  id                  TEXT PRIMARY KEY,      -- md5(store || '|' || url)
 
   -- Original scraped data
-  title              TEXT NOT NULL,
-  url                TEXT NOT NULL,
-  image              TEXT,
-  store              TEXT NOT NULL REFERENCES stores(name),
+  title               TEXT NOT NULL,
+  url                 TEXT NOT NULL,
+  image               TEXT,
+  store               TEXT NOT NULL REFERENCES stores(name),
 
   -- Pricing
-  price              NUMERIC,
-  original_price     NUMERIC,
+  price               NUMERIC,
+  original_price      NUMERIC,
 
   -- Reviews
-  rating             NUMERIC DEFAULT 0,
-  review_count       INTEGER DEFAULT 0,
+  rating              NUMERIC DEFAULT 0,
+  review_count        INTEGER DEFAULT 0,
 
   -- Availability
-  in_stock           BOOLEAN DEFAULT true,
+  in_stock            BOOLEAN DEFAULT true,
 
   -- Search metadata
-  source_query       TEXT,
-  category           TEXT,
-  brand              TEXT,
-  model              TEXT,
-  normalized_title   TEXT,
-  keywords           TEXT[],
+  source_query        TEXT,
+  category            TEXT,
+  brand               TEXT,
+  model               TEXT,
+  normalized_title    TEXT,
+  keywords            TEXT[],
 
   -- Intelligent matching
-  fingerprint        TEXT,
-  match_score        NUMERIC DEFAULT 0,
+  fingerprint         TEXT,
+  match_score         NUMERIC DEFAULT 0,
 
   -- Flexible specifications
-  specs              JSONB DEFAULT '{}'::jsonb,
+  specs               JSONB DEFAULT '{}'::jsonb,
 
   -- Complete scraped object for debugging
-  raw_data           JSONB DEFAULT '{}'::jsonb,
+  raw_data            JSONB DEFAULT '{}'::jsonb,
 
   -- Dates
-  scraped_at         TIMESTAMPTZ,
-  created_at         TIMESTAMPTZ DEFAULT now(),
-  updated_at         TIMESTAMPTZ DEFAULT now()
+  scraped_at          TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  updated_at          TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_title_trgm
@@ -91,9 +91,9 @@ CREATE TABLE IF NOT EXISTS price_history (
 CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history (product_id, recorded_at DESC);
 
 CREATE TABLE IF NOT EXISTS site_settings (
-  id         INT PRIMARY KEY DEFAULT 1,
-  data       JSONB NOT NULL DEFAULT '{}',
-  updated_at TIMESTAMPTZ DEFAULT now(),
+  id          INT PRIMARY KEY DEFAULT 1,
+  data        JSONB NOT NULL DEFAULT '{}',
+  updated_at  TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT single_row CHECK (id = 1) -- enforces exactly one settings row
 );
 
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS affiliate_links (
 
 CREATE TABLE IF NOT EXISTS clicks (
   id          BIGSERIAL PRIMARY KEY,
-  click_ref   TEXT UNIQUE,           -- short id passed as the affiliate network's sub-id/tracking param, so network-reported sales can be matched back to this row
+  click_ref   TEXT UNIQUE,              -- short id passed as the affiliate network's sub-id/tracking param
   product_id  TEXT NOT NULL REFERENCES products(id),
   clicked_at  TIMESTAMPTZ DEFAULT now(),
   ip_hash     TEXT
@@ -118,11 +118,11 @@ CREATE TABLE IF NOT EXISTS search_log (
   searched_at TIMESTAMPTZ DEFAULT now()
 ); -- powers "trending query" pre-warming
 
--- capture subscription email
+-- capture subscription email (Fixed: product_id changed from INTEGER to TEXT to match products.id)
 CREATE TABLE IF NOT EXISTS price_alerts (
   id SERIAL PRIMARY KEY,
   email TEXT NOT NULL,
-  product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+  product_id TEXT REFERENCES products(id) ON DELETE CASCADE,
   target_price NUMERIC,
   notified BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
