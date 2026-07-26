@@ -734,9 +734,13 @@
             <textarea class="cell-input f-selectors" rows="3" style="font-family: monospace; font-size: 11px;">${s.selectors ? JSON.stringify(s.selectors, null, 2) : "{}"}</textarea>
           </div>
         </td>
-        <td>
+       <td>
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <button class="btn-sm save-store">Save</button>
+            <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
+              <input type="checkbox" class="f-purge" id="purge-${s.name}">
+              <label for="purge-${s.name}" class="muted" style="font-size: 10.5px;">Purge products</label>
+            </div>
             <button class="btn-sm delete-store" style="background: var(--danger);">Delete</button>
           </div>
         </td>
@@ -777,13 +781,20 @@
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         const name = row.dataset.store;
-        if (!confirm(`Are you sure you want to delete store "${name}"? This will remove its scraper configuration permanently.`)) {
-          return;
-        }
+        const purgeCheckbox = row.querySelector(".f-purge");
+        const purgeProducts = purgeCheckbox ? purgeCheckbox.checked : false;
+
+        const confirmMsg = purgeProducts
+          ? `Are you sure you want to delete store "${name}" AND permanently purge all its cached products from the database?`
+          : `Are you sure you want to delete store "${name}"? (Cached products will be kept)`;
+
+        if (!confirm(confirmMsg)) return;
 
         btn.textContent = "Deleting...";
         try {
-          await api(`/stores/${encodeURIComponent(name)}`, { method: "DELETE" });
+          await api(`/stores/${encodeURIComponent(name)}?purgeProducts=${purgeProducts}`, { 
+            method: "DELETE" 
+          });
           loadAll();
         } catch (err) {
           alert("Failed to delete store: " + err.message);
@@ -792,7 +803,6 @@
       });
     });
   }
-
   document.getElementById("storeFilter").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));

@@ -223,13 +223,22 @@ router.post("/stores", async (req, res) => {
   }
 });
 
-// Delete a store from the database
+
+// Delete a store from the database (with optional allied data purge)
 router.delete("/stores/:name", async (req, res) => {
   const { name } = req.params;
+  const purgeProducts = req.query.purgeProducts === "true";
+
   try {
+    // Optionally delete cached products belonging to this store if requested
+    if (purgeProducts) {
+      await db(`DELETE FROM products WHERE store = $1`, [name]);
+    }
+
     const { rowCount } = await db(`DELETE FROM stores WHERE name = $1`, [name]);
     if (rowCount === 0) return res.status(404).json({ error: "Store not found" });
-    res.json({ success: true });
+
+    res.json({ success: true, purged: purgeProducts });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete store: " + err.message });
   }
