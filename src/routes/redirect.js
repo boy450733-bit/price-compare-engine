@@ -1,68 +1,65 @@
 import { Router } from "express";
-import crypto from "node:crypto";
-import { nanoid } from "nanoid";
 import { query as db } from "../db/client.js";
-import { allStoreConfigs } from "../adapters/stores/index.js";
+import { getActiveAdapters } from "../adapters/stores/index.js";
 
 const router = Router();
 
-const configByName = Object.fromEntries(allStoreConfigs.map((c) => [c.name, c]));
+// Track product clicks and redirect users to the correct store product URL
+router.get("/redirect", async (req, res) => {
+  const { productId, store, url } = req.query;
 
-router.get("/out/:productId", async (req, res) => {
-  const { productId } = req.params;
+  if (!url || !store) {
+    return res.status(400).send("Missing parameters for redirection.");
+  }
 
-  const { rows } = await db(
-    `SELECT p.url, p.store, s.affiliate_param
-     FROM products p
-     JOIN stores s ON s.name = p.store
-     WHERE p.id = $1`,
-    [productId]
-  );
+  let finalDestinationUrl = url;
 
-  const product = rows[0];
-  if (!product) return res.status(404).send("Product not found");
+  try {
+    // 1. Check if a custom manually-converted affiliate link exists for this product
+    if (productId) {
+      const { rows: affRows } = await db(
+        `SELECT affiliate_url FROM affiliate_links WHERE product_id = $1`,
+        [productId]
+      );
+      if (affRows[0]?.affiliate_url) {
+        finalDestinationUrl = affRows[0].affiliate_url;
+      }
+    }
 
-  const clickRef = nanoid(10);
-  const ipHash = crypto.createHash("sha256").update(req.ip || "").digest("hex");
+    // 2. If no manual affiliate link, check if the store has an automatic affiliate parameter
+    if (finalDestinationUrl === url) {
+      const adapters = await getActiveAdapters();
+      // Alternatively, query the stores table directly for the affiliate_param
+      const { rows: storeRows } = await db(
+        `SELECT affiliate_param FROM stores WHERE name = $1`,
+        [store]
+      );
+      const affiliateParam = storeRows[0]?.affiliate_param;
 
-  await db(
-    `INSERT INTO clicks (click_ref, product_id, ip_hash) VALUES ($1, $2, $3)`,
-    [clickRef, productId, ipHash]
-  );
+      if (affiliateParam) {
+        const separator = finalDestinationUrl.includes("?") ? "&" : "?";
+        finalDestinationUrl = `${finalDestinationUrl}${separator}${affiliateParam}`;
+      }
+    }
 
-  const finalUrl = await buildAffiliateUrl(product, productId, clickRef);
-  res.redirect(302, finalUrl);
+    // 3. Log the click asynchronously for admin metrics & worklists
+    if (productId) {
+      db(
+        `INSERT INTO clicks (product_id, store, ip, user_agent) VALUES ($1, $2, $3, $4)`,
+        [
+          productId,
+          store,
+          req.headers["x-forwarded-for"] || req.socket.remoteAddress || null,
+          req.headers["user-agent"] || null,
+        ]
+      ).catch((err) => console.error("Failed to log click:", err.message));
+    }
+  } catch (err) {
+    console.error("Redirection tracking error:", err.message);
+  }
+
+  // 4. Perform the final redirect
+  return res.redirect(302, finalDestinationUrl);
 });
-
-// Decides the outbound URL, in priority order:
-// 1. A manually-converted link already exists in `affiliate_links`
-//    (for stores like Daraz with no bulk/API tool — see scripts/*).
-//    This is checked FIRST since it's the most specific override.
-// 2. Store config has a `buildAffiliateUrl` function — for networks that
-//    support programmatic deep-linking (append or wrap models).
-// 3. Store has a plain `affiliate_param` on it — appended as a query string.
-// 4. Nothing set up yet — plain product URL, no tracking. This is the
-//    correct default and still works fine as a normal comparison link;
-//    it just doesn't earn commission until you configure tracking for
-//    that store.
-async function buildAffiliateUrl(product, productId, clickRef) {
-  const { rows } = await db(
-    `SELECT affiliate_url FROM affiliate_links WHERE product_id = $1`,
-    [productId]
-  );
-  if (rows[0]) return rows[0].affiliate_url;
-
-  const config = configByName[product.store];
-  if (config?.buildAffiliateUrl) {
-    return config.buildAffiliateUrl(product.url, clickRef);
-  }
-
-  if (product.affiliate_param) {
-    const separator = product.url.includes("?") ? "&" : "?";
-    return `${product.url}${separator}${product.affiliate_param.replace(/^\?/, "")}`;
-  }
-
-  return product.url;
-}
 
 export default router;
