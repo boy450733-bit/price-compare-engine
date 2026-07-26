@@ -24,6 +24,7 @@
     "dotenv": "^16.4.5",
     "nanoid": "^5.0.7",
     "nodemailer": "^6.9.14",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "string-similarity": "^4.0.4"
   }
 }
