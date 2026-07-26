@@ -1,59 +1,24 @@
 import { query } from "../db/client.js";
 import { productId } from "../utils/hash.js";
-import { getAdapter } from "../adapters/index.js";
+import { getActiveAdapters } from "../adapters/stores/index.js";
 import { processProduct } from "../intelligence/index.js";
 
-export async function scrapeStoreForQuery(storeName, searchQuery) {
-  const adapter = getAdapter(storeName);
-  if (!adapter) {
-    console.warn(`No adapter found for store: ${storeName}`);
-    return 0;
-  }
-
+export async function scrapeStoreForQuery(storeName, adapter, searchQuery) {
   const listings = await adapter(searchQuery);
+  if (!listings || listings.length === 0) return 0;
 
   for (const listing of listings) {
-    // 1. Process listing through your intelligence layer middleware
     const product = processProduct(listing, searchQuery, storeName);
-
-    //
-    //console.log("FINAL PRODUCT START");
-    //console.log(JSON.stringify(product, null, 2));
-    //console.log("FINAL PRODUCT ENDS");
-
-    // If the intelligence layer flags this item as noise/irrelevant, skip it
     if (!product.accepted) continue;
 
     const id = productId(storeName, product.url);
 
-    
-    // 2. Insert enriched intelligence metadata into PostgreSQL
     await query(
       `INSERT INTO products (
-        id,
-        title,
-        brand,
-        model,
-        category,
-        normalized_title,
-        specs,
-        fingerprint,
-        match_score,
-        store,
-        url,
-        image,
-        price,
-        original_price,
-        rating,
-        review_count,
-        in_stock,
-        source_query,
-        scraped_at
+        id, title, brand, model, category, normalized_title, specs, fingerprint, match_score,
+        store, url, image, price, original_price, rating, review_count, in_stock, source_query, scraped_at
       )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18, NOW()
-      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
       ON CONFLICT (id)
       DO UPDATE SET
         title = EXCLUDED.title,
@@ -93,7 +58,6 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
       ]
     );
 
-    // 3. Log price history for trends
     await query(
       `INSERT INTO price_history (product_id, price) VALUES ($1, $2)`,
       [id, product.price]
@@ -104,12 +68,14 @@ export async function scrapeStoreForQuery(storeName, searchQuery) {
 }
 
 export async function scrapeAllStoresForQuery(searchQuery) {
-  const { rows: stores } = await query(
-    `SELECT name FROM stores WHERE enabled = true`
-  );
+  const activeAdapters = await getActiveAdapters();
+  if (!activeAdapters || activeAdapters.length === 0) {
+    console.warn("No active store adapters found in memory/database.");
+    return [];
+  }
 
   const results = await Promise.allSettled(
-    stores.map((s) => scrapeStoreForQuery(s.name, searchQuery))
+    activeAdapters.map(({ name, adapter }) => scrapeStoreForQuery(name, adapter, searchQuery))
   );
 
   return results;
