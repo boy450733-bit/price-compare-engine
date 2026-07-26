@@ -194,4 +194,45 @@ router.put("/token", async (req, res) => {
   }
 });
 
+// Add a brand new store dynamically from the admin panel
+router.post("/stores", async (req, res) => {
+  const { name, color, base_url, search_url_template, affiliate_param, selectors, enabled } = req.body;
+
+  if (!name || !base_url) {
+    return res.status(400).json({ error: "Store name and base URL are required." });
+  }
+
+  try {
+    const { rows } = await db(
+      `INSERT INTO stores (name, color, base_url, search_url_template, affiliate_param, selectors, enabled)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
+       RETURNING *`,
+      [
+        name.trim(),
+        color || "#0B6E4F",
+        base_url.trim(),
+        search_url_template || `${base_url.trim()}/search/{query}/`,
+        affiliate_param || null,
+        selectors ? JSON.stringify(selectors) : "{}",
+        enabled !== false
+      ]
+    );
+    res.json({ store: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create store: " + err.message });
+  }
+});
+
+// Delete a store from the database
+router.delete("/stores/:name", async (req, res) => {
+  const { name } = req.params;
+  try {
+    const { rowCount } = await db(`DELETE FROM stores WHERE name = $1`, [name]);
+    if (rowCount === 0) return res.status(404).json({ error: "Store not found" });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete store: " + err.message });
+  }
+});
+
 export default router;

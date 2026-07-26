@@ -149,13 +149,63 @@
 
       <!-- Stores -->
       <div class="page" id="page-stores">
-        <div class="page-header"><h2>Store Config</h2><p>Enable/disable stores, edit base URLs, search URL templates, and JSON selectors.</p></div>
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2>Store Config</h2>
+            <p>Add new stores, configure JSON selectors, and manage scraper endpoints.</p>
+          </div>
+          <button class="btn-sm" id="openAddStoreModalBtn" style="background: var(--brand); font-weight: 600;">+ Add New Store</button>
+        </div>
+
+        <!-- Add Store Form Drawer -->
+        <div id="addStoreFormCard" style="display: none; background: var(--surface); border: 1.5px solid var(--brand); border-radius: var(--radius); padding: 20px; margin-bottom: 20px;">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--brand-dark);">Register New Store Scraper</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <span class="muted" style="font-size:11px">Store Name (Unique ID)</span>
+              <input type="text" class="cell-input" id="newStoreName" placeholder="e.g. Daraz.pk">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Base URL</span>
+              <input type="text" class="cell-input" id="newStoreBaseUrl" placeholder="e.g. https://www.daraz.pk">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <span class="muted" style="font-size:11px">Search URL Template</span>
+              <input type="text" class="cell-input" id="newStoreTemplate" placeholder="e.g. https://www.daraz.pk/catalog/?q={query}">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Badge Color</span>
+              <input type="color" id="newStoreColor" value="#0B6E4F" style="width:100%; height:28px; border:1px solid var(--line); border-radius:6px; padding:0;">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Affiliate Param</span>
+              <input type="text" class="cell-input" id="newStoreAffiliate" placeholder="e.g. spm=a2a0e...">
+            </div>
+          </div>
+          <div style="margin-bottom: 14px;">
+            <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
+            <textarea class="cell-input" id="newStoreSelectors" rows="4" style="font-family: monospace; font-size: 11px;">{
+  "container": ".box--ujhwb",
+  "title": ".title--wFjAI",
+  "image": "img",
+  "price": ".price--NVaji",
+  "originalPrice": ".original-price--other"
+}</textarea>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-sm" id="submitNewStoreBtn">Save &amp; Enable Store</button>
+            <button class="btn-sm" id="cancelAddStoreBtn" style="background: var(--ink-soft);">Cancel</button>
+          </div>
+        </div>
+
         <div class="toolbar">
           <input type="text" class="search-input" id="storeFilter" placeholder="Filter stores by name...">
           <span class="result-count" id="storeCount"></span>
         </div>
         <table id="storesTable">
-          <thead><tr><th>Status</th><th>Store Details &amp; Selectors</th><th></th></tr></thead>
+          <thead><tr><th>Status</th><th>Store Details &amp; Selectors</th><th>Actions</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -611,6 +661,55 @@
     }
   });
 
+  // Toggle Add Store Form Drawer
+  document.getElementById("openAddStoreModalBtn").addEventListener("click", () => {
+    document.getElementById("addStoreFormCard").style.display = "block";
+  });
+  document.getElementById("cancelAddStoreBtn").addEventListener("click", () => {
+    document.getElementById("addStoreFormCard").style.display = "none";
+  });
+
+  // Submit New Store
+  document.getElementById("submitNewStoreBtn").addEventListener("click", async () => {
+    const name = document.getElementById("newStoreName").value.trim();
+    const base_url = document.getElementById("newStoreBaseUrl").value.trim();
+    const search_url_template = document.getElementById("newStoreTemplate").value.trim();
+    const color = document.getElementById("newStoreColor").value;
+    const affiliate_param = document.getElementById("newStoreAffiliate").value.trim();
+    
+    let selectors = {};
+    try {
+      selectors = JSON.parse(document.getElementById("newStoreSelectors").value);
+    } catch (err) {
+      alert("Invalid JSON format in Selectors field.");
+      return;
+    }
+
+    if (!name || !base_url) {
+      alert("Store Name and Base URL are required.");
+      return;
+    }
+
+    const btn = document.getElementById("submitNewStoreBtn");
+    btn.textContent = "Creating...";
+    try {
+      await api("/stores", {
+        method: "POST",
+        body: JSON.stringify({ name, base_url, search_url_template, color, affiliate_param, selectors, enabled: true })
+      });
+      document.getElementById("addStoreFormCard").style.display = "none";
+      document.getElementById("newStoreName").value = "";
+      document.getElementById("newStoreBaseUrl").value = "";
+      document.getElementById("newStoreTemplate").value = "";
+      document.getElementById("newStoreAffiliate").value = "";
+      btn.textContent = "Save & Enable Store";
+      loadAll();
+    } catch (err) {
+      alert("Error creating store: " + err.message);
+      btn.textContent = "Save & Enable Store";
+    }
+  });
+
   function renderStores(list) {
     document.getElementById("storeCount").textContent = `${list.length} of ${storesData.length}`;
     const tbody = document.querySelector("#storesTable tbody");
@@ -635,7 +734,12 @@
             <textarea class="cell-input f-selectors" rows="3" style="font-family: monospace; font-size: 11px;">${s.selectors ? JSON.stringify(s.selectors, null, 2) : "{}"}</textarea>
           </div>
         </td>
-        <td><button class="btn-sm save-store">Save</button></td>
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <button class="btn-sm save-store">Save</button>
+            <button class="btn-sm delete-store" style="background: var(--danger);">Delete</button>
+          </div>
+        </td>
       </tr>`
       )
       .join("");
@@ -666,6 +770,25 @@
         btn.textContent = "Saved";
         btn.classList.add("saved");
         setTimeout(() => { btn.textContent = "Save"; btn.classList.remove("saved"); }, 1200);
+      });
+    });
+
+    tbody.querySelectorAll(".delete-store").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const name = row.dataset.store;
+        if (!confirm(`Are you sure you want to delete store "${name}"? This will remove its scraper configuration permanently.`)) {
+          return;
+        }
+
+        btn.textContent = "Deleting...";
+        try {
+          await api(`/stores/${encodeURIComponent(name)}`, { method: "DELETE" });
+          loadAll();
+        } catch (err) {
+          alert("Failed to delete store: " + err.message);
+          btn.textContent = "Delete";
+        }
       });
     });
   }

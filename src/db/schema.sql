@@ -1,12 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS stores (
-  name                TEXT PRIMARY KEY,
-  color               TEXT,
-  base_url            TEXT NOT NULL,
-  search_url_template TEXT NOT NULL,  -- use {query} placeholder
-  affiliate_param     TEXT,           -- e.g. "?aff_id=YOUR_ID" appended on redirect
-  enabled             BOOLEAN DEFAULT true
+  name TEXT PRIMARY KEY,
+  color TEXT,
+  base_url TEXT,
+  search_url_template TEXT,
+  affiliate_param TEXT,
+  selectors JSONB,
+  enabled BOOLEAN DEFAULT true
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -126,5 +127,3 @@ CREATE TABLE IF NOT EXISTS price_alerts (
   notified BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE stores ADD COLUMN IF NOT EXISTS selectors JSONB;
