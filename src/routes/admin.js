@@ -127,8 +127,8 @@ router.get("/settings", async (_req, res) => {
 
 router.put("/settings", async (req, res) => {
   await db(
-    `INSERT INTO site_settings (id, data, updated_at) VALUES (1, $1, now())
-     ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = now()`,
+    `INSERT INTO site_settings (id, data, updated_at) VALUES (1, $1::jsonb, now())
+     ON CONFLICT (id) DO UPDATE SET data = $1::jsonb, updated_at = now()`,
     [JSON.stringify(req.body)]
   );
   res.json({ ok: true });
@@ -161,7 +161,7 @@ router.put("/token", async (req, res) => {
   try {
     await pool.query(
       `INSERT INTO site_settings (id, data) 
-       VALUES (1, json_build_object('adminToken', $1)::jsonb)
+       VALUES (1, json_build_object('adminToken', $1::text)::jsonb)
        ON CONFLICT (id) DO UPDATE SET 
        data = jsonb_set(COALESCE(site_settings.data, '{}'::jsonb), '{adminToken}', to_jsonb($1::text))`,
       [cleanToken]
