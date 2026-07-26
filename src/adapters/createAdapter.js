@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import stringSimilarity from "string-similarity";
+import crypto from "node:crypto";
 
 // --- STEP 1: Anti-Bot Evasion (Rotating User-Agents) ---
 const USER_AGENTS = [
@@ -19,7 +20,7 @@ function sleep(ms) {
 }
 
 export function createAdapter(config) {
-  return config.parseJson ? createJsonAdapter(config) : createHtmlAdapter(config);
+  return (config.parseJson || config.selectors?.isApi) ? createJsonAdapter(config) : createHtmlAdapter(config);
 }
 
 async function performFetch(config, query) {
@@ -30,10 +31,10 @@ async function performFetch(config, query) {
     headers = {},
   } = config;
 
-  // --- STEP 1: Human-like randomized delay (0.5s to 2s) to prevent WAF blocks ---
+  // --- Human-like randomized delay (0.5s to 2s) to prevent WAF blocks ---
   await sleep(Math.floor(Math.random() * 1500) + 500);
 
-  const url = searchUrl(query);
+  const url = typeof searchUrl === "function" ? searchUrl(query) : searchUrl.replace("{query}", encodeURIComponent(query));
   const fetchOptions = {
     method,
     headers: { 
@@ -52,17 +53,69 @@ async function performFetch(config, query) {
 }
 
 function createJsonAdapter(config) {
-  const { parseJson } = config;
+  const { parseJson, name, baseUrl } = config;
   return async function adapter(query) {
     const res = await performFetch(config, query);
     if (!res.ok) return [];
+    
     const data = await res.json();
-    return parseJson(data, query) || [];
+
+    // 1. If a custom parseJson code function was provided
+    if (typeof parseJson === "function") {
+      return (parseJson(data, query) || []).map(p => formatProductRecord(p, name, baseUrl));
+    }
+
+    // 2. Dynamic JSON API mapping from database selectors configuration
+    const sel = config.selectors || {};
+    const path = sel.dataPath || "mods.listItems";
+    const items = path.split('.').reduce((obj, key) => obj?.[key], data) || [];
+
+    return items
+      .filter((item) => sel.filterType ? item.tItemType === sel.filterType : true)
+      .map((item) => {
+        const itemUrl = item[sel.fields?.url || "itemUrl"] || "";
+        const formattedUrl = itemUrl.startsWith("http") ? itemUrl : `${baseUrl || ''}${itemUrl}`;
+        
+        return {
+          title: item[sel.fields?.title || "name"] || "Untitled Product",
+          url: formattedUrl,
+          image: item[sel.fields?.image || "image"] || null,
+          price: item[sel.fields?.price || "price"] ? Number(item[sel.fields?.price || "price"]) : null,
+          originalPrice: item[sel.fields?.originalPrice || "originalPrice"] ? Number(item[sel.fields?.originalPrice || "originalPrice"]) : null,
+          rating: item[sel.fields?.rating || "ratingScore"] ? Number(item[sel.fields?.rating || "ratingScore"]) : 0,
+          reviewCount: item[sel.fields?.reviewCount || "review"] ? Number(item[sel.fields?.reviewCount || "review"]) : 0,
+          inStock: item[sel.fields?.inStock || "inStock"] !== false,
+        };
+      }).map(p => formatProductRecord(p, name, baseUrl));
+  };
+}
+
+function formatProductRecord(p, storeName, baseUrl) {
+  const rawId = `${storeName}|${p.url}`;
+  const id = crypto.createHash("md5").update(rawId).digest("hex");
+  let finalUrl = p.url;
+  if (finalUrl && !finalUrl.startsWith("http") && baseUrl) {
+    finalUrl = new URL(finalUrl, baseUrl).toString();
+  }
+
+  return {
+    id,
+    title: p.title,
+    url: finalUrl,
+    image: p.image || null,
+    price: p.price !== undefined ? Number(p.price) : null,
+    originalPrice: p.originalPrice !== undefined ? Number(p.originalPrice) : null,
+    rating: p.rating !== undefined ? Number(p.rating) : 0,
+    reviewCount: p.reviewCount !== undefined ? Number(p.reviewCount) : 0,
+    inStock: p.inStock !== false,
+    store: storeName,
+    scraped_at: new Date()
   };
 }
 
 function createHtmlAdapter(config) {
   const {
+    name,
     baseUrl,
     selectors: {
       container,
@@ -165,7 +218,7 @@ function createHtmlAdapter(config) {
         }
       }
 
-      results.push({
+      results.push(formatProductRecord({
         title: titleText,
         url: href.startsWith("http") ? href : `${baseUrl}${href}`,
         image: imageSrc || null,
@@ -174,7 +227,7 @@ function createHtmlAdapter(config) {
         rating: ratingValue,
         reviewCount: reviewCountValue,
         inStock: inStockValue,
-      });
+      }, name, baseUrl));
     });
 
     return results;
