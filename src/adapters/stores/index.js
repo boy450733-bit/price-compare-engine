@@ -38,6 +38,7 @@ export async function getActiveAdapters() {
     return [];
   }
 }
+
 /*
 import { megaConfig } from "./mega.config.js";
 import { priceOyeConfig } from "./priceoye.config.js";
