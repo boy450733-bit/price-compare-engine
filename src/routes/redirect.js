@@ -1,65 +1,81 @@
 import { Router } from "express";
 import { query as db } from "../db/client.js";
-import { getActiveAdapters } from "../adapters/stores/index.js";
+import { pool } from "../db/client.js";
 
 const router = Router();
 
-// Track product clicks and redirect users to the correct store product URL
-router.get("/redirect", async (req, res) => {
-  const { productId, store, url } = req.query;
+// Handle cleaner product click tracking and redirection via /out/:id
+router.get("/out/:id", async (req, res) => {
+  const { id } = req.params;
 
-  if (!url || !store) {
-    return res.status(400).send("Missing parameters for redirection.");
+  if (!id) {
+    return res.status(400).send("Missing product ID for redirection.");
   }
 
-  let finalDestinationUrl = url;
-
   try {
-    // 1. Check if a custom manually-converted affiliate link exists for this product
-    if (productId) {
-      const { rows: affRows } = await db(
-        `SELECT affiliate_url FROM affiliate_links WHERE product_id = $1`,
-        [productId]
-      );
-      if (affRows[0]?.affiliate_url) {
-        finalDestinationUrl = affRows[0].affiliate_url;
-      }
+    // 1. Fetch the product details from the database
+    const { rows: prodRows } = await db(
+      `SELECT id, title, store, url FROM products WHERE id = $1`,
+      [id]
+    );
+
+    if (prodRows.length === 0) {
+      return res.status(404).send("Product not found or expired.");
     }
 
-    // 2. If no manual affiliate link, check if the store has an automatic affiliate parameter
-    if (finalDestinationUrl === url) {
-      const adapters = await getActiveAdapters();
-      // Alternatively, query the stores table directly for the affiliate_param
+    const product = prodRows[0];
+    let finalDestinationUrl = product.url;
+
+    // 2. Check if a manual custom affiliate link exists for this product ID
+    const { rows: affRows } = await db(
+      `SELECT affiliate_url FROM affiliate_links WHERE product_id = $1`,
+      [id]
+    );
+    if (affRows[0]?.affiliate_url) {
+      finalDestinationUrl = affRows[0].affiliate_url;
+    } else {
+      // 3. If no manual link, check if the store has an automatic affiliate parameter
       const { rows: storeRows } = await db(
         `SELECT affiliate_param FROM stores WHERE name = $1`,
-        [store]
+        [product.store]
       );
       const affiliateParam = storeRows[0]?.affiliate_param;
 
-      if (affiliateParam) {
+      if (affiliateParam && finalDestinationUrl) {
         const separator = finalDestinationUrl.includes("?") ? "&" : "?";
         finalDestinationUrl = `${finalDestinationUrl}${separator}${affiliateParam}`;
       }
     }
 
-    // 3. Log the click asynchronously for admin metrics & worklists
-    if (productId) {
-      db(
-        `INSERT INTO clicks (product_id, store, ip, user_agent) VALUES ($1, $2, $3, $4)`,
-        [
-          productId,
-          store,
-          req.headers["x-forwarded-for"] || req.socket.remoteAddress || null,
-          req.headers["user-agent"] || null,
-        ]
-      ).catch((err) => console.error("Failed to log click:", err.message));
-    }
-  } catch (err) {
-    console.error("Redirection tracking error:", err.message);
-  }
+    // 4. Log the click asynchronously for admin analytics & worklists
+    db(
+      `INSERT INTO clicks (product_id, store, ip, user_agent) VALUES ($1, $2, $3, $4)`,
+      [
+        product.id,
+        product.store,
+        req.headers["x-forwarded-for"] || req.socket.remoteAddress || null,
+        req.headers["user-agent"] || null,
+      ]
+    ).catch((err) => console.error("Failed to log click:", err.message));
 
-  // 4. Perform the final redirect
-  return res.redirect(302, finalDestinationUrl);
+    // 5. Perform the final redirect
+    return res.redirect(302, finalDestinationUrl);
+  } catch (err) {
+    console.error("Redirection error:", err.message);
+    return res.status(500).send("Internal server error during redirection.");
+  }
+});
+
+// Fallback legacy redirect route (just in case old links are cached in browsers)
+router.get("/redirect", async (req, res) => {
+  const { productId, store, url } = req.query;
+  if (productId) {
+    return res.redirect(302, `/out/${productId}`);
+  }
+  if (url) {
+    return res.redirect(302, url);
+  }
+  return res.status(400).send("Missing redirection parameters.");
 });
 
 export default router;
