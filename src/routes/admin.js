@@ -154,4 +154,45 @@ router.get("/stats", async (_req, res) => {
   });
 });
 
+import fs from "node:fs";
+import path from "node:path";
+
+// PUT /admin/api/token — Updates or resets the admin security token
+router.put("/token", async (req, res) => {
+  const { newToken } = req.body;
+  
+  if (!newToken || newToken.trim().length < 6) {
+    return res.status(400).json({ error: "Token must be at least 6 characters long." });
+  }
+
+  const cleanToken = newToken.trim();
+
+  try {
+    // 1. Update the in-memory runtime environment variable immediately
+    process.env.ADMIN_TOKEN = cleanToken;
+
+    // 2. Persist the change to the local .env file (if running locally or on a persistent volume)
+    const envPath = path.resolve(process.cwd(), ".env");
+    let envContent = "";
+    
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, "utf8");
+    }
+
+    if (envContent.includes("ADMIN_TOKEN=")) {
+      // Replace existing ADMIN_TOKEN line
+      envContent = envContent.replace(/^ADMIN_TOKEN=.*$/m, `ADMIN_TOKEN=${cleanToken}`);
+    } else {
+      // Append if it doesn't exist
+      envContent += `\nADMIN_TOKEN=${cleanToken}\n`;
+    }
+
+    fs.writeFileSync(envPath, envContent, "utf8");
+
+    res.json({ success: true, message: "Admin token updated successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
