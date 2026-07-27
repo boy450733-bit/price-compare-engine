@@ -306,8 +306,6 @@ router.post("/test-store-raw", async (req, res) => {
   }
 
   const searchUrl = search_url_template.replace("{query}", encodeURIComponent(query || "phone"));
-  
-  // Extract custom headers if supplied in selectors
   const customHeaders = selectors?.headers || {};
 
   try {
@@ -325,19 +323,21 @@ router.post("/test-store-raw", async (req, res) => {
     const ok = response.ok;
     const htmlText = await response.text();
 
-    // Extract content inside <body>...</body> tags if present
+    // Safe extraction: try to locate body content, otherwise use full HTML
     let bodyContent = htmlText;
     const bodyMatch = htmlText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    if (bodyMatch && bodyMatch[1]) {
-      bodyContent = bodyMatch[1].trim();
+    if (bodyMatch && bodyMatch[1] && bodyMatch[1].length > 500) {
+      bodyContent = bodyMatch[1];
     }
 
-    const truncatedHtml = bodyContent.length > 100000 ? bodyContent.slice(0, 100000) + "\n\n... [Truncated for preview]" : bodyContent;
+    // Allow a larger preview window (up to 150,000 chars) so products aren't cut off
+    const maxLen = 150000;
+    const truncatedHtml = bodyContent.length > maxLen ? bodyContent.slice(0, maxLen) + "\n\n... [Truncated]" : bodyContent;
 
     res.json({
       success: ok,
       status,
-      contentLength: bodyContent.length,
+      contentLength: htmlText.length,
       htmlSnippet: truncatedHtml
     });
   } catch (err) {
