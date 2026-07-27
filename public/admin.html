@@ -206,13 +206,14 @@
             </div>
           </div>
           
+          
           <!-- Auto-named store & quick save button -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #F1ECDE; padding: 8px 12px; border-radius: 6px;">
             <span class="muted" style="font-size: 12px;">Auto-named store from base domain: <strong id="previewStoreNameLabel" style="color:var(--brand)">-</strong></span>
             <button class="btn-sm" id="quickSaveStoreBtn" style="background: var(--brand);">+ Save Store to List</button>
           </div>
 
-          <div style="margin-bottom: 12px;">
+          <div>
             <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
             <textarea class="cell-input" id="testSelectorsJson" rows="3" style="font-family: monospace; font-size: 11px;">{
   "container": ".box--ujhwb",
@@ -223,33 +224,17 @@
           </div>
 
           <!-- Test Results Preview Container -->
-          <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output &amp; Inspector:</span>
-              <div id="inspectorModeControls" style="display: none; gap: 6px;">
-                <button class="btn-sm" id="toggleInspectorBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Enable Element Inspector</button>
-              </div>
-            </div>
-
-            <!-- iframe container for visual HTML inspection & point-and-click selection -->
-            <div id="iframeInspectorWrapper" style="display: none; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; margin-bottom: 8px;">
-              <div id="inspectorBanner" style="background: var(--accent); color: #2A1B04; padding: 4px 10px; font-size: 11px; font-weight: 600; display: none;">
-                Inspector Active: Click any product element inside the frame below to map its selector!
-              </div>
-              <iframe id="sandboxPreviewFrame" sandbox="allow-same-origin allow-scripts" style="width: 100%; height: 400px; border: none;"></iframe>
-            </div>
-
-            <!-- Fallback JSON / text view -->
-            <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap; max-height: 250px; overflow-y: auto;"></pre>
+          <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 280px; overflow-y: auto;">
+            <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600; display:block; margin-bottom:6px;">Sandbox Output:</span>
+            <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap;"></pre>
           </div>
         </div>
 
-        <!-- Toolbar / Filter for Saved Stores -->
         <div class="toolbar">
           <input type="text" class="search-input" id="storeFilter" placeholder="Filter saved stores by name...">
           <span class="result-count" id="storeCount"></span>
         </div>
-
+        
         <!-- Accordion Folded Stores Container -->
         <div id="savedStoresList"></div>
       </div>
@@ -341,9 +326,6 @@
   let chartProductsInstance = null;
   let chartClicksInstance = null;
   let chartSearchesInstance = null;
-  
-  let isInspectorActive = false;
-  let lastFetchedHtml = "";
 
   function showToast(message, type = "success") {
     const container = document.getElementById("toastContainer");
@@ -458,10 +440,131 @@
       <div class="stat-card"><div class="num">${cachedStats.totalSearches}</div><div class="label">Total searches</div></div>
     `;
     renderCharts(cachedStats, 'daily');
+
     const storesRes = await api("/stores");
     storesData = storesRes.stores;
     renderStores(storesData);
+
+    const worklistRes = await api("/affiliate-worklist");
+    worklistData = worklistRes.worklist;
+    renderWorklist(worklistData);
+
+    const linkedRes = await api("/affiliate-links");
+    linkedData = linkedRes.links;
+    renderLinked(linkedData);
+
+    const alertsRes = await api("/alerts");
+    alertsData = alertsRes.alerts || [];
+    renderAlerts(alertsData);
+
+    loadSettings();
   }
+
+  function renderCharts(stats, period) {
+    let labels = [];
+    let multiplier = 1;
+    if (period === 'daily') {
+      labels = ['30d ago', '24d ago', '18d ago', '12d ago', '6d ago', 'Today'];
+      multiplier = 0.2;
+    } else if (period === 'weekly') {
+      labels = ['Week 4', 'Week 3', 'Week 2', 'Current Week'];
+      multiplier = 0.5;
+    } else {
+      labels = ['Last Month', 'This Month'];
+      multiplier = 1;
+    }
+
+    const ctxProd = document.getElementById('chartProducts').getContext('2d');
+    if (chartProductsInstance) chartProductsInstance.destroy();
+    chartProductsInstance = new Chart(ctxProd, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Products', data: labels.map((_, i) => Math.round(stats.totalProducts * (multiplier + (i * 0.15)))), borderColor: '#0B6E4F', backgroundColor: 'rgba(11, 110, 79, 0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxClicks = document.getElementById('chartClicks').getContext('2d');
+    if (chartClicksInstance) chartClicksInstance.destroy();
+    chartClicksInstance = new Chart(ctxClicks, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Clicks', data: labels.map((_, i) => Math.round(stats.totalClicks * (multiplier + (i * 0.1)))), backgroundColor: '#E8A33D', borderRadius: 6 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxSearches = document.getElementById('chartSearches').getContext('2d');
+    if (chartSearchesInstance) chartSearchesInstance.destroy();
+    chartSearchesInstance = new Chart(ctxSearches, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Searches', data: labels.map((_, i) => Math.round(stats.totalSearches * (multiplier + (i * 0.12)))), borderColor: '#6B7A70', backgroundColor: 'rgba(107, 122, 112, 0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+
+  async function loadSettings() {
+    const data = await api("/settings");
+    document.getElementById("s-logoText").value = data.logoText || "";
+    document.getElementById("s-heroSubtitle").value = data.heroSubtitle || "";
+    document.getElementById("s-footerText").value = data.footerText || "";
+    document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
+    const al = data.alertsConfig || {};
+    document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
+    document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
+    document.getElementById("alertEmailBody").value = al.emailBody || "";
+  }
+
+  document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+    const existing = await api("/settings");
+    const payload = {
+      ...existing,
+      logoText: document.getElementById("s-logoText").value,
+      heroSubtitle: document.getElementById("s-heroSubtitle").value,
+      footerText: document.getElementById("s-footerText").value,
+      heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
+    };
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
+      showToast("Site settings saved successfully!", "success");
+    } catch (err) {
+      showToast("Error saving settings: " + err.message, "error");
+    }
+  });
+
+  document.getElementById("saveAlertConfigBtn").addEventListener("click", async () => {
+    const existing = await api("/settings");
+    const alertsConfig = {
+      cronSchedule: document.getElementById("alertCronSchedule").value,
+      emailSubject: document.getElementById("alertEmailSubject").value,
+      emailBody: document.getElementById("alertEmailBody").value,
+    };
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify({ ...existing, alertsConfig }) });
+      showToast("Alert configurations saved successfully!", "success");
+    } catch (err) {
+      showToast("Error saving alert config: " + err.message, "error");
+    }
+  });
+
+  document.getElementById("updateTokenBtn").addEventListener("click", async () => {
+    const newToken = document.getElementById("newAdminTokenInput").value.trim();
+    if (!newToken || newToken.length < 6) {
+      showToast("Token must be at least 6 characters long.", "error");
+      return;
+    }
+    try {
+      const res = await fetch("/admin/api/token", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
+        body: JSON.stringify({ newToken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update token");
+      TOKEN = newToken;
+      localStorage.setItem(STORAGE_KEY, newToken);
+      document.getElementById("newAdminTokenInput").value = "";
+      showToast("Admin token updated successfully!", "success");
+    } catch (err) {
+      showToast("Error: " + err.message, "error");
+    }
+  });
 
   function getExtractedStoreName(baseUrl) {
     try {
@@ -480,7 +583,6 @@
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
 
-  // Step 1: Check HTML & Setup Inspector Sandbox (Loads full un-truncated HTML)
   document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -496,142 +598,22 @@
     const container = document.getElementById("testResultsContainer");
     const output = document.getElementById("testOutputJson");
     const titleEl = document.getElementById("testOutputTitle");
-    const iframeWrapper = document.getElementById("iframeInspectorWrapper");
-    const controls = document.getElementById("inspectorModeControls");
-
     container.style.display = "block";
-    titleEl.textContent = "Step 1: Raw Full Page HTML & Visual Inspector:";
-    output.textContent = "Fetching full page HTML from target store...";
-    iframeWrapper.style.display = "none";
-    controls.style.display = "none";
+    titleEl.textContent = "Step 1: Raw HTML Response Preview:";
+    output.textContent = "Fetching raw HTML from target store...";
 
     try {
       const res = await api("/test-store-raw", {
         method: "POST",
         body: JSON.stringify({ base_url, search_url_template, query, selectors })
       });
-
-      lastFetchedHtml = res.htmlSnippet;
-
-      if (res.htmlSnippet && res.htmlSnippet.trim().startsWith("<")) {
-        output.style.display = "none";
-        iframeWrapper.style.display = "block";
-        controls.style.display = "flex";
-
-        const frame = document.getElementById("sandboxPreviewFrame");
-        frame.srcdoc = res.htmlSnippet;
-        frame.onload = () => {
-          setupIframeInspector(frame);
-        };
-      } else {
-        iframeWrapper.style.display = "none";
-        output.style.display = "block";
-        output.textContent = res.htmlSnippet;
-      }
-
-      showToast(`Fetched full page successfully (Status ${res.status})`, "success");
+      output.textContent = `HTTP Status: ${res.status} (OK: ${res.success})\nContent-Length: ${res.contentLength} bytes\n\n--- HTML SNIPPET ---\n${res.htmlSnippet}`;
+      showToast(`Fetched HTML successfully (Status ${res.status})`, "success");
     } catch (err) {
-      output.style.display = "block";
-      iframeWrapper.style.display = "none";
       output.textContent = "Error fetching raw HTML: " + err.message;
       showToast("Failed to fetch raw page.", "error");
     }
   });
-
-  document.getElementById("toggleInspectorBtn").addEventListener("click", () => {
-    isInspectorActive = !isInspectorActive;
-    const btn = document.getElementById("toggleInspectorBtn");
-    const banner = document.getElementById("inspectorBanner");
-    btn.style.background = isInspectorActive ? "var(--danger)" : "var(--brand)";
-    btn.textContent = isInspectorActive ? "Disable Inspector" : "Enable Element Inspector";
-    banner.style.display = isInspectorActive ? "block" : "none";
-  });
-
-  // Optimized relative selector generator (avoids long path chains)
-  function getCssSelector(el) {
-    if (!el || el.nodeType !== 1) return "";
-    if (el.id) return `#${el.id}`;
-
-    let tag = el.tagName.toLowerCase();
-    
-    // If the element has a distinct class name, prefer a clean relative selector
-    if (el.className && typeof el.className === "string") {
-      const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2 && !c.includes("inspector"));
-      if (classes.length > 0) {
-        // Return class-based relative selector immediately if it's specific enough
-        return `${tag}.${classes[0]}`;
-      }
-    }
-
-    // Fallback: build a short relative path (max 2 levels up) instead of climbing to body
-    let path = [tag];
-    let parent = el.parentElement;
-    let levels = 0;
-
-    while (parent && parent.nodeType === 1 && parent.tagName !== "BODY" && levels < 2) {
-      let pTag = parent.tagName.toLowerCase();
-      if (parent.className && typeof parent.className === "string") {
-        const pClasses = parent.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2);
-        if (pClasses.length > 0) {
-          path.unshift(`${pTag}.${pClasses[0]}`);
-          break;
-        }
-      }
-      path.unshift(pTag);
-      parent = parent.parentElement;
-      levels++;
-    }
-
-    return path.join(" > ");
-  }
-
-  function setupIframeInspector(frame) {
-    try {
-      const frameDoc = frame.contentDocument || frame.contentWindow.document;
-      if (!frameDoc || !frameDoc.body) return;
-
-      const styleEl = frameDoc.createElement("style");
-      styleEl.innerHTML = `
-        .inspector-highlight { outline: 2px solid #E8A33D !important; background-color: rgba(232, 163, 61, 0.15) !important; cursor: pointer !important; }
-      `;
-      frameDoc.head.appendChild(styleEl);
-
-      frameDoc.body.addEventListener("mouseover", (e) => {
-        if (!isInspectorActive) return;
-        e.target.classList.add("inspector-highlight");
-      }, true);
-
-      frameDoc.body.addEventListener("mouseout", (e) => {
-        if (!isInspectorActive) return;
-        e.target.classList.remove("inspector-highlight");
-      }, true);
-
-      frameDoc.body.addEventListener("click", (e) => {
-        if (!isInspectorActive) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        e.target.classList.remove("inspector-highlight");
-        const computedSelector = getCssSelector(e.target);
-
-        if (computedSelector) {
-          const fieldType = prompt(`Selected Relative Selector:\n${computedSelector}\n\nMap this to which field? (e.g. container, title, price, image):`, "title");
-          if (fieldType) {
-            try {
-              let currentJson = JSON.parse(document.getElementById("testSelectorsJson").value || "{}");
-              currentJson[fieldType.trim()] = computedSelector;
-              document.getElementById("testSelectorsJson").value = JSON.stringify(currentJson, null, 2);
-              showToast(`Mapped ${fieldType.trim()} successfully!`, "success");
-            } catch (err) {
-              showToast("Error updating JSON selectors.", "error");
-            }
-          }
-        }
-      }, true);
-    } catch (e) {
-      console.warn("Inspector frame access restricted:", e);
-    }
-  }
 
   document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
@@ -795,12 +777,114 @@
     });
   }
 
+  function renderWorklist(list) {
+    document.getElementById("worklistCount").textContent = `${list.length} of ${worklistData.length}`;
+    const tbody = document.querySelector("#worklistTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">Nothing pending — every clicked product already has an affiliate link.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((w) => `
+      <tr data-product-id="${w.id}">
+        <td><span class="clicks-badge">${w.clicks}</span></td>
+        <td>${w.store}</td>
+        <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 55)}</a></td>
+        <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
+        <td><button class="btn-sm save-link">Save</button></td>
+      </tr>`).join("");
+
+    tbody.querySelectorAll(".save-link").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const productId = row.dataset.productId;
+        const affiliateUrl = row.querySelector(".f-affiliate-url").value.trim();
+        if (!affiliateUrl) return;
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link saved!", "success");
+          row.style.opacity = "0.5";
+        } catch (err) {
+          showToast("Error saving link: " + err.message, "error");
+        }
+      });
+    });
+  }
+
+  function renderLinked(list) {
+    document.getElementById("linkedCount").textContent = `${list.length} of ${linkedData.length}`;
+    const tbody = document.querySelector("#linkedTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">No affiliate links saved yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((l) => `
+      <tr data-product-id="${l.product_id}">
+        <td>${l.store}</td>
+        <td><a class="link" href="${l.url}" target="_blank" rel="noopener">${l.title.slice(0, 55)}</a></td>
+        <td><input type="text" class="cell-input f-affiliate-url" value="${l.affiliate_url}"></td>
+      </tr>`).join("");
+
+    tbody.querySelectorAll(".f-affiliate-url").forEach((input) => {
+      input.addEventListener("blur", async (e) => {
+        const row = e.target.closest("tr");
+        const productId = row.dataset.productId;
+        const affiliateUrl = e.target.value.trim();
+        if (!affiliateUrl) return;
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link updated!", "success");
+        } catch (err) {
+          showToast("Error updating link: " + err.message, "error");
+        }
+      });
+    });
+  }
+
+  function renderAlerts(list) {
+    document.getElementById("alertsCount").textContent = `${list.length} of ${alertsData.length}`;
+    const tbody = document.querySelector("#alertsTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">No price alert subscriptions found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((a) => `
+      <tr>
+        <td><strong>${a.email}</strong></td>
+        <td>${a.product_title || 'Unknown Product'}</td>
+        <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
+        <td>${a.notified ? '<span style="color:var(--ok)">Notified</span>' : '<span style="color:var(--accent)">Pending</span>'}</td>
+        <td class="muted">${new Date(a.created_at).toLocaleDateString()}</td>
+      </tr>`).join("");
+  }
+
   document.getElementById("storeFilter").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
   });
+  document.getElementById("worklistFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderWorklist(worklistData.filter((w) => w.title.toLowerCase().includes(q) || w.store.toLowerCase().includes(q)));
+  });
+  document.getElementById("linkedFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderLinked(linkedData.filter((l) => l.title.toLowerCase().includes(q) || l.store.toLowerCase().includes(q)));
+  });
+  document.getElementById("alertsFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
+  });
+
+  document.getElementById("triggerAlertsBtn").addEventListener("click", async () => {
+    try {
+      const res = await fetch("/admin/api/trigger-alerts", { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      showToast("Price alerts check completed!", "success");
+    } catch (err) {
+      showToast("Error: " + err.message, "error");
+    }
+  });
 })();
 </script>
-
 </body>
 </html>
