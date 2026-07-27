@@ -206,7 +206,7 @@
             </div>
           </div>
           
-          
+
           <!-- Auto-named store & quick save button -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #F1ECDE; padding: 8px 12px; border-radius: 6px;">
             <span class="muted" style="font-size: 12px;">Auto-named store from base domain: <strong id="previewStoreNameLabel" style="color:var(--brand)">-</strong></span>
@@ -223,18 +223,26 @@
 }</textarea>
           </div>
 
-          <!-- Test Results Preview Container -->
-          <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 280px; overflow-y: auto;">
-            <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600; display:block; margin-bottom:6px;">Sandbox Output:</span>
-            <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap;"></pre>
+      <!-- Test Results Preview Container -->
+      <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output & Inspector:</span>
+          <div id="inspectorModeControls" style="display: none; gap: 6px;">
+            <button class="btn-sm" id="toggleInspectorBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Enable Element Inspector</button>
           </div>
         </div>
 
-        <div class="toolbar">
-          <input type="text" class="search-input" id="storeFilter" placeholder="Filter saved stores by name...">
-          <span class="result-count" id="storeCount"></span>
+        {/* iframe container for visual HTML inspection & point-and-click selection */}
+        <div id="iframeInspectorWrapper" style="display: none; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff;">
+          <div id="inspectorBanner" style="background: var(--accent); color: #2A1B04; padding: 4px 10px; font-size: 11px; font-weight: 600; display: none;">
+            Inspector Active: Click any product element inside the frame below to map its selector!
+          </div>
+          <iframe id="sandboxPreviewFrame" sandbox="allow-same-origin" style="width: 100%; height: 300px; border: none;"></iframe>
         </div>
-        
+
+        {/* Fallback JSON / text view */}
+        <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap; max-height: 250px; overflow-y: auto;"></pre>
+      </div>
         <!-- Accordion Folded Stores Container -->
         <div id="savedStoresList"></div>
       </div>
@@ -884,6 +892,132 @@
       showToast("Error: " + err.message, "error");
     }
   });
+
+  let isInspectorActive = false;
+  let lastFetchedHtml = "";
+
+  // Handle Step 1 (HTML Preview + Visual Inspector Setup)
+  document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl").value.trim();
+    const search_url_template = document.getElementById("testTemplate").value.trim();
+    const query = document.getElementById("testQueryInput").value.trim() || "phone";
+    let selectors = {};
+    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
+
+    if (!base_url || !search_url_template) {
+      showToast("Base URL and Search URL Template are required.", "error");
+      return;
+    }
+
+    const container = document.getElementById("testResultsContainer");
+    const output = document.getElementById("testOutputJson");
+    const titleEl = document.getElementById("testOutputTitle");
+    const iframeWrapper = document.getElementById("iframeInspectorWrapper");
+    const controls = document.getElementById("inspectorModeControls");
+
+    container.style.display = "block";
+    titleEl.textContent = "Step 1: Raw HTML & Visual Inspector:";
+    output.textContent = "Fetching raw HTML from target store...";
+    iframeWrapper.style.display = "none";
+    controls.style.display = "none";
+
+    try {
+      const res = await api("/test-store-raw", {
+        method: "POST",
+        body: JSON.stringify({ base_url, search_url_template, query, selectors })
+      });
+
+      lastFetchedHtml = res.htmlSnippet;
+
+      // Check if it's an HTML response vs JSON/API response
+      if (res.htmlSnippet.trim().startsWith("<")) {
+        output.style.display = "none";
+        iframeWrapper.style.display = "block";
+        controls.style.display = "flex";
+
+        // Write HTML into sandbox iframe safely
+        const frame = document.getElementById("sandboxPreviewFrame");
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open();
+        doc.write(res.htmlSnippet);
+        doc.close();
+
+        setupIframeInspector(frame);
+      } else {
+        iframeWrapper.style.display = "none";
+        output.style.display = "block";
+        output.textContent = res.htmlSnippet;
+      }
+
+      showToast(`Fetched successfully (Status ${res.status})`, "success");
+    } catch (err) {
+      output.style.display = "block";
+      iframeWrapper.style.display = "none";
+      output.textContent = "Error fetching raw HTML: " + err.message;
+      showToast("Failed to fetch raw page.", "error");
+    }
+  });
+
+  // Toggle Point-and-Click Inspector Mode
+  document.getElementById("toggleInspectorBtn").addEventListener("click", () => {
+    isInspectorActive = !isInspectorActive;
+    const btn = document.getElementById("toggleInspectorBtn");
+    const banner = document.getElementById("inspectorBanner");
+    btn.style.background = isInspectorActive ? "var(--danger)" : "var(--brand)";
+    btn.textContent = isInspectorActive ? "Disable Inspector" : "Enable Element Inspector";
+    banner.style.display = isInspectorActive ? "block" : "none";
+  });
+
+  // Helper to compute a clean CSS selector for clicked element
+  function getCssSelector(el) {
+    if (!el || el.nodeType !== 1) return "";
+    if (el.id) return `#${el.id}`;
+    let path = [];
+    while (el && el.nodeType === 1 && el.tagName !== "BODY") {
+      let selector = el.tagName.toLowerCase();
+      if (el.className && typeof el.className === "string") {
+        const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2);
+        if (classes.length > 0) {
+          selector += `.${classes[0]}`;
+        }
+      }
+      path.unshift(selector);
+      el = el.parentElement;
+    }
+    return path.join(" > ");
+  }
+
+  // Bind click listener inside the iframe for visual selection
+  function setupIframeInspector(frame) {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.body.addEventListener("click", (e) => {
+        if (!isInspectorActive) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const target = e.target;
+        const computedSelector = getCssSelector(target);
+
+        if (computedSelector) {
+          // Prompt user what field they want to map this selector to
+          const fieldType = prompt(`Selected Element Selector:\n${computedSelector}\n\nMap this to which field? (e.g. container, title, price, image, originalPrice):`, "title");
+          if (fieldType) {
+            try {
+              let currentJson = JSON.parse(document.getElementById("testSelectorsJson").value || "{}");
+              currentJson[fieldType.trim()] = computedSelector;
+              document.getElementById("testSelectorsJson").value = JSON.stringify(currentJson, null, 2);
+              showToast(`Mapped ${fieldType.trim()} selector successfully!`, "success");
+            } catch (err) {
+              showToast("Error updating JSON selectors block.", "error");
+            }
+          }
+        }
+      }, true);
+    } catch (e) {
+      console.warn("Cross-origin frame restrictions prevent iframe inspection:", e);
+    }
+  }
 })();
 </script>
 </body>

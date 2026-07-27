@@ -332,7 +332,7 @@ router.post("/test-store-raw", async (req, res) => {
       bodyContent = bodyMatch[1].trim();
     }
 
-    const truncatedHtml = bodyContent.length > 8000 ? bodyContent.slice(0, 8000) + "\n\n... [Truncated for preview]" : bodyContent;
+    const truncatedHtml = bodyContent.length > 100000 ? bodyContent.slice(0, 100000) + "\n\n... [Truncated for preview]" : bodyContent;
 
     res.json({
       success: ok,
