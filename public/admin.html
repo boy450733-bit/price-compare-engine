@@ -342,7 +342,6 @@
   let chartClicksInstance = null;
   let chartSearchesInstance = null;
   
-  // Inspector global states scoped correctly inside IIFE
   let isInspectorActive = false;
   let lastFetchedHtml = "";
 
@@ -481,7 +480,7 @@
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
 
-  // Step 1: Check HTML & Setup Inspector Sandbox
+  // Step 1: Check HTML & Setup Inspector Sandbox (Loads full un-truncated HTML)
   document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -501,8 +500,8 @@
     const controls = document.getElementById("inspectorModeControls");
 
     container.style.display = "block";
-    titleEl.textContent = "Step 1: Raw HTML & Visual Inspector:";
-    output.textContent = "Fetching raw HTML from target store...";
+    titleEl.textContent = "Step 1: Raw Full Page HTML & Visual Inspector:";
+    output.textContent = "Fetching full page HTML from target store...";
     iframeWrapper.style.display = "none";
     controls.style.display = "none";
 
@@ -530,7 +529,7 @@
         output.textContent = res.htmlSnippet;
       }
 
-      showToast(`Fetched successfully (Status ${res.status})`, "success");
+      showToast(`Fetched full page successfully (Status ${res.status})`, "success");
     } catch (err) {
       output.style.display = "block";
       iframeWrapper.style.display = "none";
@@ -539,7 +538,6 @@
     }
   });
 
-  // Toggle Inspector Mode Button Listener
   document.getElementById("toggleInspectorBtn").addEventListener("click", () => {
     isInspectorActive = !isInspectorActive;
     const btn = document.getElementById("toggleInspectorBtn");
@@ -549,21 +547,41 @@
     banner.style.display = isInspectorActive ? "block" : "none";
   });
 
+  // Optimized relative selector generator (avoids long path chains)
   function getCssSelector(el) {
     if (!el || el.nodeType !== 1) return "";
     if (el.id) return `#${el.id}`;
-    let path = [];
-    while (el && el.nodeType === 1 && el.tagName !== "BODY") {
-      let selector = el.tagName.toLowerCase();
-      if (el.className && typeof el.className === "string") {
-        const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2);
-        if (classes.length > 0) {
-          selector += `.${classes[0]}`;
+
+    let tag = el.tagName.toLowerCase();
+    
+    // If the element has a distinct class name, prefer a clean relative selector
+    if (el.className && typeof el.className === "string") {
+      const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2 && !c.includes("inspector"));
+      if (classes.length > 0) {
+        // Return class-based relative selector immediately if it's specific enough
+        return `${tag}.${classes[0]}`;
+      }
+    }
+
+    // Fallback: build a short relative path (max 2 levels up) instead of climbing to body
+    let path = [tag];
+    let parent = el.parentElement;
+    let levels = 0;
+
+    while (parent && parent.nodeType === 1 && parent.tagName !== "BODY" && levels < 2) {
+      let pTag = parent.tagName.toLowerCase();
+      if (parent.className && typeof parent.className === "string") {
+        const pClasses = parent.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2);
+        if (pClasses.length > 0) {
+          path.unshift(`${pTag}.${pClasses[0]}`);
+          break;
         }
       }
-      path.unshift(selector);
-      el = el.parentElement;
+      path.unshift(pTag);
+      parent = parent.parentElement;
+      levels++;
     }
+
     return path.join(" > ");
   }
 
@@ -597,7 +615,7 @@
         const computedSelector = getCssSelector(e.target);
 
         if (computedSelector) {
-          const fieldType = prompt(`Selected Element Selector:\n${computedSelector}\n\nMap this to which field? (e.g. container, title, price, image):`, "title");
+          const fieldType = prompt(`Selected Relative Selector:\n${computedSelector}\n\nMap this to which field? (e.g. container, title, price, image):`, "title");
           if (fieldType) {
             try {
               let currentJson = JSON.parse(document.getElementById("testSelectorsJson").value || "{}");
@@ -615,7 +633,6 @@
     }
   }
 
-  // Step 2: Run Scraper Extraction
   document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
