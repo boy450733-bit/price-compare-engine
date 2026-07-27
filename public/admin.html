@@ -223,12 +223,15 @@
 }</textarea>
           </div>
 
-          <!-- Test Results Preview Container -->
-          <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 280px; overflow-y: auto;">
-            <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600; display:block; margin-bottom:6px;">Sandbox Output:</span>
-            <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap;"></pre>
-          </div>
-        </div>
+<!-- Test Results Preview Container -->
+<div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output:</span>
+    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--ink-soft); display: none;">Make Editable</button>
+  </div>
+  <!-- Changed from <pre> to <textarea> to allow editing, deleting, and searching via Ctrl+F -->
+  <textarea id="testOutputJson" class="cell-input" rows="10" style="margin:0; font-family: monospace; font-size: 11px; width: 100%; resize: vertical; background: var(--surface);"></textarea>
+</div>
 
         <div class="toolbar">
           <input type="text" class="search-input" id="storeFilter" placeholder="Filter saved stores by name...">
@@ -583,6 +586,7 @@
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
 
+  // Step 1: Check HTML with Editable Textarea Support
   document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -598,21 +602,36 @@
     const container = document.getElementById("testResultsContainer");
     const output = document.getElementById("testOutputJson");
     const titleEl = document.getElementById("testOutputTitle");
+    const toggleBtn = document.getElementById("toggleEditableBtn");
+
     container.style.display = "block";
     titleEl.textContent = "Step 1: Raw HTML Response Preview:";
-    output.textContent = "Fetching raw HTML from target store...";
+    output.value = "Fetching raw HTML from target store...";
+    toggleBtn.style.display = "inline-block";
 
     try {
       const res = await api("/test-store-raw", {
         method: "POST",
         body: JSON.stringify({ base_url, search_url_template, query, selectors })
       });
-      output.textContent = `HTTP Status: ${res.status} (OK: ${res.success})\nContent-Length: ${res.contentLength} bytes\n\n--- HTML SNIPPET ---\n${res.htmlSnippet}`;
+      output.value = `HTTP Status: ${res.status} (OK: ${res.success})\nContent-Length: ${res.contentLength} bytes\n\n--- HTML SNIPPET ---\n${res.htmlSnippet}`;
       showToast(`Fetched HTML successfully (Status ${res.status})`, "success");
     } catch (err) {
-      output.textContent = "Error fetching raw HTML: " + err.message;
+      output.value = "Error fetching raw HTML: " + err.message;
       showToast("Failed to fetch raw page.", "error");
     }
+  });
+
+  // Toggle Editing on Output Textarea
+  let isEditable = true;
+  document.getElementById("toggleEditableBtn").addEventListener("click", () => {
+    isEditable = !isEditable;
+    const output = document.getElementById("testOutputJson");
+    const btn = document.getElementById("toggleEditableBtn");
+    output.readOnly = !isEditable;
+    btn.style.background = isEditable ? "var(--ink-soft)" : "var(--brand)";
+    btn.textContent = isEditable ? "Make Editable" : "Lock Editing";
+    showToast(isEditable ? "Preview unlocked for editing." : "Preview locked.", "success");
   });
 
   document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
@@ -628,19 +647,22 @@
     const container = document.getElementById("testResultsContainer");
     const output = document.getElementById("testOutputJson");
     const titleEl = document.getElementById("testOutputTitle");
+    const toggleBtn = document.getElementById("toggleEditableBtn");
+    
     container.style.display = "block";
     titleEl.textContent = "Step 2: Scraper Extracted Results:";
-    output.textContent = "Executing selectors and parsing products...";
+    output.value = "Executing selectors and parsing products...";
+    toggleBtn.style.display = "none";
 
     try {
       const res = await api("/test-store", {
         method: "POST",
         body: JSON.stringify({ base_url, search_url_template, selectors, query })
       });
-      output.textContent = JSON.stringify(res, null, 2);
+      output.value = JSON.stringify(res, null, 2);
       showToast(`Scraper extracted ${res.count} products successfully!`, "success");
     } catch (err) {
-      output.textContent = "Extraction Error: " + err.message;
+      output.value = "Extraction Error: " + err.message;
       showToast("Scraper extraction failed.", "error");
     }
   });
