@@ -598,7 +598,34 @@
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
 
-  document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
+  document.getElementById("toggleInspectorBtn").addEventListener("click", () => {
+    isInspectorActive = !isInspectorActive;
+    const btn = document.getElementById("toggleInspectorBtn");
+    const banner = document.getElementById("inspectorBanner");
+    btn.style.background = isInspectorActive ? "var(--danger)" : "var(--brand)";
+    btn.textContent = isInspectorActive ? "Disable Inspector" : "Enable Element Inspector";
+    banner.style.display = isInspectorActive ? "block" : "none";
+  });
+
+  function getCssSelector(el) {
+    if (!el || el.nodeType !== 1) return "";
+    if (el.id) return `#${el.id}`;
+    let path = [];
+    while (el && el.nodeType === 1 && el.tagName !== "BODY") {
+      let selector = el.tagName.toLowerCase();
+      if (el.className && typeof el.className === "string") {
+        const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2);
+        if (classes.length > 0) {
+          selector += `.${classes[0]}`;
+        }
+      }
+      path.unshift(selector);
+      el = el.parentElement;
+    }
+    return path.join(" > ");
+  }
+
+document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
     const query = document.getElementById("testQueryInput").value.trim() || "phone";
@@ -630,18 +657,20 @@
 
       lastFetchedHtml = res.htmlSnippet;
 
-      if (res.htmlSnippet.trim().startsWith("<")) {
+      if (res.htmlSnippet && res.htmlSnippet.trim().startsWith("<")) {
         output.style.display = "none";
         iframeWrapper.style.display = "block";
         controls.style.display = "flex";
 
         const frame = document.getElementById("sandboxPreviewFrame");
-        const doc = frame.contentDocument || frame.contentWindow.document;
-        doc.open();
-        doc.write(res.htmlSnippet);
-        doc.close();
+        
+        // Use srcdoc attribute instead of direct doc.write() to bypass cross-origin lockouts
+        frame.srcdoc = res.htmlSnippet;
 
-        setupIframeInspector(frame);
+        // Wait for frame to load before binding the inspector
+        frame.onload = () => {
+          setupIframeInspector(frame);
+        };
       } else {
         iframeWrapper.style.display = "none";
         output.style.display = "block";
@@ -657,37 +686,12 @@
     }
   });
 
-  document.getElementById("toggleInspectorBtn").addEventListener("click", () => {
-    isInspectorActive = !isInspectorActive;
-    const btn = document.getElementById("toggleInspectorBtn");
-    const banner = document.getElementById("inspectorBanner");
-    btn.style.background = isInspectorActive ? "var(--danger)" : "var(--brand)";
-    btn.textContent = isInspectorActive ? "Disable Inspector" : "Enable Element Inspector";
-    banner.style.display = isInspectorActive ? "block" : "none";
-  });
-
-  function getCssSelector(el) {
-    if (!el || el.nodeType !== 1) return "";
-    if (el.id) return `#${el.id}`;
-    let path = [];
-    while (el && el.nodeType === 1 && el.tagName !== "BODY") {
-      let selector = el.tagName.toLowerCase();
-      if (el.className && typeof el.className === "string") {
-        const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && c.length > 2);
-        if (classes.length > 0) {
-          selector += `.${classes[0]}`;
-        }
-      }
-      path.unshift(selector);
-      el = el.parentElement;
-    }
-    return path.join(" > ");
-  }
-
   function setupIframeInspector(frame) {
     try {
-      const doc = frame.contentDocument || frame.contentWindow.document;
-      doc.body.addEventListener("click", (e) => {
+      const frameDoc = frame.contentDocument || frame.contentWindow.document;
+      if (!frameDoc || !frameDoc.body) return;
+
+      frameDoc.body.addEventListener("click", (e) => {
         if (!isInspectorActive) return;
         e.preventDefault();
         e.stopPropagation();
@@ -710,7 +714,7 @@
         }
       }, true);
     } catch (e) {
-      console.warn("Cross-origin frame restrictions prevent iframe inspection:", e);
+      console.warn("Inspector frame access restricted:", e);
     }
   }
 
