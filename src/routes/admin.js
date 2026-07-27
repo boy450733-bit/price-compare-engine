@@ -318,19 +318,26 @@ router.post("/test-store-raw", async (req, res) => {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         ...customHeaders
       },
-      // If POST and body needed, or empty body
       body: (selectors?.method === "POST") ? (selectors?.body || null) : undefined
     });
 
     const status = response.status;
     const ok = response.ok;
     const htmlText = await response.text();
-    const truncatedHtml = htmlText.length > 5000 ? htmlText.slice(0, 5000) + "\n\n... [Truncated for preview]" : htmlText;
+
+    // Extract content inside <body>...</body> tags if present
+    let bodyContent = htmlText;
+    const bodyMatch = htmlText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch && bodyMatch[1]) {
+      bodyContent = bodyMatch[1].trim();
+    }
+
+    const truncatedHtml = bodyContent.length > 8000 ? bodyContent.slice(0, 8000) + "\n\n... [Truncated for preview]" : bodyContent;
 
     res.json({
       success: ok,
       status,
-      contentLength: htmlText.length,
+      contentLength: bodyContent.length,
       htmlSnippet: truncatedHtml
     });
   } catch (err) {
