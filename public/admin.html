@@ -106,6 +106,7 @@
   .sub-tab-btn, .sub-tab-btn-alerts { padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--ink-soft); border-bottom: 2px solid transparent; background: transparent; cursor: pointer; }
   .sub-tab-btn.active, .sub-tab-btn-alerts.active { color: var(--brand-dark); border-bottom-color: var(--brand); }
 
+  /* Accordion folded store card styles */
   .store-row-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 6px; }
   .store-row-header:hover { background: #FBFAF6; }
   .store-details-panel { display: none; background: var(--surface); border: 1px solid var(--line); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 16px; margin-top: -8px; margin-bottom: 10px; }
@@ -179,6 +180,7 @@
           </div>
         </div>
 
+        <!-- Live Scraper Testing Sandbox Card -->
         <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 24px;">
           <h3 style="font-size: 15px; margin-bottom: 6px; color: var(--brand-dark);">🧪 Live Scraper Sandbox</h3>
           <p class="muted" style="margin-bottom: 14px;">Step 1: Check network response &amp; HTML body. Step 2: Extract structured products via selectors.</p>
@@ -204,6 +206,7 @@
             </div>
           </div>
           
+          <!-- Auto-named store & quick save button -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #F1ECDE; padding: 8px 12px; border-radius: 6px;">
             <span class="muted" style="font-size: 12px;">Auto-named store from base domain: <strong id="previewStoreNameLabel" style="color:var(--brand)">-</strong></span>
             <button class="btn-sm" id="quickSaveStoreBtn" style="background: var(--brand);">+ Save Store to List</button>
@@ -219,6 +222,7 @@
 }</textarea>
           </div>
 
+          <!-- Test Results Preview Container -->
           <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 280px; overflow-y: auto;">
             <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600; display:block; margin-bottom:6px;">Sandbox Output:</span>
             <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap;"></pre>
@@ -230,6 +234,7 @@
           <span class="result-count" id="storeCount"></span>
         </div>
         
+        <!-- Accordion Folded Stores Container -->
         <div id="savedStoresList"></div>
       </div>
 
