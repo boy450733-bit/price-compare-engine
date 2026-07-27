@@ -298,4 +298,44 @@ router.post("/test-store", async (req, res) => {
   }
 });
 
+// 1. Raw HTML fetch test (Step 1)
+router.post("/test-store-raw", async (req, res) => {
+  const { base_url, search_url_template, query, selectors } = req.body;
+  if (!search_url_template) {
+    return res.status(400).json({ error: "Search URL template is required" });
+  }
+
+  const searchUrl = search_url_template.replace("{query}", encodeURIComponent(query || "phone"));
+  
+  // Extract custom headers if supplied in selectors
+  const customHeaders = selectors?.headers || {};
+
+  try {
+    const response = await fetch(searchUrl, {
+      method: selectors?.method || "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        ...customHeaders
+      },
+      // If POST and body needed, or empty body
+      body: (selectors?.method === "POST") ? (selectors?.body || null) : undefined
+    });
+
+    const status = response.status;
+    const ok = response.ok;
+    const htmlText = await response.text();
+    const truncatedHtml = htmlText.length > 5000 ? htmlText.slice(0, 5000) + "\n\n... [Truncated for preview]" : htmlText;
+
+    res.json({
+      success: ok,
+      status,
+      contentLength: htmlText.length,
+      htmlSnippet: truncatedHtml
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

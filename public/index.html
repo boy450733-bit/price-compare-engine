@@ -794,7 +794,7 @@
     filterBar.classList.add("visible");
     results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
     statusLine.innerHTML = "";
-    debounceTimer = setTimeout(() => fetchNewSearch(query), 400);
+    debounceTimer = setTimeout(() => fetchNewSearch(query), 500);
   });
 
   clearFiltersBtn.addEventListener("click", () => {
