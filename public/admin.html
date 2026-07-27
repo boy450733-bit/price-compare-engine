@@ -212,7 +212,7 @@
             <button class="btn-sm" id="quickSaveStoreBtn" style="background: var(--brand);">+ Save Store to List</button>
           </div>
 
-          <div>
+          <div style="margin-bottom: 12px;">
             <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
             <textarea class="cell-input" id="testSelectorsJson" rows="3" style="font-family: monospace; font-size: 11px;">{
   "container": ".box--ujhwb",
@@ -225,14 +225,14 @@
           <!-- Test Results Preview Container -->
           <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output & Inspector:</span>
+              <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output &amp; Inspector:</span>
               <div id="inspectorModeControls" style="display: none; gap: 6px;">
                 <button class="btn-sm" id="toggleInspectorBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Enable Element Inspector</button>
               </div>
             </div>
 
             <!-- iframe container for visual HTML inspection & point-and-click selection -->
-            <div id="iframeInspectorWrapper" style="display: none; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff;">
+            <div id="iframeInspectorWrapper" style="display: none; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; margin-bottom: 8px;">
               <div id="inspectorBanner" style="background: var(--accent); color: #2A1B04; padding: 4px 10px; font-size: 11px; font-weight: 600; display: none;">
                 Inspector Active: Click any product element inside the frame below to map its selector!
               </div>
@@ -242,6 +242,12 @@
             <!-- Fallback JSON / text view -->
             <pre id="testOutputJson" style="margin:0; font-family: monospace; font-size: 11px; white-space: pre-wrap; max-height: 250px; overflow-y: auto;"></pre>
           </div>
+        </div>
+
+        <!-- Toolbar / Filter for Saved Stores -->
+        <div class="toolbar">
+          <input type="text" class="search-input" id="storeFilter" placeholder="Filter saved stores by name...">
+          <span class="result-count" id="storeCount"></span>
         </div>
 
         <!-- Accordion Folded Stores Container -->
