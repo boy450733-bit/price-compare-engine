@@ -85,14 +85,6 @@ app.use("/api", alertsRoutes);
 app.use("/admin/api", alertsRoutes);
 app.use("/", redirectRoutes);
 
-app.post("/admin/api/trigger-alerts", async (_req, res) => {
-  try {
-    await checkAndSendPriceAlerts();
-    res.json({ success: true, message: "Price alerts check triggered manually." });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
