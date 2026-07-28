@@ -224,14 +224,14 @@
 }</textarea>
           </div>
 
-          
+        
 <!-- Test Results Preview Container -->
 <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
     <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output:</span>
-    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Copy Raw HTML</button>
+    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--ink-soft);">Make Editable</button>
   </div>
-  <pre style="margin:0; border-radius: 6px; overflow-x: auto; max-height: 350px;"><code id="htmlCode" class="language-html" style="font-family: monospace; font-size: 11px;"></code></pre>
+  <textarea id="testOutputJson" class="cell-input" rows="12" style="margin:0; font-family: monospace; font-size: 11px; width: 100%; resize: vertical; background: var(--surface);"></textarea>
 </div>
 
         <div class="toolbar">
@@ -623,8 +623,53 @@
     });
   }
 
-  // Step 1: Check HTML with Dynamic Highlighting & Beautify
-document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
+// Helper to strip non-content tags and reduce HTML size
+function stripCommonTags(htmlString) {
+  if (!htmlString) return "";
+
+  return htmlString
+    // Metadata
+    .replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gis, "")
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gis, "")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gis, "")
+    .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gis, "")
+    .replace(/<template\b[^<]*(?:(?!<\/template>)<[^<]*)*<\/template>/gis, "")
+
+    // Layout
+    .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gis, "")
+    .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gis, "")
+    .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gis, "")
+    .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gis, "")
+
+    // Forms
+    .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gis, "")
+
+    // Embedded media
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gis, "")
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gis, "")
+    .replace(/<embed\b[^>]*>/gis, "")
+    .replace(/<canvas\b[^<]*(?:(?!<\/canvas>)<[^<]*)*<\/canvas>/gis, "")
+    .replace(/<video\b[^<]*(?:(?!<\/video>)<[^<]*)*<\/video>/gis, "")
+    .replace(/<audio\b[^<]*(?:(?!<\/audio>)<[^<]*)*<\/audio>/gis, "")
+    .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gis, "")
+
+    // Self-closing utility tags
+    .replace(/<meta\b[^>]*>/gis, "")
+    .replace(/<link\b[^>]*>/gis, "")
+    .replace(/<base\b[^>]*>/gis, "")
+    .replace(/<source\b[^>]*>/gis, "")
+    .replace(/<track\b[^>]*>/gis, "")
+    .replace(/<br\s*\/?>/gis, "")
+    .replace(/<hr\s*\/?>/gis, "")
+    .replace(/<wbr\s*\/?>/gis, "")
+
+    // Compress whitespace
+    .replace(/\n\s*\n/g, "\n")
+    .trim();
+}
+
+  // Step 1: Check HTML with Auto-Stripping & Editable Textarea
+  document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
     const query = document.getElementById("testQueryInput").value.trim() || "phone";
@@ -637,13 +682,13 @@ document.getElementById("runTestHtmlBtn").addEventListener("click", async () => 
     }
 
     const container = document.getElementById("testResultsContainer");
-    const codeEl = document.getElementById("htmlCode");
+    const output = document.getElementById("testOutputJson");
     const titleEl = document.getElementById("testOutputTitle");
+    
     container.style.display = "block";
-    titleEl.textContent = "Step 1: Formatted HTML Response Preview:";
-    codeEl.textContent = "Loading highlighter & fetching HTML...";
-
-    await loadSyntaxHighlighter();
+    titleEl.textContent = "Step 1: Cleaned HTML Response Preview:";
+    output.value = "Fetching and stripping common tags...";
+    output.readOnly = true; // Default to locked until edit is clicked
 
     try {
       const res = await api("/test-store-raw", {
@@ -651,32 +696,34 @@ document.getElementById("runTestHtmlBtn").addEventListener("click", async () => 
         body: JSON.stringify({ base_url, search_url_template, query, selectors })
       });
 
-      // Trim blank lines and shorten vertical space using beautify options
-      const formatted = html_beautify(res.htmlSnippet || "", {
-        indent_size: 2,
-        wrap_attributes: "auto",
-        preserve_newlines: false, // Removes excessive blank gaps
-        unformatted: ["code", "pre", "em", "strong", "span"]
-      });
+      // Strip unwanted wrapper tags automatically
+      const cleanedHtml = stripCommonTags(res.htmlSnippet || "");
 
-      codeEl.className = "language-html";
-      codeEl.textContent = formatted;
-      hljs.highlightElement(codeEl);
-      showToast(`Fetched HTML successfully (Status ${res.status})`, "success");
+      // Optional: Beautify if js-beautify is available, otherwise output cleaned text directly
+      const formatted = window.html_beautify ? html_beautify(cleanedHtml, {
+        indent_size: 2,
+        preserve_newlines: false
+      }) : cleanedHtml;
+
+      output.value = formatted;
+      showToast(`Fetched and stripped tags successfully (Status ${res.status})`, "success");
     } catch (err) {
-      codeEl.textContent = "Error fetching raw HTML: " + err.message;
+      output.value = "Error fetching raw HTML: " + err.message;
       showToast("Failed to fetch raw page.", "error");
     }
   });
 
-  // Make the button copy the formatted code instantly to clipboard for editing/inspection
+  // Toggle Editing State Button
+  let isEditable = false;
   document.getElementById("toggleEditableBtn").addEventListener("click", () => {
-    const codeEl = document.getElementById("htmlCode");
-    navigator.clipboard.writeText(codeEl.textContent).then(() => {
-      showToast("Formatted HTML copied to clipboard!", "success");
-    }).catch(() => {
-      showToast("Failed to copy code.", "error");
-    });
+    isEditable = !isEditable;
+    const output = document.getElementById("testOutputJson");
+    const btn = document.getElementById("toggleEditableBtn");
+    
+    output.readOnly = !isEditable;
+    btn.style.background = isEditable ? "var(--brand)" : "var(--ink-soft)";
+    btn.textContent = isEditable ? "Lock Editing" : "Make Editable";
+    showToast(isEditable ? "Preview unlocked for manual editing." : "Preview locked.", "success");
   });
 
   // Step 2: Run Scraper Extraction
