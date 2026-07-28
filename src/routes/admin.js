@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { query as db, pool } from "../db/client.js";
 import { invalidateStoreCache } from "../adapters/stores/index.js";
+import { checkAndSendPriceAlerts } from "../utils/notifier.js";
 
 const router = Router();
 
@@ -138,12 +139,14 @@ router.get("/alerts", async (_req, res) => {
 // Trigger manual price alert check
 router.post("/trigger-alerts", async (_req, res) => {
   try {
+    console.log("[admin routes] Manual alert trigger requested.");
+    await checkAndSendPriceAlerts();
     res.json({ success: true, message: "Alert check executed successfully." });
   } catch (err) {
+    console.error("[admin routes] Failed to trigger alerts:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
-
 // Site settings
 router.get("/settings", async (_req, res) => {
   const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
