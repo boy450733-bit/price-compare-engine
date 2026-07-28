@@ -22,11 +22,10 @@ export async function checkAndSendPriceAlerts() {
     const subjectTemplate = alertsConfig.emailSubject || "🎉 Price Drop Alert for {product_title}!";
     const bodyTemplate = alertsConfig.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
 
-    const alertsRes = await pool.query(`
-      SELECT a.id, a.email, a.target_price, p.title AS product_title, p.price AS current_price, p.url AS product_url, s.name AS store_name
+  const alertsRes = await pool.query(`
+      SELECT a.id, a.email, a.target_price, p.title AS product_title, p.price AS current_price, p.url AS product_url, p.store AS store_name
       FROM price_alerts a
       JOIN products p ON a.product_id = p.id
-      JOIN stores s ON p.store_id = s.id
       WHERE a.notified = false AND (a.target_price IS NULL OR p.price <= a.target_price)
     `);
 
