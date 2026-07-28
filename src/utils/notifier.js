@@ -1,9 +1,8 @@
 import nodemailer from "nodemailer";
 import { pool } from "../db/client.js";
 
-// Setup Nodemailer transporter using environment variables
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_SERVER || "smtp.example.com",
+  host: process.env.MAIL_SERVER || "smtp.ethereal.email",
   port: parseInt(process.env.MAIL_PORT || "587", 10),
   secure: false,
   auth: {
@@ -16,7 +15,6 @@ export async function checkAndSendPriceAlerts() {
   console.log("Running price alert check worker...");
   
   try {
-    // 1. Fetch site settings containing email templates from the database
     const settingsRes = await pool.query("SELECT data FROM site_settings WHERE id = 1");
     const settings = settingsRes.rows[0]?.data || {};
     const alertsConfig = settings.alertsConfig || {};
@@ -24,8 +22,6 @@ export async function checkAndSendPriceAlerts() {
     const subjectTemplate = alertsConfig.emailSubject || "🎉 Price Drop Alert for {product_title}!";
     const bodyTemplate = alertsConfig.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
 
-    // 2. Fetch pending, unnotified price alerts where current price matches or drops below target price
-    // (Adjust this query based on your schema fields for current vs target price)
     const alertsRes = await pool.query(`
       SELECT a.id, a.email, a.target_price, p.title AS product_title, p.price AS current_price, p.url AS product_url, s.name AS store_name
       FROM price_alerts a
@@ -39,7 +35,6 @@ export async function checkAndSendPriceAlerts() {
 
     let sentCount = 0;
     for (const alert of pendingAlerts) {
-      // Replace dynamic placeholders
       const subject = subjectTemplate
         .replace(/{product_title}/g, alert.product_title || "Product")
         .replace(/{target_price}/g, alert.target_price ? `Rs ${Number(alert.target_price).toLocaleString()}` : "N/A")
@@ -54,14 +49,17 @@ export async function checkAndSendPriceAlerts() {
         .replace(/{product_url}/g, alert.product_url || "#");
 
       try {
-        await transporter.sendMail({
+        const info = await transporter.sendMail({
           from: process.env.MAIL_DEFAULT_SENDER || '"Sasta.pk" <noreply@sasta.pk>',
           to: alert.email,
           subject: subject,
           text: body,
         });
 
-        // Mark as notified in database so it doesn't send repeatedly
+        console.log("Message sent: %s", info.messageId);
+        // If using Ethereal, this prints the direct web link to read the email:
+        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+
         await pool.query("UPDATE price_alerts SET notified = true WHERE id = $1", [alert.id]);
         sentCount++;
       } catch (emailErr) {
