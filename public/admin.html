@@ -301,7 +301,7 @@
 
       <!-- Site Settings -->
       <div class="page" id="page-settings">
-        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, card details, and administrative security tokens.</p></div>
+        <div class="page-header"><h2>Site Settings</h2><p>Branding, theme configurations, hero quotes, and product card feature toggles.</p></div>
         
         <h3 style="font-size:14px;margin-bottom:10px">Administrative Security</h3>
         <table style="margin-bottom:24px">
@@ -310,25 +310,61 @@
           </tbody>
         </table>
 
-        <h3 style="font-size:14px;margin-bottom:10px">Branding &amp; UI Settings</h3>
+        <h3 style="font-size:14px;margin-bottom:10px">Branding &amp; Content</h3>
         <table style="margin-bottom:24px">
           <tbody>
             <tr><td style="width:160px">Logo text</td><td><input type="text" class="cell-input" id="s-logoText"></td></tr>
-            <tr><td>Hero subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
+            <tr><td>Hero Subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
             <tr><td>Footer text</td><td><input type="text" class="cell-input" id="s-footerText"></td></tr>
-            <tr><td>Hero quotes</td><td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
-            <tr><td>Product Card Badge Label</td><td><input type="text" class="cell-input" id="s-productBadgeLabel" placeholder="e.g. Best Price"></td></tr>
+            <tr><td>Hero Quotes (one per line)</td><td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
           </tbody>
         </table>
 
-        <h3 style="font-size:14px;margin-bottom:10px">Product Card Display Toggles (index.html)</h3>
+        <h3 style="font-size:14px;margin-bottom:10px">Theme Customization</h3>
         <table style="margin-bottom:24px">
           <tbody>
-            <tr><td style="width:200px">Show Product Image</td><td><input type="checkbox" id="s-cardShowImg" checked></td></tr>
-            <tr><td>Show Product Title</td><td><input type="checkbox" id="s-cardShowTitle" checked></td></tr>
-            <tr><td>Show Specification Bar</td><td><input type="checkbox" id="s-cardShowSpecs" checked></td></tr>
-            <tr><td>Show Price Tag</td><td><input type="checkbox" id="s-cardShowPrice" checked></td></tr>
-            <tr><td>Show Store Badge</td><td><input type="checkbox" id="s-cardShowStore" checked></td></tr>
+            <tr><td style="width:160px">Brand Color</td><td><input type="color" id="s-brandColor" value="#f07605"></td></tr>
+            <tr><td>Accent Color</td><td><input type="color" id="s-accentColor" value="#e8c187"></td></tr>
+            <tr><td>Body Font</td><td><input type="text" class="cell-input" id="s-fontBody" value="Inter"></td></tr>
+            <tr><td>Display Font</td><td><input type="text" class="cell-input" id="s-fontDisplay" value="Space Grotesk"></td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Product Card Feature Toggles (index.html)</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr>
+              <td style="width:50%; border-right: 1px solid var(--line); padding-right: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showImage"> Show Image</label>
+              </td>
+              <td style="padding-left: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showTitle"> Show Title</label>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-right: 1px solid var(--line); padding-right: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showSpecs"> Show Specs</label>
+              </td>
+              <td style="padding-left: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showRating"> Show Rating</label>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-right: 1px solid var(--line); padding-right: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showUpdatedAt"> Show Updated At</label>
+              </td>
+              <td style="padding-left: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showOutOfStock"> Show Out Of Stock Tag</label>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-right: 1px solid var(--line); padding-right: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showDiscountBadge"> Show Discount Badge</label>
+              </td>
+              <td style="padding-left: 12px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="s-showOriginalPrice"> Show Original Price</label>
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -531,15 +567,24 @@
     document.getElementById("s-heroSubtitle").value = data.heroSubtitle || "";
     document.getElementById("s-footerText").value = data.footerText || "";
     document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
-    document.getElementById("s-productBadgeLabel").value = data.productBadgeLabel || "";
     
-    // Product card checkboxes mapping
-    const cardOpts = data.cardOptions || {};
-    document.getElementById("s-cardShowImg").checked = cardOpts.showImg !== false;
-    document.getElementById("s-cardShowTitle").checked = cardOpts.showTitle !== false;
-    document.getElementById("s-cardShowSpecs").checked = cardOpts.showSpecs !== false;
-    document.getElementById("s-cardShowPrice").checked = cardOpts.showPrice !== false;
-    document.getElementById("s-cardShowStore").checked = cardOpts.showStore !== false;
+    // Theme mapping
+    const theme = data.theme || {};
+    document.getElementById("s-brandColor").value = theme.brandColor || "#f07605";
+    document.getElementById("s-accentColor").value = theme.accentColor || "#e8c187";
+    document.getElementById("s-fontBody").value = theme.fontBody || "Inter";
+    document.getElementById("s-fontDisplay").value = theme.fontDisplay || "Space Grotesk";
+
+    // Card Features mapping
+    const cardFeatures = data.cardFeatures || {};
+    document.getElementById("s-showImage").checked = cardFeatures.showImage !== false;
+    document.getElementById("s-showTitle").checked = cardFeatures.showTitle !== false;
+    document.getElementById("s-showSpecs").checked = cardFeatures.showSpecs !== false;
+    document.getElementById("s-showRating").checked = cardFeatures.showRating !== false;
+    document.getElementById("s-showUpdatedAt").checked = cardFeatures.showUpdatedAt !== false;
+    document.getElementById("s-showOutOfStock").checked = cardFeatures.showOutOfStock !== false;
+    document.getElementById("s-showDiscountBadge").checked = cardFeatures.showDiscountBadge !== false;
+    document.getElementById("s-showOriginalPrice").checked = cardFeatures.showOriginalPrice !== false;
 
     const al = data.alertsConfig || {};
     document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
@@ -554,14 +599,22 @@
       logoText: document.getElementById("s-logoText").value,
       heroSubtitle: document.getElementById("s-heroSubtitle").value,
       footerText: document.getElementById("s-footerText").value,
-      productBadgeLabel: document.getElementById("s-productBadgeLabel").value,
       heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
-      cardOptions: {
-        showImg: document.getElementById("s-cardShowImg").checked,
-        showTitle: document.getElementById("s-cardShowTitle").checked,
-        showSpecs: document.getElementById("s-cardShowSpecs").checked,
-        showPrice: document.getElementById("s-cardShowPrice").checked,
-        showStore: document.getElementById("s-cardShowStore").checked
+      theme: {
+        brandColor: document.getElementById("s-brandColor").value,
+        accentColor: document.getElementById("s-accentColor").value,
+        fontBody: document.getElementById("s-fontBody").value,
+        fontDisplay: document.getElementById("s-fontDisplay").value
+      },
+      cardFeatures: {
+        showImage: document.getElementById("s-showImage").checked,
+        showTitle: document.getElementById("s-showTitle").checked,
+        showSpecs: document.getElementById("s-showSpecs").checked,
+        showRating: document.getElementById("s-showRating").checked,
+        showUpdatedAt: document.getElementById("s-showUpdatedAt").checked,
+        showOutOfStock: document.getElementById("s-showOutOfStock").checked,
+        showDiscountBadge: document.getElementById("s-showDiscountBadge").checked,
+        showOriginalPrice: document.getElementById("s-showOriginalPrice").checked
       }
     };
     try {
