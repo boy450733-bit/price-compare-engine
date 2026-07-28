@@ -281,7 +281,16 @@
               <tbody>
                 <tr><td style="width:200px">Cron Schedule Pattern</td><td><input type="text" class="cell-input" id="alertCronSchedule" value="0 */6 * * *"></td></tr>
                 <tr><td>Email Subject Template</td><td><input type="text" class="cell-input" id="alertEmailSubject" value="🎉 Price Drop Alert for {product_title}!"></td></tr>
-                <tr><td>Email HTML Body Template</td><td><textarea id="alertEmailBody" rows="7" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
+                <tr>
+                  <td>Email HTML Body Template</td>
+                  <td>
+                    <textarea id="alertEmailBody" rows="7" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea>
+                    <div class="muted" style="font-size: 11px; margin-top: 6px;">
+                      <strong>Available Dynamic Fields:</strong> 
+                      <code>{product_title}</code>, <code>{target_price}</code>, <code>{current_price}</code>, <code>{store_name}</code>, <code>{product_url}</code>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
             <button class="btn-sm" id="saveAlertConfigBtn">Save Configurations</button>
@@ -293,12 +302,14 @@
       <!-- Site Settings -->
       <div class="page" id="page-settings">
         <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, card details, and administrative security tokens.</p></div>
+        
         <h3 style="font-size:14px;margin-bottom:10px">Administrative Security</h3>
         <table style="margin-bottom:24px">
           <tbody>
             <tr><td style="width:200px">Change Admin Token</td><td><div style="display: flex; gap: 10px;"><input type="password" class="cell-input" id="newAdminTokenInput" placeholder="Enter new secure admin token"><button class="btn-sm" id="updateTokenBtn" style="background: var(--danger);">Update Token</button></div></td></tr>
           </tbody>
         </table>
+
         <h3 style="font-size:14px;margin-bottom:10px">Branding &amp; UI Settings</h3>
         <table style="margin-bottom:24px">
           <tbody>
@@ -309,6 +320,18 @@
             <tr><td>Product Card Badge Label</td><td><input type="text" class="cell-input" id="s-productBadgeLabel" placeholder="e.g. Best Price"></td></tr>
           </tbody>
         </table>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Product Card Display Toggles (index.html)</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr><td style="width:200px">Show Product Image</td><td><input type="checkbox" id="s-cardShowImg" checked></td></tr>
+            <tr><td>Show Product Title</td><td><input type="checkbox" id="s-cardShowTitle" checked></td></tr>
+            <tr><td>Show Specification Bar</td><td><input type="checkbox" id="s-cardShowSpecs" checked></td></tr>
+            <tr><td>Show Price Tag</td><td><input type="checkbox" id="s-cardShowPrice" checked></td></tr>
+            <tr><td>Show Store Badge</td><td><input type="checkbox" id="s-cardShowStore" checked></td></tr>
+          </tbody>
+        </table>
+
         <button class="btn-sm" id="saveSettingsBtn">Save Settings</button>
       </div>
 
@@ -509,10 +532,19 @@
     document.getElementById("s-footerText").value = data.footerText || "";
     document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
     document.getElementById("s-productBadgeLabel").value = data.productBadgeLabel || "";
+    
+    // Product card checkboxes mapping
+    const cardOpts = data.cardOptions || {};
+    document.getElementById("s-cardShowImg").checked = cardOpts.showImg !== false;
+    document.getElementById("s-cardShowTitle").checked = cardOpts.showTitle !== false;
+    document.getElementById("s-cardShowSpecs").checked = cardOpts.showSpecs !== false;
+    document.getElementById("s-cardShowPrice").checked = cardOpts.showPrice !== false;
+    document.getElementById("s-cardShowStore").checked = cardOpts.showStore !== false;
+
     const al = data.alertsConfig || {};
     document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
     document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
-    document.getElementById("alertEmailBody").value = al.emailBody || "";
+    document.getElementById("alertEmailBody").value = al.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
   }
 
   document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
@@ -524,6 +556,13 @@
       footerText: document.getElementById("s-footerText").value,
       productBadgeLabel: document.getElementById("s-productBadgeLabel").value,
       heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
+      cardOptions: {
+        showImg: document.getElementById("s-cardShowImg").checked,
+        showTitle: document.getElementById("s-cardShowTitle").checked,
+        showSpecs: document.getElementById("s-cardShowSpecs").checked,
+        showPrice: document.getElementById("s-cardShowPrice").checked,
+        showStore: document.getElementById("s-cardShowStore").checked
+      }
     };
     try {
       await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
