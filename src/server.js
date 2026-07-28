@@ -24,6 +24,7 @@ import { eezepcConfig } from "./adapters/stores/eezepc.config.js";
 import { shophiveConfig } from "./adapters/stores/shophive.config.js";
 import { flashiConfig } from "./adapters/stores/flashi.config.js";
 
+
 const initialStoreConfigs = [
   megaConfig,
   priceOyeConfig,
@@ -106,7 +107,7 @@ autoSetup()
     process.exit(1);
   });
   
-import { checkAndSendPriceAlerts } from "./utils/notifier.js";
+
 
 app.post("/admin/api/trigger-alerts", async (_req, res) => {
   try {
