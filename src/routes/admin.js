@@ -330,8 +330,8 @@ router.post("/test-store-raw", async (req, res) => {
       bodyContent = bodyMatch[1];
     }
 
-    // Allow a larger preview window (up to 150,000 chars) so products aren't cut off
-    const maxLen = 150000;
+    // Allow a larger preview window (up to 400,000 chars) so products aren't cut off
+    const maxLen = 400000;
     const truncatedHtml = bodyContent.length > maxLen ? bodyContent.slice(0, maxLen) + "\n\n... [Truncated]" : bodyContent;
 
     res.json({
