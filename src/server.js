@@ -83,18 +83,6 @@ app.use("/api", historyRoutes);
 app.use("/api", alertsRoutes);
 app.use("/admin/api", alertsRoutes);
 
-// Manual trigger endpoint for admin panel button click
-app.post("/admin/api/trigger-alerts", async (_req, res) => {
-  console.log("ROUTE HIT: /admin/api/trigger-alerts was reached!");
-  try {
-    console.log("[api] Manual alert trigger requested from admin panel.");
-    await checkAndSendPriceAlerts();
-    res.json({ success: true, message: "Price alerts check triggered manually." });
-  } catch (err) {
-    console.error("[api] Failed to trigger alerts:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.use("/", redirectRoutes);
 
