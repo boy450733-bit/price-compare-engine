@@ -1,68 +1,76 @@
 import nodemailer from "nodemailer";
 import { pool } from "../db/client.js";
-import "dotenv/config";
 
-// Create the transporter using your custom domain SMTP settings
+// Setup Nodemailer transporter using environment variables
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for other ports like 587
+  host: process.env.MAIL_SERVER || "smtp.example.com",
+  port: parseInt(process.env.MAIL_PORT || "587", 10),
+  secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.MAIL_USERNAME,
+    pass: process.env.MAIL_PASSWORD,
   },
 });
 
 export async function checkAndSendPriceAlerts() {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.log("Skipping price alert check: SMTP credentials not configured.");
-    return;
-  }
-
+  console.log("Running price alert check worker...");
+  
   try {
-    console.log("Running scheduled price drop alert check...");
+    // 1. Fetch site settings containing email templates from the database
+    const settingsRes = await pool.query("SELECT data FROM site_settings WHERE id = 1");
+    const settings = settingsRes.rows[0]?.data || {};
+    const alertsConfig = settings.alertsConfig || {};
 
-    // Fetch un-notified alerts where product price meets target
-    const { rows: alerts } = await pool.query(`
-      SELECT 
-        a.id as alert_id, 
-        a.email, 
-        a.target_price,
-        p.id as product_id, 
-        p.title, 
-        p.min_price
+    const subjectTemplate = alertsConfig.emailSubject || "🎉 Price Drop Alert for {product_title}!";
+    const bodyTemplate = alertsConfig.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
+
+    // 2. Fetch pending, unnotified price alerts where current price matches or drops below target price
+    // (Adjust this query based on your schema fields for current vs target price)
+    const alertsRes = await pool.query(`
+      SELECT a.id, a.email, a.target_price, p.title AS product_title, p.price AS current_price, p.url AS product_url, s.name AS store_name
       FROM price_alerts a
       JOIN products p ON a.product_id = p.id
-      WHERE a.notified = false
+      JOIN stores s ON p.store_id = s.id
+      WHERE a.notified = false AND (a.target_price IS NULL OR p.price <= a.target_price)
     `);
 
-    for (const alert of alerts) {
-      const currentPrice = Number(alert.min_price);
-      const targetPrice = alert.target_price ? Number(alert.target_price) : null;
+    const pendingAlerts = alertsRes.rows;
+    console.log(`Found ${pendingAlerts.length} pending price alerts to send.`);
 
-      if (targetPrice && currentPrice <= targetPrice) {
-        // Send the mail using your custom domain address
+    let sentCount = 0;
+    for (const alert of pendingAlerts) {
+      // Replace dynamic placeholders
+      const subject = subjectTemplate
+        .replace(/{product_title}/g, alert.product_title || "Product")
+        .replace(/{target_price}/g, alert.target_price ? `Rs ${Number(alert.target_price).toLocaleString()}` : "N/A")
+        .replace(/{current_price}/g, alert.current_price ? `Rs ${Number(alert.current_price).toLocaleString()}` : "N/A")
+        .replace(/{store_name}/g, alert.store_name || "Store");
+
+      const body = bodyTemplate
+        .replace(/{product_title}/g, alert.product_title || "Product")
+        .replace(/{target_price}/g, alert.target_price ? `Rs ${Number(alert.target_price).toLocaleString()}` : "N/A")
+        .replace(/{current_price}/g, alert.current_price ? `Rs ${Number(alert.current_price).toLocaleString()}` : "N/A")
+        .replace(/{store_name}/g, alert.store_name || "Store")
+        .replace(/{product_url}/g, alert.product_url || "#");
+
+      try {
         await transporter.sendMail({
-          from: `"Sasta.pk Alerts" <${process.env.SMTP_USER}>`,
+          from: process.env.MAIL_DEFAULT_SENDER || '"Sasta.pk" <noreply@sasta.pk>',
           to: alert.email,
-          subject: `🔥 Price Drop Alert: ${alert.title}`,
-          text: `The price for ${alert.title} has dropped to Rs ${currentPrice.toLocaleString()}.`,
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #17231D;">
-              <h2 style="color: #0B6E4F;">Great News! Price Dropped!</h2>
-              <p>The price for <strong>${alert.title}</strong> has dropped to <strong>Rs ${currentPrice.toLocaleString()}</strong>.</p>
-              <p><a href="https://price-compare-engine-production.up.railway.app" style="background: #0B6E4F; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">View Deal Now</a></p>
-              <p style="font-size: 12px; color: #5B6B62; margin-top: 20px;">You are receiving this because you signed up for price alerts on Sasta.pk.</p>
-            </div>
-          `,
+          subject: subject,
+          text: body,
         });
 
-        // Mark as notified to prevent duplicate emails
-        await pool.query(`UPDATE price_alerts SET notified = true WHERE id = $1`, [alert.alert_id]);
-        console.log(`Alert email sent to ${alert.email} for product ${alert.product_id}`);
+        // Mark as notified in database so it doesn't send repeatedly
+        await pool.query("UPDATE price_alerts SET notified = true WHERE id = $1", [alert.id]);
+        sentCount++;
+      } catch (emailErr) {
+        console.error(`Failed to send alert email to ${alert.email}:`, emailErr.message);
       }
     }
+
+    console.log(`Price alert check completed. Successfully sent ${sentCount} emails.`);
   } catch (err) {
-    console.error("Error running price alert cron job:", err.message);
+    console.error("Error in checkAndSendPriceAlerts worker:", err.message);
   }
 }
