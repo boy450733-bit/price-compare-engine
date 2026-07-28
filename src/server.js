@@ -114,3 +114,15 @@ autoSetup()
     process.exit(1);
   });
   
+import { checkAndSendPriceAlerts } from "./utils/notifier.js";
+
+app.post("/admin/api/trigger-alerts", async (_req, res) => {
+  try {
+    console.log("[api] Manual alert trigger requested from admin panel.");
+    await checkAndSendPriceAlerts();
+    res.json({ success: true, message: "Price alerts check triggered manually." });
+  } catch (err) {
+    console.error("[api] Failed to trigger alerts:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
