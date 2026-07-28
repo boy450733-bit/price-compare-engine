@@ -229,10 +229,9 @@
 <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
     <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output:</span>
-    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--ink-soft); display: none;">Make Editable</button>
+    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Copy Raw HTML</button>
   </div>
-  <!-- Changed from <pre> to <textarea> to allow editing, deleting, and searching via Ctrl+F -->
-  <pre style="margin:0; border-radius: 6px; overflow-x: auto;"><code id="htmlCode" class="language-html" style="font-family: monospace; font-size: 11px;"></code></pre>
+  <pre style="margin:0; border-radius: 6px; overflow-x: auto; max-height: 350px;"><code id="htmlCode" class="language-html" style="font-family: monospace; font-size: 11px;"></code></pre>
 </div>
 
         <div class="toolbar">
@@ -625,7 +624,7 @@
   }
 
   // Step 1: Check HTML with Dynamic Highlighting & Beautify
-  document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
+document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
     const query = document.getElementById("testQueryInput").value.trim() || "phone";
@@ -640,12 +639,9 @@
     const container = document.getElementById("testResultsContainer");
     const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
-    const toggleBtn = document.getElementById("toggleEditableBtn");
-    
     container.style.display = "block";
     titleEl.textContent = "Step 1: Formatted HTML Response Preview:";
     codeEl.textContent = "Loading highlighter & fetching HTML...";
-    if (toggleBtn) toggleBtn.style.display = "none";
 
     await loadSyntaxHighlighter();
 
@@ -655,10 +651,12 @@
         body: JSON.stringify({ base_url, search_url_template, query, selectors })
       });
 
+      // Trim blank lines and shorten vertical space using beautify options
       const formatted = html_beautify(res.htmlSnippet || "", {
         indent_size: 2,
         wrap_attributes: "auto",
-        preserve_newlines: true
+        preserve_newlines: false, // Removes excessive blank gaps
+        unformatted: ["code", "pre", "em", "strong", "span"]
       });
 
       codeEl.className = "language-html";
@@ -669,6 +667,16 @@
       codeEl.textContent = "Error fetching raw HTML: " + err.message;
       showToast("Failed to fetch raw page.", "error");
     }
+  });
+
+  // Make the button copy the formatted code instantly to clipboard for editing/inspection
+  document.getElementById("toggleEditableBtn").addEventListener("click", () => {
+    const codeEl = document.getElementById("htmlCode");
+    navigator.clipboard.writeText(codeEl.textContent).then(() => {
+      showToast("Formatted HTML copied to clipboard!", "success");
+    }).catch(() => {
+      showToast("Failed to copy code.", "error");
+    });
   });
 
   // Step 2: Run Scraper Extraction
