@@ -229,11 +229,10 @@
 <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
     <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output:</span>
-    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--ink-soft);">Make Editable</button>
+    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Copy HTML</button>
   </div>
-  <textarea id="testOutputJson" class="cell-input" rows="12" style="margin:0; font-family: monospace; font-size: 11px; width: 100%; resize: vertical; background: var(--surface);"></textarea>
+  <pre style="margin:0; border-radius: 6px; overflow-x: auto; max-height: 350px;"><code id="htmlCode" class="language-html" style="font-family: monospace; font-size: 11px;"></code></pre>
 </div>
-
         <div class="toolbar">
           <input type="text" class="search-input" id="storeFilter" placeholder="Filter saved stores by name...">
           <span class="result-count" id="storeCount"></span>
@@ -586,42 +585,42 @@
     const name = getExtractedStoreName(val);
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
+  
+// Helper to dynamically load syntax highlighter and beautifier on demand
+function loadSyntaxHighlighter() {
+  return new Promise((resolve) => {
+    if (window.hljs && window.html_beautify) {
+      resolve();
+      return;
+    }
 
-  // Dynamic CDN Loader for Syntax Highlighting & Beautification
-  function loadSyntaxHighlighter() {
-    return new Promise((resolve) => {
-      if (window.hljs && window.html_beautify) {
-        resolve();
-        return;
-      }
+    if (!document.getElementById("hljsTheme")) {
+      const link = document.createElement("link");
+      link.id = "hljsTheme";
+      link.rel = "stylesheet";
+      link.href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
+      document.head.appendChild(link);
+    }
 
-      if (!document.getElementById("hljsTheme")) {
-        const link = document.createElement("link");
-        link.id = "hljsTheme";
-        link.rel = "stylesheet";
-        link.href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
-        document.head.appendChild(link);
-      }
+    const hljsScript = document.createElement("script");
+    hljsScript.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+    
+    const beautifyScript = document.createElement("script");
+    beautifyScript.src = "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js";
 
-      const hljsScript = document.createElement("script");
-      hljsScript.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
-      
-      const beautifyScript = document.createElement("script");
-      beautifyScript.src = "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js";
+    let loadedCount = 0;
+    const checkLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 2) resolve();
+    };
 
-      let loadedCount = 0;
-      const checkLoaded = () => {
-        loadedCount++;
-        if (loadedCount === 2) resolve();
-      };
+    hljsScript.onload = checkLoaded;
+    beautifyScript.onload = checkLoaded;
 
-      hljsScript.onload = checkLoaded;
-      beautifyScript.onload = checkLoaded;
-
-      document.head.appendChild(hljsScript);
-      document.head.appendChild(beautifyScript);
-    });
-  }
+    document.head.appendChild(hljsScript);
+    document.head.appendChild(beautifyScript);
+  });
+}
 
 // Helper to strip non-content tags and reduce HTML size
 function stripCommonTags(htmlString) {
@@ -668,50 +667,70 @@ function stripCommonTags(htmlString) {
     .trim();
 }
 
-  // Step 1: Check HTML with Auto-Stripping & Editable Textarea
-  document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
-    const base_url = document.getElementById("testBaseUrl").value.trim();
-    const search_url_template = document.getElementById("testTemplate").value.trim();
-    const query = document.getElementById("testQueryInput").value.trim() || "phone";
-    let selectors = {};
-    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
+// Step 1: Check HTML with Auto-Stripping, Beautifying & Syntax Highlighting
+document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
+  const base_url = document.getElementById("testBaseUrl").value.trim();
+  const search_url_template = document.getElementById("testTemplate").value.trim();
+  const query = document.getElementById("testQueryInput").value.trim() || "phone";
+  let selectors = {};
+  try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
 
-    if (!base_url || !search_url_template) {
-      showToast("Base URL and Search URL Template are required.", "error");
-      return;
-    }
+  if (!base_url || !search_url_template) {
+    showToast("Base URL and Search URL Template are required.", "error");
+    return;
+  }
 
-    const container = document.getElementById("testResultsContainer");
-    const output = document.getElementById("testOutputJson");
-    const titleEl = document.getElementById("testOutputTitle");
+  const container = document.getElementById("testResultsContainer");
+  const codeEl = document.getElementById("htmlCode");
+  const titleEl = document.getElementById("testOutputTitle");
+  
+  container.style.display = "block";
+  titleEl.textContent = "Step 1: Cleaned & Formatted HTML Response Preview:";
+  codeEl.textContent = "Loading tools and stripping common tags...";
+
+  // Dynamically load highlight.js and js-beautify on demand
+  await loadSyntaxHighlighter();
+
+  try {
+    const res = await api("/test-store-raw", {
+      method: "POST",
+      body: JSON.stringify({ base_url, search_url_template, query, selectors })
+    });
+
+    // Strip unwanted wrapper tags automatically
+    const cleanedHtml = stripCommonTags(res.htmlSnippet || "");
+
+    // Beautify with proper indenting and spacing
+    const formatted = window.html_beautify ? html_beautify(cleanedHtml, {
+      indent_size: 2,
+      wrap_attributes: "auto",
+      preserve_newlines: false
+    }) : cleanedHtml;
+
+    codeEl.className = "language-html";
+    codeEl.textContent = formatted;
     
-    container.style.display = "block";
-    titleEl.textContent = "Step 1: Cleaned HTML Response Preview:";
-    output.value = "Fetching and stripping common tags...";
-    output.readOnly = true; // Default to locked until edit is clicked
-
-    try {
-      const res = await api("/test-store-raw", {
-        method: "POST",
-        body: JSON.stringify({ base_url, search_url_template, query, selectors })
-      });
-
-      // Strip unwanted wrapper tags automatically
-      const cleanedHtml = stripCommonTags(res.htmlSnippet || "");
-
-      // Optional: Beautify if js-beautify is available, otherwise output cleaned text directly
-      const formatted = window.html_beautify ? html_beautify(cleanedHtml, {
-        indent_size: 2,
-        preserve_newlines: false
-      }) : cleanedHtml;
-
-      output.value = formatted;
-      showToast(`Fetched and stripped tags successfully (Status ${res.status})`, "success");
-    } catch (err) {
-      output.value = "Error fetching raw HTML: " + err.message;
-      showToast("Failed to fetch raw page.", "error");
+    // Trigger syntax highlighting colorization
+    if (window.hljs) {
+      hljs.highlightElement(codeEl);
     }
+
+    showToast(`Fetched and stripped tags successfully (Status ${res.status})`, "success");
+  } catch (err) {
+    codeEl.textContent = "Error fetching raw HTML: " + err.message;
+    showToast("Failed to fetch raw page.", "error");
+  }
+});
+
+// Copy button implementation
+document.getElementById("toggleEditableBtn").addEventListener("click", () => {
+  const codeEl = document.getElementById("htmlCode");
+  navigator.clipboard.writeText(codeEl.textContent).then(() => {
+    showToast("Cleaned HTML copied to clipboard!", "success");
+  }).catch(() => {
+    showToast("Failed to copy code.", "error");
   });
+});
 
   // Toggle Editing State Button
   let isEditable = false;
