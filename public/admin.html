@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sasta.pk Admin</title>
+<!-- Highlight.js Theme CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<!-- Highlight.js Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<!-- JS-Beautify Library for HTML Formatting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+<!-- (Your existing fonts and CSS styles follow here) -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%23DC2626' stroke='%23FFFFFF' stroke-width='2'/%3E%3Crect x='13' y='12' width='18' height='35' rx='2' fill='none' stroke='%23FFFFFF' stroke-width='2'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23FFFFFF'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%232563EB' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%232563EB'/%3E%3C/svg%3E"><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -231,7 +238,7 @@
     <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--ink-soft); display: none;">Make Editable</button>
   </div>
   <!-- Changed from <pre> to <textarea> to allow editing, deleting, and searching via Ctrl+F -->
-  <textarea id="testOutputJson" class="cell-input" rows="10" style="margin:0; font-family: monospace; font-size: 11px; width: 100%; resize: vertical; background: var(--surface);"></textarea>
+  <pre style="margin:0; border-radius: 6px; overflow-x: auto;"><code id="htmlCode" class="language-html" style="font-family: monospace; font-size: 11px;"></code></pre>
 </div>
 
         <div class="toolbar">
@@ -588,6 +595,47 @@
   });
 
   // Step 1: Check HTML with Editable Textarea Support
+// Helper function to load external CDNs on demand
+  function loadSyntaxHighlighter() {
+    return new Promise((resolve) => {
+      // If already loaded, resolve immediately
+      if (window.hljs && window.html_beautify) {
+        resolve();
+        return;
+      }
+
+      // 1. Load Highlight.js CSS theme
+      if (!document.getElementById("hljsTheme")) {
+        const link = document.createElement("link");
+        link.id = "hljsTheme";
+        link.rel = "stylesheet";
+        link.href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
+        document.head.appendChild(link);
+      }
+
+      // 2. Load Highlight.js Script
+      const hljsScript = document.createElement("script");
+      hljsScript.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+      
+      // 3. Load JS-Beautify Script
+      const beautifyScript = document.createElement("script");
+      beautifyScript.src = "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js";
+
+      let loadedCount = 0;
+      const checkLoaded = () => {
+        loadedCount++;
+        if (loadedCount === 2) resolve();
+      };
+
+      hljsScript.onload = checkLoaded;
+      beautifyScript.onload = checkLoaded;
+
+      document.head.appendChild(hljsScript);
+      document.head.appendChild(beautifyScript);
+    });
+  }
+
+  // Update your HTML test click handler to await the dynamic loader
   document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -601,24 +649,33 @@
     }
 
     const container = document.getElementById("testResultsContainer");
-    const output = document.getElementById("testOutputJson");
+    const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
-    const toggleBtn = document.getElementById("toggleEditableBtn");
-
     container.style.display = "block";
-    titleEl.textContent = "Step 1: Raw HTML Response Preview:";
-    output.value = "Fetching raw HTML from target store...";
-    toggleBtn.style.display = "inline-block";
+    titleEl.textContent = "Step 1: Formatted HTML Response Preview:";
+    codeEl.textContent = "Loading highlighter & fetching HTML...";
+
+    // Dynamically load the libs on first click
+    await loadSyntaxHighlighter();
 
     try {
       const res = await api("/test-store-raw", {
         method: "POST",
         body: JSON.stringify({ base_url, search_url_template, query, selectors })
       });
-      output.value = `HTTP Status: ${res.status} (OK: ${res.success})\nContent-Length: ${res.contentLength} bytes\n\n--- HTML SNIPPET ---\n${res.htmlSnippet}`;
+
+      const formatted = html_beautify(res.htmlSnippet || "", {
+        indent_size: 2,
+        wrap_attributes: "auto",
+        preserve_newlines: true
+      });
+
+      codeEl.className = "language-html";
+      codeEl.textContent = formatted;
+      hljs.highlightElement(codeEl);
       showToast(`Fetched HTML successfully (Status ${res.status})`, "success");
     } catch (err) {
-      output.value = "Error fetching raw HTML: " + err.message;
+      codeEl.textContent = "Error fetching raw HTML: " + err.message;
       showToast("Failed to fetch raw page.", "error");
     }
   });
@@ -646,24 +703,27 @@
     }
 
     const container = document.getElementById("testResultsContainer");
-    const output = document.getElementById("testOutputJson");
+    const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
-    const toggleBtn = document.getElementById("toggleEditableBtn");
-    
     container.style.display = "block";
     titleEl.textContent = "Step 2: Scraper Extracted Results:";
-    output.value = "Executing selectors and parsing products...";
-    toggleBtn.style.display = "none";
+    codeEl.textContent = "Executing selectors and parsing products...";
 
     try {
       const res = await api("/test-store", {
         method: "POST",
         body: JSON.stringify({ base_url, search_url_template, selectors, query })
       });
-      output.value = JSON.stringify(res, null, 2);
+      
+      // Format JSON output nicely
+      codeEl.className = "language-json";
+      codeEl.textContent = JSON.stringify(res, null, 2);
+      hljs.highlightElement(codeEl);
       showToast(`Scraper extracted ${res.count} products successfully!`, "success");
     } catch (err) {
-      output.value = "Extraction Error: " + err.message;
+      codeEl.className = "language-html";
+      codeEl.textContent = "Extraction Error: " + err.message;
+      hljs.highlightElement(codeEl);
       showToast("Scraper extraction failed.", "error");
     }
   });
