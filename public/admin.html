@@ -588,17 +588,14 @@
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
 
-  // Step 1: Check HTML with Editable Textarea Support
-// Helper function to load external CDNs on demand
+  // Dynamic CDN Loader for Syntax Highlighting & Beautification
   function loadSyntaxHighlighter() {
     return new Promise((resolve) => {
-      // If already loaded, resolve immediately
       if (window.hljs && window.html_beautify) {
         resolve();
         return;
       }
 
-      // 1. Load Highlight.js CSS theme
       if (!document.getElementById("hljsTheme")) {
         const link = document.createElement("link");
         link.id = "hljsTheme";
@@ -607,11 +604,9 @@
         document.head.appendChild(link);
       }
 
-      // 2. Load Highlight.js Script
       const hljsScript = document.createElement("script");
       hljsScript.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
       
-      // 3. Load JS-Beautify Script
       const beautifyScript = document.createElement("script");
       beautifyScript.src = "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js";
 
@@ -629,7 +624,7 @@
     });
   }
 
-  // Update your HTML test click handler to await the dynamic loader
+  // Step 1: Check HTML with Dynamic Highlighting & Beautify
   document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -645,11 +640,13 @@
     const container = document.getElementById("testResultsContainer");
     const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
+    const toggleBtn = document.getElementById("toggleEditableBtn");
+    
     container.style.display = "block";
     titleEl.textContent = "Step 1: Formatted HTML Response Preview:";
     codeEl.textContent = "Loading highlighter & fetching HTML...";
+    if (toggleBtn) toggleBtn.style.display = "none";
 
-    // Dynamically load the libs on first click
     await loadSyntaxHighlighter();
 
     try {
@@ -674,18 +671,7 @@
     }
   });
 
-  // Toggle Editing on Output Textarea
-  let isEditable = true;
-  document.getElementById("toggleEditableBtn").addEventListener("click", () => {
-    isEditable = !isEditable;
-    const output = document.getElementById("testOutputJson");
-    const btn = document.getElementById("toggleEditableBtn");
-    output.readOnly = !isEditable;
-    btn.style.background = isEditable ? "var(--ink-soft)" : "var(--brand)";
-    btn.textContent = isEditable ? "Make Editable" : "Lock Editing";
-    showToast(isEditable ? "Preview unlocked for editing." : "Preview locked.", "success");
-  });
-
+  // Step 2: Run Scraper Extraction
   document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -699,9 +685,14 @@
     const container = document.getElementById("testResultsContainer");
     const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
+    const toggleBtn = document.getElementById("toggleEditableBtn");
+
     container.style.display = "block";
     titleEl.textContent = "Step 2: Scraper Extracted Results:";
     codeEl.textContent = "Executing selectors and parsing products...";
+    if (toggleBtn) toggleBtn.style.display = "none";
+
+    await loadSyntaxHighlighter();
 
     try {
       const res = await api("/test-store", {
@@ -709,7 +700,6 @@
         body: JSON.stringify({ base_url, search_url_template, selectors, query })
       });
       
-      // Format JSON output nicely
       codeEl.className = "language-json";
       codeEl.textContent = JSON.stringify(res, null, 2);
       hljs.highlightElement(codeEl);
