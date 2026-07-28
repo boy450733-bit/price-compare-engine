@@ -299,13 +299,14 @@
             <tr><td style="width:200px">Change Admin Token</td><td><div style="display: flex; gap: 10px;"><input type="password" class="cell-input" id="newAdminTokenInput" placeholder="Enter new secure admin token"><button class="btn-sm" id="updateTokenBtn" style="background: var(--danger);">Update Token</button></div></td></tr>
           </tbody>
         </table>
-        <h3 style="font-size:14px;margin-bottom:10px">Branding</h3>
+        <h3 style="font-size:14px;margin-bottom:10px">Branding &amp; UI Settings</h3>
         <table style="margin-bottom:24px">
           <tbody>
             <tr><td style="width:160px">Logo text</td><td><input type="text" class="cell-input" id="s-logoText"></td></tr>
             <tr><td>Hero subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
             <tr><td>Footer text</td><td><input type="text" class="cell-input" id="s-footerText"></td></tr>
             <tr><td>Hero quotes</td><td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
+            <tr><td>Product Card Badge Label</td><td><input type="text" class="cell-input" id="s-productBadgeLabel" placeholder="e.g. Best Price"></td></tr>
           </tbody>
         </table>
         <button class="btn-sm" id="saveSettingsBtn">Save Settings</button>
@@ -507,6 +508,7 @@
     document.getElementById("s-heroSubtitle").value = data.heroSubtitle || "";
     document.getElementById("s-footerText").value = data.footerText || "";
     document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
+    document.getElementById("s-productBadgeLabel").value = data.productBadgeLabel || "";
     const al = data.alertsConfig || {};
     document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
     document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
@@ -520,6 +522,7 @@
       logoText: document.getElementById("s-logoText").value,
       heroSubtitle: document.getElementById("s-heroSubtitle").value,
       footerText: document.getElementById("s-footerText").value,
+      productBadgeLabel: document.getElementById("s-productBadgeLabel").value,
       heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
     };
     try {

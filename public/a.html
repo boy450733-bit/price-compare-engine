@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sasta.pk Admin</title>
+<!-- (Your existing fonts and CSS styles follow here) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%23DC2626' stroke='%23FFFFFF' stroke-width='2'/%3E%3Crect x='13' y='12' width='18' height='35' rx='2' fill='none' stroke='%23FFFFFF' stroke-width='2'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23FFFFFF'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%232563EB' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%232563EB'/%3E%3C/svg%3E"><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5EF; --surface: #fff; --ink: #17231D; --ink-soft: #6B7A70;
+    --brand: #0B6E4F; --brand-dark: #094F39; --line: #E7E1D2; --accent: #E8A33D;
+    --danger: #C24B3F; --ok: #0B6E4F; --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Inter", sans-serif; font-size: 14px; }
+  h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; }
+  button { font-family: inherit; cursor: pointer; border: none; }
+
+  #toastContainer {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast {
+    background: #17231D; color: #fff; padding: 12px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0; transform: translateY(10px); transition: all 0.25s ease; pointer-events: auto;
+    display: flex; align-items: center; gap: 8px; border-left: 4px solid var(--brand);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.success { border-left-color: var(--ok); }
+
+  #modalOverlay {
+    position: fixed; inset: 0; background: rgba(23, 35, 29, 0.5); z-index: 9998;
+    display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);
+  }
+  #customModal {
+    background: var(--surface); width: 100%; max-width: 420px; border-radius: 14px;
+    padding: 24px; border: 1px solid var(--line); box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+  #customModal h3 { font-size: 16px; margin-bottom: 8px; color: var(--ink); }
+  #customModal p { color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; margin-bottom: 20px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+  #authGate { max-width: 380px; margin: 90px auto; text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 32px; }
+  #authGate h1 { font-size: 20px; margin-bottom: 4px; }
+  #authGate p { color: var(--ink-soft); font-size: 13px; margin: 4px 0 18px; }
+  #authGate input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 14px; }
+  #authGate button { width: 100%; padding: 10px; background: var(--brand); color: #fff; border-radius: 8px; font-weight: 600; font-size: 14px; }
+  #authError { color: var(--danger); font-size: 12px; min-height: 16px; margin-top: 8px; }
+
+  #app { display: none; min-height: 100vh; }
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 200px; background: var(--brand-dark); color: #fff; flex-shrink: 0; padding: 20px 14px; display: flex; flex-direction: column; }
+  .sidebar .brand { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 17px; padding: 0 8px 20px; }
+  .tab-btn { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; color: rgba(255,255,255,0.75); background: transparent; text-align: left; font-size: 13.5px; font-weight: 500; margin-bottom: 2px; width: 100%; }
+  .tab-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .tab-btn.active { background: rgba(255,255,255,0.14); color: #fff; }
+  .sidebar-footer { margin-top: auto; }
+  .logout-btn { width: 100%; padding: 8px; background: transparent; border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); border-radius: 8px; font-size: 12px; }
+  .logout-btn:hover { color: #fff; border-color: #fff; }
+
+  .main { flex: 1; padding: 28px 32px; max-width: 1100px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 20px; }
+  .page-header h2 { font-size: 18px; }
+  .page-header p { color: var(--ink-soft); font-size: 13px; margin-top: 4px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .stat-card .num { font-family: "Space Grotesk", sans-serif; font-size: 26px; font-weight: 700; }
+  .stat-card .label { font-size: 11.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.02em; margin-top: 2px; }
+  
+  .charts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .period-btn-group { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); padding: 3px; border-radius: 8px; }
+  .period-btn { padding: 4px 10px; font-size: 12px; font-weight: 500; background: transparent; color: var(--ink-soft); border-radius: 6px; }
+  .period-btn.active { background: var(--brand); color: #fff; }
+
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
+  .chart-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .chart-box.full-width { grid-column: span 2; }
+  .chart-box h3 { font-size: 14px; margin-bottom: 12px; color: var(--ink-soft); }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .search-input { flex: 1; max-width: 320px; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .result-count { font-size: 12px; color: var(--ink-soft); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: 13px; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  th { background: #F1ECDE; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); font-weight: 600; }
+  tbody tr:hover { background: #FBFAF6; }
+  input[type="text"].cell-input, textarea.cell-input { width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: inherit; }
+  input[type="color"] { width: 40px; height: 26px; border: 1px solid var(--line); border-radius: 6px; padding: 0; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .status-dot.on { background: var(--ok); }
+  .status-dot.off { background: var(--danger); }
+  .btn-sm { padding: 5px 12px; border-radius: 6px; background: var(--brand); color: #fff; font-size: 12px; font-weight: 500; }
+  .btn-sm:hover { opacity: 0.9; }
+  a.link { color: var(--brand); font-size: 12.5px; }
+  .muted { color: var(--ink-soft); font-size: 12.5px; }
+  .clicks-badge { display: inline-block; background: var(--accent); color: #2A1B04; font-weight: 700; font-size: 11.5px; padding: 2px 8px; border-radius: 999px; }
+
+  .sub-tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .sub-tab-btn, .sub-tab-btn-alerts { padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--ink-soft); border-bottom: 2px solid transparent; background: transparent; cursor: pointer; }
+  .sub-tab-btn.active, .sub-tab-btn-alerts.active { color: var(--brand-dark); border-bottom-color: var(--brand); }
+
+  /* Accordion folded store card styles */
+  .store-row-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 6px; }
+  .store-row-header:hover { background: #FBFAF6; }
+  .store-details-panel { display: none; background: var(--surface); border: 1px solid var(--line); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 16px; margin-top: -8px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+<div id="modalOverlay">
+  <div id="customModal">
+    <h3 id="modalTitle">Confirm Action</h3>
+    <p id="modalMessage">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn-sm" id="modalCancelBtn" style="background: var(--ink-soft);">Cancel</button>
+      <button class="btn-sm" id="modalConfirmBtn" style="background: var(--danger);">Delete Store</button>
+    </div>
+  </div>
+</div>
+
+<div id="authGate">
+  <h1>Sasta.pk Admin</h1>
+  <p>Enter your admin token to continue.</p>
+  <input type="text" id="tokenInput" placeholder="ADMIN_TOKEN">
+  <button id="loginBtn">Enter</button>
+  <p id="authError"></p>
+</div>
+
+<div id="app">
+  <div class="shell">
+    <div class="sidebar">
+      <div class="brand">Sasta<span style="color:var(--accent)">.pk</span> Admin</div>
+      <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+      <button class="tab-btn" data-tab="stores">🏬 Store</button>
+      <button class="tab-btn" data-tab="affiliate">🔗 Affiliate</button>
+      <button class="tab-btn" data-tab="alerts">🔔 Alerts</button>
+      <button class="tab-btn" data-tab="settings">🎨 Site Settings</button>
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logoutBtn">Log out</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <h2>Dashboard</h2>
+          <p>Overview of your price comparison engine performance metrics.</p>
+        </div>
+        <div class="stat-grid" id="statGrid"></div>
+        <div class="charts-header">
+          <h3 style="font-size: 16px;">Analytics &amp; Trends</h3>
+          <div class="period-btn-group">
+            <button class="period-btn active" data-period="daily">Daily</button>
+            <button class="period-btn" data-period="weekly">Weekly</button>
+            <button class="period-btn" data-period="monthly">Monthly</button>
+          </div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-box"><h3>Products Cached Trend</h3><canvas id="chartProducts" width="100" height="60"></canvas></div>
+          <div class="chart-box"><h3>Total Clicks Trend</h3><canvas id="chartClicks" width="100" height="60"></canvas></div>
+          <div class="chart-box full-width"><h3>Total Searches Activity</h3><canvas id="chartSearches" width="100" height="40"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Stores -->
+      <div class="page" id="page-stores">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2>Store Config</h2>
+            <p>Test scraper connectivity, verify HTML payloads, and manage enabled store adapters.</p>
+          </div>
+        </div>
+
+        <!-- Live Scraper Testing Sandbox Card -->
+        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 24px;">
+          <h3 style="font-size: 15px; margin-bottom: 6px; color: var(--brand-dark);">🧪 Live Scraper Sandbox</h3>
+          <p class="muted" style="margin-bottom: 14px;">Step 1: Check network response &amp; HTML body. Step 2: Extract structured products via selectors.</p>
+          
+          <div style="display: grid; grid-template-columns: 2fr 2fr 1fr auto auto; gap: 10px; margin-bottom: 12px; align-items: end;">
+            <div>
+              <span class="muted" style="font-size:11px">Base URL</span>
+              <input type="text" class="cell-input" id="testBaseUrl" placeholder="https://www.daraz.pk">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Search URL Template</span>
+              <input type="text" class="cell-input" id="testTemplate" placeholder="https://www.daraz.pk/catalog/?q={query}">
+            </div>
+            <div>
+              <span class="muted" style="font-size:11px">Test Query</span>
+              <input type="text" class="cell-input" id="testQueryInput" value="phone">
+            </div>
+            <div>
+              <button class="btn-sm" id="runTestHtmlBtn" style="height: 30px; background: var(--brand);">1. Check HTML</button>
+            </div>
+            <div>
+              <button class="btn-sm" id="runTestScraperBtn" style="height: 30px; background: var(--accent); color: #2A1B04; font-weight: 700;">2. Run Scraper</button>
+            </div>
+          </div>
+          
+          
+          <!-- Auto-named store & quick save button -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #F1ECDE; padding: 8px 12px; border-radius: 6px;">
+            <span class="muted" style="font-size: 12px;">Auto-named store from base domain: <strong id="previewStoreNameLabel" style="color:var(--brand)">-</strong></span>
+            <button class="btn-sm" id="quickSaveStoreBtn" style="background: var(--brand);">+ Save Store to List</button>
+          </div>
+
+          <div>
+            <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
+            <textarea class="cell-input" id="testSelectorsJson" rows="3" style="font-family: monospace; font-size: 11px;">{
+  "container": ".box--ujhwb",
+  "title": ".title--wFjAI",
+  "image": "img",
+  "price": ".price--NVaji"
+}</textarea>
+          </div>
+
+        
+<!-- Test Results Preview Container -->
+<div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output:</span>
+    <button class="btn-sm" id="toggleEditableBtn" style="padding: 2px 8px; font-size: 10px; background: var(--brand);">Copy HTML</button>
+  </div>
+  <pre style="margin:0; border-radius: 6px; overflow-x: auto; max-height: 350px;"><code id="htmlCode" class="language-html" style="font-family: monospace; font-size: 11px;"></code></pre>
+</div>
+        <div class="toolbar">
+          <input type="text" class="search-input" id="storeFilter" placeholder="Filter saved stores by name...">
+          <span class="result-count" id="storeCount"></span>
+        </div>
+        
+        <!-- Accordion Folded Stores Container -->
+        <div id="savedStoresList"></div>
+      </div>
+
+      <!-- Affiliate -->
+      <div class="page" id="page-affiliate">
+        <div class="page-header"><h2>Affiliate Links</h2><p>Convert clicked products into tracked links, and review ones already set up.</p></div>
+        <div class="sub-tabs">
+          <button class="sub-tab-btn active" data-subtab="pending">Pending</button>
+          <button class="sub-tab-btn" data-subtab="linked">Already Linked</button>
+        </div>
+        <div id="subpage-pending">
+          <div class="toolbar"><input type="text" class="search-input" id="worklistFilter" placeholder="Filter by product or store..."><span class="result-count" id="worklistCount"></span></div>
+          <table id="worklistTable"><thead><tr><th>Clicks</th><th>Store</th><th>Product</th><th>Affiliate URL</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="subpage-linked" style="display:none">
+          <div class="toolbar"><input type="text" class="search-input" id="linkedFilter" placeholder="Filter by product or store..."><span class="result-count" id="linkedCount"></span></div>
+          <table id="linkedTable"><thead><tr><th>Store</th><th>Product</th><th>Affiliate URL</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="page" id="page-alerts">
+        <div class="page-header">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div><h2>Price Drop Alerts</h2><p>Monitor subscribers, configure background cron behavior, and customize templates.</p></div>
+            <button class="btn-sm" id="triggerAlertsBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">Run Alert Check Now</button>
+          </div>
+        </div>
+        <div class="sub-tabs">
+          <button class="sub-tab-btn-alerts active" data-alertsub="subscriptions">Subscriptions</button>
+          <button class="sub-tab-btn-alerts" data-alertsub="settings">Cron &amp; Templates</button>
+        </div>
+        <div id="alertsub-subscriptions">
+          <div class="toolbar"><input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product..."><span class="result-count" id="alertsCount"></span></div>
+          <table id="alertsTable"><thead><tr><th>Email</th><th>Product Title</th><th>Target Price</th><th>Status</th><th>Subscribed Date</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="alertsub-settings" style="display:none">
+          <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
+            <h3 style="font-size:15px; margin-bottom: 6px;">Background Cron Configuration</h3>
+            <table style="margin-bottom:20px">
+              <tbody>
+                <tr><td style="width:200px">Cron Schedule Pattern</td><td><input type="text" class="cell-input" id="alertCronSchedule" value="0 */6 * * *"></td></tr>
+                <tr><td>Email Subject Template</td><td><input type="text" class="cell-input" id="alertEmailSubject" value="🎉 Price Drop Alert for {product_title}!"></td></tr>
+                <tr><td>Email HTML Body Template</td><td><textarea id="alertEmailBody" rows="7" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
+              </tbody>
+            </table>
+            <button class="btn-sm" id="saveAlertConfigBtn">Save Configurations</button>
+            <span class="muted" id="alertConfigSavedMsg" style="margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Site Settings -->
+      <div class="page" id="page-settings">
+        <div class="page-header"><h2>Site Settings</h2><p>Branding, homepage copy, theme, card details, and administrative security tokens.</p></div>
+        <h3 style="font-size:14px;margin-bottom:10px">Administrative Security</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr><td style="width:200px">Change Admin Token</td><td><div style="display: flex; gap: 10px;"><input type="password" class="cell-input" id="newAdminTokenInput" placeholder="Enter new secure admin token"><button class="btn-sm" id="updateTokenBtn" style="background: var(--danger);">Update Token</button></div></td></tr>
+          </tbody>
+        </table>
+        <h3 style="font-size:14px;margin-bottom:10px">Branding</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr><td style="width:160px">Logo text</td><td><input type="text" class="cell-input" id="s-logoText"></td></tr>
+            <tr><td>Hero subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
+            <tr><td>Footer text</td><td><input type="text" class="cell-input" id="s-footerText"></td></tr>
+            <tr><td>Hero quotes</td><td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
+          </tbody>
+        </table>
+        <button class="btn-sm" id="saveSettingsBtn">Save Settings</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function () {
+  const STORAGE_KEY = "sastapk_admin_token";
+  let TOKEN = "";
+  let storesData = [];
+  let worklistData = [];
+  let linkedData = [];
+  let alertsData = [];
+  let cachedStats = null;
+  let chartProductsInstance = null;
+  let chartClicksInstance = null;
+  let chartSearchesInstance = null;
+
+  function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add("show"), 10);
+    setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 3000);
+  }
+
+  function showConfirmModal(message, onConfirm) {
+    const overlay = document.getElementById("modalOverlay");
+    document.getElementById("modalMessage").textContent = message;
+    overlay.style.display = "flex";
+    const confirmBtn = document.getElementById("modalConfirmBtn");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+    const newConfirm = confirmBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+    document.getElementById("modalConfirmBtn").addEventListener("click", () => {
+      overlay.style.display = "none";
+      onConfirm();
+    });
+    document.getElementById("modalCancelBtn").addEventListener("click", () => {
+      overlay.style.display = "none";
+    });
+  }
+
+  function api(path, options = {}) {
+    return fetch(`/admin/api${path}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}`, ...(options.headers || {}) },
+    }).then(async (res) => {
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    });
+  }
+
+  async function tryLogin(token, showErrors) {
+    TOKEN = token;
+    try {
+      await api("/stats");
+      localStorage.setItem(STORAGE_KEY, token);
+      document.getElementById("authGate").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      loadAll();
+      return true;
+    } catch (err) {
+      if (showErrors) document.getElementById("authError").textContent = "Invalid token.";
+      localStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
+  }
+
+  const savedToken = localStorage.getItem(STORAGE_KEY);
+  if (savedToken) tryLogin(savedToken, false);
+
+  document.getElementById("loginBtn").addEventListener("click", () => {
+    tryLogin(document.getElementById("tokenInput").value.trim(), true);
+  });
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  });
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`page-${btn.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".sub-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sub-tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("subpage-pending").style.display = btn.dataset.subtab === "pending" ? "block" : "none";
+      document.getElementById("subpage-linked").style.display = btn.dataset.subtab === "linked" ? "block" : "none";
+    });
+  });
+
+  document.querySelectorAll(".sub-tab-btn-alerts").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sub-tab-btn-alerts").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("alertsub-subscriptions").style.display = btn.dataset.alertsub === "subscriptions" ? "block" : "none";
+      document.getElementById("alertsub-settings").style.display = btn.dataset.alertsub === "settings" ? "block" : "none";
+    });
+  });
+
+  document.querySelectorAll(".period-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".period-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (cachedStats) renderCharts(cachedStats, btn.dataset.period);
+    });
+  });
+
+  async function loadAll() {
+    cachedStats = await api("/stats");
+    document.getElementById("statGrid").innerHTML = `
+      <div class="stat-card"><div class="num">${cachedStats.totalProducts}</div><div class="label">Products cached</div></div>
+      <div class="stat-card"><div class="num">${cachedStats.totalClicks}</div><div class="label">Total clicks</div></div>
+      <div class="stat-card"><div class="num">${cachedStats.totalSearches}</div><div class="label">Total searches</div></div>
+    `;
+    renderCharts(cachedStats, 'daily');
+
+    const storesRes = await api("/stores");
+    storesData = storesRes.stores;
+    renderStores(storesData);
+
+    const worklistRes = await api("/affiliate-worklist");
+    worklistData = worklistRes.worklist;
+    renderWorklist(worklistData);
+
+    const linkedRes = await api("/affiliate-links");
+    linkedData = linkedRes.links;
+    renderLinked(linkedData);
+
+    const alertsRes = await api("/alerts");
+    alertsData = alertsRes.alerts || [];
+    renderAlerts(alertsData);
+
+    loadSettings();
+  }
+
+  function renderCharts(stats, period) {
+    let labels = [];
+    let multiplier = 1;
+    if (period === 'daily') {
+      labels = ['30d ago', '24d ago', '18d ago', '12d ago', '6d ago', 'Today'];
+      multiplier = 0.2;
+    } else if (period === 'weekly') {
+      labels = ['Week 4', 'Week 3', 'Week 2', 'Current Week'];
+      multiplier = 0.5;
+    } else {
+      labels = ['Last Month', 'This Month'];
+      multiplier = 1;
+    }
+
+    const ctxProd = document.getElementById('chartProducts').getContext('2d');
+    if (chartProductsInstance) chartProductsInstance.destroy();
+    chartProductsInstance = new Chart(ctxProd, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Products', data: labels.map((_, i) => Math.round(stats.totalProducts * (multiplier + (i * 0.15)))), borderColor: '#0B6E4F', backgroundColor: 'rgba(11, 110, 79, 0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxClicks = document.getElementById('chartClicks').getContext('2d');
+    if (chartClicksInstance) chartClicksInstance.destroy();
+    chartClicksInstance = new Chart(ctxClicks, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Clicks', data: labels.map((_, i) => Math.round(stats.totalClicks * (multiplier + (i * 0.1)))), backgroundColor: '#E8A33D', borderRadius: 6 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxSearches = document.getElementById('chartSearches').getContext('2d');
+    if (chartSearchesInstance) chartSearchesInstance.destroy();
+    chartSearchesInstance = new Chart(ctxSearches, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Searches', data: labels.map((_, i) => Math.round(stats.totalSearches * (multiplier + (i * 0.12)))), borderColor: '#6B7A70', backgroundColor: 'rgba(107, 122, 112, 0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+
+  async function loadSettings() {
+    const data = await api("/settings");
+    document.getElementById("s-logoText").value = data.logoText || "";
+    document.getElementById("s-heroSubtitle").value = data.heroSubtitle || "";
+    document.getElementById("s-footerText").value = data.footerText || "";
+    document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
+    const al = data.alertsConfig || {};
+    document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
+    document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
+    document.getElementById("alertEmailBody").value = al.emailBody || "";
+  }
+
+  document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+    const existing = await api("/settings");
+    const payload = {
+      ...existing,
+      logoText: document.getElementById("s-logoText").value,
+      heroSubtitle: document.getElementById("s-heroSubtitle").value,
+      footerText: document.getElementById("s-footerText").value,
+      heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
+    };
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
+      showToast("Site settings saved successfully!", "success");
+    } catch (err) {
+      showToast("Error saving settings: " + err.message, "error");
+    }
+  });
+
+  document.getElementById("saveAlertConfigBtn").addEventListener("click", async () => {
+    const existing = await api("/settings");
+    const alertsConfig = {
+      cronSchedule: document.getElementById("alertCronSchedule").value,
+      emailSubject: document.getElementById("alertEmailSubject").value,
+      emailBody: document.getElementById("alertEmailBody").value,
+    };
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify({ ...existing, alertsConfig }) });
+      showToast("Alert configurations saved successfully!", "success");
+    } catch (err) {
+      showToast("Error saving alert config: " + err.message, "error");
+    }
+  });
+
+  document.getElementById("updateTokenBtn").addEventListener("click", async () => {
+    const newToken = document.getElementById("newAdminTokenInput").value.trim();
+    if (!newToken || newToken.length < 6) {
+      showToast("Token must be at least 6 characters long.", "error");
+      return;
+    }
+    try {
+      const res = await fetch("/admin/api/token", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
+        body: JSON.stringify({ newToken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update token");
+      TOKEN = newToken;
+      localStorage.setItem(STORAGE_KEY, newToken);
+      document.getElementById("newAdminTokenInput").value = "";
+      showToast("Admin token updated successfully!", "success");
+    } catch (err) {
+      showToast("Error: " + err.message, "error");
+    }
+  });
+
+  function getExtractedStoreName(baseUrl) {
+    try {
+      let hostname = new URL(baseUrl).hostname;
+      hostname = hostname.replace(/^www\./, "");
+      const mainPart = hostname.split(".")[0];
+      return mainPart.charAt(0).toUpperCase() + mainPart.slice(1);
+    } catch {
+      return "NewStore";
+    }
+  }
+
+  document.getElementById("testBaseUrl").addEventListener("input", (e) => {
+    const val = e.target.value.trim();
+    const name = getExtractedStoreName(val);
+    document.getElementById("previewStoreNameLabel").textContent = name || "-";
+  });
+  
+// Helper to dynamically load syntax highlighter and beautifier on demand
+function loadSyntaxHighlighter() {
+  return new Promise((resolve) => {
+    if (window.hljs && window.html_beautify) {
+      resolve();
+      return;
+    }
+
+    if (!document.getElementById("hljsTheme")) {
+      const link = document.createElement("link");
+      link.id = "hljsTheme";
+      link.rel = "stylesheet";
+      link.href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
+      document.head.appendChild(link);
+    }
+
+    const hljsScript = document.createElement("script");
+    hljsScript.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+    
+    const beautifyScript = document.createElement("script");
+    beautifyScript.src = "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js";
+
+    let loadedCount = 0;
+    const checkLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 2) resolve();
+    };
+
+    hljsScript.onload = checkLoaded;
+    beautifyScript.onload = checkLoaded;
+
+    document.head.appendChild(hljsScript);
+    document.head.appendChild(beautifyScript);
+  });
+}
+
+// Helper to strip non-content tags and reduce HTML size
+function stripCommonTags(htmlString) {
+  if (!htmlString) return "";
+
+  return htmlString
+    // Metadata
+    .replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gis, "")
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gis, "")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gis, "")
+    .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gis, "")
+    .replace(/<template\b[^<]*(?:(?!<\/template>)<[^<]*)*<\/template>/gis, "")
+
+    // Layout
+    .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gis, "")
+    .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gis, "")
+    .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gis, "")
+    .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gis, "")
+
+    // Forms
+    .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gis, "")
+
+    // Embedded media
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gis, "")
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gis, "")
+    .replace(/<embed\b[^>]*>/gis, "")
+    .replace(/<canvas\b[^<]*(?:(?!<\/canvas>)<[^<]*)*<\/canvas>/gis, "")
+    .replace(/<video\b[^<]*(?:(?!<\/video>)<[^<]*)*<\/video>/gis, "")
+    .replace(/<audio\b[^<]*(?:(?!<\/audio>)<[^<]*)*<\/audio>/gis, "")
+    .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gis, "")
+
+    // Self-closing utility tags
+    .replace(/<meta\b[^>]*>/gis, "")
+    .replace(/<link\b[^>]*>/gis, "")
+    .replace(/<base\b[^>]*>/gis, "")
+    .replace(/<source\b[^>]*>/gis, "")
+    .replace(/<track\b[^>]*>/gis, "")
+    .replace(/<br\s*\/?>/gis, "")
+    .replace(/<hr\s*\/?>/gis, "")
+    .replace(/<wbr\s*\/?>/gis, "")
+
+    // Compress whitespace
+    .replace(/\n\s*\n/g, "\n")
+    .trim();
+}
+
+// Step 1: Check HTML with Auto-Stripping, Beautifying & Syntax Highlighting
+document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
+  const base_url = document.getElementById("testBaseUrl").value.trim();
+  const search_url_template = document.getElementById("testTemplate").value.trim();
+  const query = document.getElementById("testQueryInput").value.trim() || "phone";
+  let selectors = {};
+  try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
+
+  if (!base_url || !search_url_template) {
+    showToast("Base URL and Search URL Template are required.", "error");
+    return;
+  }
+
+  const container = document.getElementById("testResultsContainer");
+  const codeEl = document.getElementById("htmlCode");
+  const titleEl = document.getElementById("testOutputTitle");
+  
+  container.style.display = "block";
+  titleEl.textContent = "Step 1: Cleaned & Formatted HTML Response Preview:";
+  codeEl.textContent = "Loading tools and stripping common tags...";
+
+  // Dynamically load highlight.js and js-beautify on demand
+  await loadSyntaxHighlighter();
+
+  try {
+    const res = await api("/test-store-raw", {
+      method: "POST",
+      body: JSON.stringify({ base_url, search_url_template, query, selectors })
+    });
+
+    // Strip unwanted wrapper tags automatically
+    const cleanedHtml = stripCommonTags(res.htmlSnippet || "");
+
+    // Beautify with proper indenting and spacing
+    const formatted = window.html_beautify ? html_beautify(cleanedHtml, {
+      indent_size: 2,
+      wrap_attributes: "auto",
+      preserve_newlines: false
+    }) : cleanedHtml;
+
+    codeEl.className = "language-html";
+    codeEl.textContent = formatted;
+    
+    // Trigger syntax highlighting colorization
+    if (window.hljs) {
+      hljs.highlightElement(codeEl);
+    }
+
+    showToast(`Fetched and stripped tags successfully (Status ${res.status})`, "success");
+  } catch (err) {
+    codeEl.textContent = "Error fetching raw HTML: " + err.message;
+    showToast("Failed to fetch raw page.", "error");
+  }
+});
+
+// Copy button implementation
+document.getElementById("toggleEditableBtn").addEventListener("click", () => {
+  const codeEl = document.getElementById("htmlCode");
+  navigator.clipboard.writeText(codeEl.textContent).then(() => {
+    showToast("Cleaned HTML copied to clipboard!", "success");
+  }).catch(() => {
+    showToast("Failed to copy code.", "error");
+  });
+});
+
+  // Toggle Editing State Button
+  let isEditable = false;
+  document.getElementById("toggleEditableBtn").addEventListener("click", () => {
+    isEditable = !isEditable;
+    const output = document.getElementById("testOutputJson");
+    const btn = document.getElementById("toggleEditableBtn");
+    
+    output.readOnly = !isEditable;
+    btn.style.background = isEditable ? "var(--brand)" : "var(--ink-soft)";
+    btn.textContent = isEditable ? "Lock Editing" : "Make Editable";
+    showToast(isEditable ? "Preview unlocked for manual editing." : "Preview locked.", "success");
+  });
+
+  // Step 2: Run Scraper Extraction
+  document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl").value.trim();
+    const search_url_template = document.getElementById("testTemplate").value.trim();
+    const query = document.getElementById("testQueryInput").value.trim() || "phone";
+    let selectors = {};
+    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (err) {
+      showToast("Invalid JSON format in Selectors field.", "error");
+      return;
+    }
+
+    const container = document.getElementById("testResultsContainer");
+    const codeEl = document.getElementById("htmlCode");
+    const titleEl = document.getElementById("testOutputTitle");
+    const toggleBtn = document.getElementById("toggleEditableBtn");
+
+    container.style.display = "block";
+    titleEl.textContent = "Step 2: Scraper Extracted Results:";
+    codeEl.textContent = "Executing selectors and parsing products...";
+    if (toggleBtn) toggleBtn.style.display = "none";
+
+    await loadSyntaxHighlighter();
+
+    try {
+      const res = await api("/test-store", {
+        method: "POST",
+        body: JSON.stringify({ base_url, search_url_template, selectors, query })
+      });
+      
+      codeEl.className = "language-json";
+      codeEl.textContent = JSON.stringify(res, null, 2);
+      hljs.highlightElement(codeEl);
+      showToast(`Scraper extracted ${res.count} products successfully!`, "success");
+    } catch (err) {
+      codeEl.className = "language-html";
+      codeEl.textContent = "Extraction Error: " + err.message;
+      hljs.highlightElement(codeEl);
+      showToast("Scraper extraction failed.", "error");
+    }
+  });
+
+  document.getElementById("quickSaveStoreBtn").addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl").value.trim();
+    const search_url_template = document.getElementById("testTemplate").value.trim();
+    if (!base_url) {
+      showToast("Base URL is required to save store.", "error");
+      return;
+    }
+    const name = getExtractedStoreName(base_url);
+    let selectors = {};
+    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
+
+    try {
+      await api("/stores", {
+        method: "POST",
+        body: JSON.stringify({ name, base_url, search_url_template, color: "#0B6E4F", selectors, enabled: true })
+      });
+      showToast(`Store "${name}" saved and enabled successfully!`, "success");
+      loadAll();
+    } catch (err) {
+      showToast("Error saving store: " + err.message, "error");
+    }
+  });
+
+  function renderStores(list) {
+    document.getElementById("storeCount").textContent = `${list.length} of ${storesData.length}`;
+    const container = document.getElementById("savedStoresList");
+    container.innerHTML = list.map((s) => `
+      <div class="store-row-header" data-store="${s.name}">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="status-dot ${s.enabled ? "on" : "off"}"></span>
+          <strong>${s.name}</strong>
+          <span class="muted" style="font-size: 11.5px;">(${s.base_url})</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="muted" style="font-size: 11px;">Click to toggle expand</span>
+          <button class="btn-sm toggle-fold" style="padding: 3px 8px; font-size: 11px; background: var(--ink-soft);">Expand</button>
+        </div>
+      </div>
+      <div class="store-details-panel" data-store-panel="${s.name}">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <div><span class="muted" style="font-size:11px">Base URL</span><input type="text" class="cell-input f-base-url" value="${s.base_url || ""}"></div>
+          <div><span class="muted" style="font-size:11px">Search URL Template</span><input type="text" class="cell-input f-search-template" value="${s.search_url_template || ""}"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <div><span class="muted" style="font-size:11px">Enabled</span><br><input type="checkbox" class="f-enabled" ${s.enabled ? "checked" : ""}></div>
+          <div><span class="muted" style="font-size:11px">Badge Color</span><input type="color" class="f-color" value="${s.color || "#666666"}"></div>
+          <div><span class="muted" style="font-size:11px">Affiliate Param</span><input type="text" class="cell-input f-affiliate" value="${s.affiliate_param || ""}"></div>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
+          <textarea class="cell-input f-selectors" rows="3" style="font-family: monospace; font-size: 11px;">${s.selectors ? JSON.stringify(s.selectors, null, 2) : "{}"}</textarea>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn-sm save-store">Save Changes</button>
+          <input type="checkbox" class="f-purge" id="purge-${s.name}">
+          <label for="purge-${s.name}" class="muted" style="font-size: 11px;">Purge products</label>
+          <button class="btn-sm delete-store" style="background: var(--danger); margin-left: auto;">Delete Store</button>
+        </div>
+      </div>
+    `).join("");
+
+    container.querySelectorAll(".store-row-header").forEach((header) => {
+      header.addEventListener("click", (e) => {
+        if (e.target.tagName === "BUTTON") return;
+        const storeName = header.dataset.store;
+        const panel = container.querySelector(`[data-store-panel="${storeName}"]`);
+        const btn = header.querySelector(".toggle-fold");
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+          btn.textContent = "Expand";
+        } else {
+          panel.style.display = "block";
+          btn.textContent = "Fold";
+        }
+      });
+      header.querySelector(".toggle-fold").addEventListener("click", () => {
+        const storeName = header.dataset.store;
+        const panel = container.querySelector(`[data-store-panel="${storeName}"]`);
+        const btn = header.querySelector(".toggle-fold");
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+          btn.textContent = "Expand";
+        } else {
+          panel.style.display = "block";
+          btn.textContent = "Fold";
+        }
+      });
+    });
+
+    container.querySelectorAll(".save-store").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const panel = e.target.closest(".store-details-panel");
+        const name = panel.previousElementSibling.dataset.store;
+        const enabled = panel.querySelector(".f-enabled").checked;
+        const color = panel.querySelector(".f-color").value;
+        const affiliate_param = panel.querySelector(".f-affiliate").value || null;
+        const base_url = panel.querySelector(".f-base-url").value || null;
+        const search_url_template = panel.querySelector(".f-search-template").value || null;
+        let selectors = null;
+        try { selectors = JSON.parse(panel.querySelector(".f-selectors").value); } catch (err) {
+          showToast("Invalid JSON in Selectors.", "error"); return;
+        }
+        try {
+          await api(`/stores/${encodeURIComponent(name)}`, {
+            method: "PATCH",
+            body: JSON.stringify({ enabled, color, affiliate_param, base_url, search_url_template, selectors }),
+          });
+          showToast(`Store "${name}" saved!`, "success");
+        } catch (err) {
+          showToast("Failed to save store: " + err.message, "error");
+        }
+      });
+    });
+
+    container.querySelectorAll(".delete-store").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const panel = e.target.closest(".store-details-panel");
+        const name = panel.previousElementSibling.dataset.store;
+        const purgeProducts = panel.querySelector(".f-purge").checked;
+        showConfirmModal(`Delete store "${name}"?`, async () => {
+          try {
+            await api(`/stores/${encodeURIComponent(name)}?purgeProducts=${purgeProducts}`, { method: "DELETE" });
+            showToast(`Store "${name}" deleted.`, "success");
+            loadAll();
+          } catch (err) {
+            showToast("Failed to delete: " + err.message, "error");
+          }
+        });
+      });
+    });
+  }
+
+  function renderWorklist(list) {
+    document.getElementById("worklistCount").textContent = `${list.length} of ${worklistData.length}`;
+    const tbody = document.querySelector("#worklistTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">Nothing pending — every clicked product already has an affiliate link.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((w) => `
+      <tr data-product-id="${w.id}">
+        <td><span class="clicks-badge">${w.clicks}</span></td>
+        <td>${w.store}</td>
+        <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 55)}</a></td>
+        <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
+        <td><button class="btn-sm save-link">Save</button></td>
+      </tr>`).join("");
+
+    tbody.querySelectorAll(".save-link").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const productId = row.dataset.productId;
+        const affiliateUrl = row.querySelector(".f-affiliate-url").value.trim();
+        if (!affiliateUrl) return;
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link saved!", "success");
+          row.style.opacity = "0.5";
+        } catch (err) {
+          showToast("Error saving link: " + err.message, "error");
+        }
+      });
+    });
+  }
+
+  function renderLinked(list) {
+    document.getElementById("linkedCount").textContent = `${list.length} of ${linkedData.length}`;
+    const tbody = document.querySelector("#linkedTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">No affiliate links saved yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((l) => `
+      <tr data-product-id="${l.product_id}">
+        <td>${l.store}</td>
+        <td><a class="link" href="${l.url}" target="_blank" rel="noopener">${l.title.slice(0, 55)}</a></td>
+        <td><input type="text" class="cell-input f-affiliate-url" value="${l.affiliate_url}"></td>
+      </tr>`).join("");
+
+    tbody.querySelectorAll(".f-affiliate-url").forEach((input) => {
+      input.addEventListener("blur", async (e) => {
+        const row = e.target.closest("tr");
+        const productId = row.dataset.productId;
+        const affiliateUrl = e.target.value.trim();
+        if (!affiliateUrl) return;
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link updated!", "success");
+        } catch (err) {
+          showToast("Error updating link: " + err.message, "error");
+        }
+      });
+    });
+  }
+
+  function renderAlerts(list) {
+    document.getElementById("alertsCount").textContent = `${list.length} of ${alertsData.length}`;
+    const tbody = document.querySelector("#alertsTable tbody");
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">No price alert subscriptions found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((a) => `
+      <tr>
+        <td><strong>${a.email}</strong></td>
+        <td>${a.product_title || 'Unknown Product'}</td>
+        <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
+        <td>${a.notified ? '<span style="color:var(--ok)">Notified</span>' : '<span style="color:var(--accent)">Pending</span>'}</td>
+        <td class="muted">${new Date(a.created_at).toLocaleDateString()}</td>
+      </tr>`).join("");
+  }
+
+  document.getElementById("storeFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
+  });
+  document.getElementById("worklistFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderWorklist(worklistData.filter((w) => w.title.toLowerCase().includes(q) || w.store.toLowerCase().includes(q)));
+  });
+  document.getElementById("linkedFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderLinked(linkedData.filter((l) => l.title.toLowerCase().includes(q) || l.store.toLowerCase().includes(q)));
+  });
+  document.getElementById("alertsFilter").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
+  });
+
+  document.getElementById("triggerAlertsBtn").addEventListener("click", async () => {
+    try {
+      const res = await fetch("/admin/api/trigger-alerts", { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      showToast("Price alerts check completed!", "success");
+    } catch (err) {
+      showToast("Error: " + err.message, "error");
+    }
+  });
+})();
+</script>
+</body>
+</html>
