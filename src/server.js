@@ -12,7 +12,6 @@ import adminRoutes from "./routes/admin.js";
 import settingsRoutes from "./routes/settings.js";
 import historyRoutes from "./routes/history.js";
 import alertsRoutes from "./routes/alerts.js";
-import cron from "node-cron";
 import { checkAndSendPriceAlerts } from "./utils/notifier.js";
 
 // Import store configs individually for initial database seeding
@@ -23,7 +22,6 @@ import { darazConfig } from "./adapters/stores/daraz.config.js";
 import { eezepcConfig } from "./adapters/stores/eezepc.config.js";
 import { shophiveConfig } from "./adapters/stores/shophive.config.js";
 import { flashiConfig } from "./adapters/stores/flashi.config.js";
-
 
 const initialStoreConfigs = [
   megaConfig,
@@ -84,31 +82,8 @@ app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
 app.use("/api", alertsRoutes);
 app.use("/admin/api", alertsRoutes);
-app.use("/", redirectRoutes);
 
-
-app.get("/health", (_req, res) => res.json({ ok: true }));
-
-const port = process.env.PORT || 3000;
-
-autoSetup()
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`API running on :${port}`);
-
-      cron.schedule("0 */6 * * *", () => {
-        checkAndSendPriceAlerts();
-      });
-      console.log("Price alert background cron worker scheduled.");
-    });
-  })
-  .catch((err) => {
-    console.error("Startup failed:", err.message);
-    process.exit(1);
-  });
-  
-
-
+// Manual trigger endpoint for admin panel button click
 app.post("/admin/api/trigger-alerts", async (_req, res) => {
   try {
     console.log("[api] Manual alert trigger requested from admin panel.");
@@ -119,3 +94,21 @@ app.post("/admin/api/trigger-alerts", async (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.use("/", redirectRoutes);
+
+app.get("/health", (_req, res) => res.json({ ok: true }));
+
+const port = process.env.PORT || 3000;
+
+autoSetup()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`API running on :${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Startup failed:", err.message);
+    process.exit(1);
+  });
+  
