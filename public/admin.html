@@ -271,14 +271,32 @@
           <button class="sub-tab-btn-alerts" data-alertsub="settings">Cron &amp; Templates</button>
           <button class="sub-tab-btn-alerts" data-alertsub="mailer">Mailer Settings</button>
         </div>
-        <!-- HTML Layout Update for Subscriptions Tab -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
-          <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
-          <span id="alertsCount" class="muted" style="font-size: 12px; white-space: nowrap;">0 of 0</span>
-        </div>
-        <button type="button" id="purgeAllAlertsBtn" class="btn-sm" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Purge All</button>
-      </div>
+  <!-- Subscriptions Tab Container Markup -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
+      <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
+      <span id="alertsCount" class="muted" style="font-size: 12px; white-space: nowrap;">0 of 0</span>
+    </div>
+    <button type="button" id="purgeAllAlertsBtn" class="btn-sm" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Purge All</button>
+  </div>
+
+  <div class="table-container">
+    <table id="alertsTable" class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Product Title</th>
+          <th>Target Price</th>
+          <th>Status</th>
+          <th>Subscribed Date</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dynamically populated by renderAlerts() -->
+      </tbody>
+    </table>
+  </div>
 
         <div id="alertsub-settings" style="display:none">
           <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
