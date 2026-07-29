@@ -1,16 +1,6 @@
 import nodemailer from "nodemailer";
 import { pool } from "../db/client.js";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_SERVER || "smtp.ethereal.email",
-  port: parseInt(process.env.MAIL_PORT || "587", 10),
-  secure: false,
-  auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD,
-  },
-});
-
 export async function checkAndSendPriceAlerts() {
   console.log("Running price alert check worker...");
   
@@ -19,10 +9,59 @@ export async function checkAndSendPriceAlerts() {
     const settings = settingsRes.rows[0]?.data || {};
     const alertsConfig = settings.alertsConfig || {};
 
+    // Retrieve multiple mailers configured in admin panel, falling back to legacy single config or .env
+    let mailers = alertsConfig.mailers || [];
+    
+    if (mailers.length === 0) {
+      // Fallback to legacy single configuration if multi-mailers array is empty
+      mailers = [{
+        name: "Default Mailer",
+        host: alertsConfig.mailServer || process.env.MAIL_SERVER || "smtp.ethereal.email",
+        port: parseInt(alertsConfig.mailPort || process.env.MAIL_PORT || "587", 10),
+        secure: typeof alertsConfig.mailSecure === "boolean" ? alertsConfig.mailSecure : (parseInt(alertsConfig.mailPort) === 465),
+        username: alertsConfig.mailUsername || process.env.MAIL_USERNAME,
+        password: alertsConfig.mailPassword || process.env.MAIL_PASSWORD,
+        sender: alertsConfig.mailSender || process.env.MAIL_DEFAULT_SENDER || '"Sasta.pk" <noreply@sasta.pk>',
+        active: true
+      }];
+    }
+
+    // Filter only active mailers
+    const activeMailers = mailers.filter(m => m.active !== false);
+    if (activeMailers.length === 0) {
+      console.error("No active mailers configured for sending alerts!");
+      return;
+    }
+
+    const rotationMode = alertsConfig.mailerRotationMode || "round-robin"; // "round-robin", "random", or "fallback"
+    let mailerIndex = 0;
+
+    function getNextTransporter() {
+      if (activeMailers.length === 0) return null;
+      
+      let config;
+      if (rotationMode === "random") {
+        config = activeMailers[Math.floor(Math.random() * activeMailers.length)];
+      } else {
+        // Round-robin
+        config = activeMailers[mailerIndex % activeMailers.length];
+        mailerIndex++;
+      }
+
+      const transporter = nodemailer.createTransport({
+        host: config.host,
+        port: parseInt(config.port, 10),
+        secure: config.secure,
+        auth: (config.username && config.password) ? { user: config.username, pass: config.password } : undefined,
+      });
+
+      return { transporter, sender: config.sender || '"Sasta.pk" <noreply@sasta.pk>', name: config.name || "Mailer" };
+    }
+
     const subjectTemplate = alertsConfig.emailSubject || "🎉 Price Drop Alert for {product_title}!";
     const bodyTemplate = alertsConfig.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
 
-  const alertsRes = await pool.query(`
+    const alertsRes = await pool.query(`
       SELECT a.id, a.email, a.target_price, p.title AS product_title, p.price AS current_price, p.url AS product_url, p.store AS store_name
       FROM price_alerts a
       JOIN products p ON a.product_id = p.id
@@ -47,22 +86,36 @@ export async function checkAndSendPriceAlerts() {
         .replace(/{store_name}/g, alert.store_name || "Store")
         .replace(/{product_url}/g, alert.product_url || "#");
 
-      try {
-        const info = await transporter.sendMail({
-          from: process.env.MAIL_DEFAULT_SENDER || '"Sasta.pk" <noreply@sasta.pk>',
-          to: alert.email,
-          subject: subject,
-          text: body,
-        });
+      let sentSuccessfully = false;
+      let attempts = 0;
+      const maxAttempts = activeMailers.length;
 
-        console.log("Message sent: %s", info.messageId);
-        // If using Ethereal, this prints the direct web link to read the email:
-        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      // Try sending, with fallback capability if rotationMode is fallback or quota fails
+      while (!sentSuccessfully && attempts < maxAttempts) {
+        const mailConfig = getNextTransporter();
+        if (!mailConfig) break;
 
-        await pool.query("UPDATE price_alerts SET notified = true WHERE id = $1", [alert.id]);
-        sentCount++;
-      } catch (emailErr) {
-        console.error(`Failed to send alert email to ${alert.email}:`, emailErr.message);
+        try {
+          const info = await mailConfig.transporter.sendMail({
+            from: mailConfig.sender,
+            to: alert.email,
+            subject: subject,
+            text: body,
+          });
+
+          console.log(`[${mailConfig.name}] Message sent: %s`, info.messageId);
+          console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+
+          await pool.query("UPDATE price_alerts SET notified = true WHERE id = $1", [alert.id]);
+          sentCount++;
+          sentSuccessfully = true;
+        } catch (emailErr) {
+          attempts++;
+          console.error(`[${mailConfig.name}] Failed to send alert email to ${alert.email}:`, emailErr.message);
+          if (rotationMode !== "fallback") {
+            break; // Stop loop if round-robin and single attempt fails unless set to fallback
+          }
+        }
       }
     }
 

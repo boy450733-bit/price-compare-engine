@@ -262,13 +262,14 @@
       <div class="page" id="page-alerts">
         <div class="page-header">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div><h2>Price Drop Alerts</h2><p>Monitor subscribers, configure background cron behavior, and customize templates.</p></div>
+            <div><h2>Price Drop Alerts</h2><p>Monitor subscribers, configure background cron behavior, customize templates, and manage SMTP credentials.</p></div>
             <button class="btn-sm" id="triggerAlertsBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">Run Alert Check Now</button>
           </div>
         </div>
         <div class="sub-tabs">
           <button class="sub-tab-btn-alerts active" data-alertsub="subscriptions">Subscriptions</button>
           <button class="sub-tab-btn-alerts" data-alertsub="settings">Cron &amp; Templates</button>
+          <button class="sub-tab-btn-alerts" data-alertsub="mailer">Mailer Settings</button>
         </div>
         <div id="alertsub-subscriptions">
           <div class="toolbar"><input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product..."><span class="result-count" id="alertsCount"></span></div>
@@ -295,6 +296,33 @@
             </table>
             <button class="btn-sm" id="saveAlertConfigBtn">Save Configurations</button>
             <span class="muted" id="alertConfigSavedMsg" style="margin-left:10px"></span>
+          </div>
+        </div>
+        <div id="alertsub-mailer" style="display:none">
+          <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div>
+                <h3 style="font-size:15px; margin-bottom: 4px;">Multi-SMTP Mailer Pool</h3>
+                <p class="muted" style="font-size: 12px;">Add multiple accounts (Resend, Mailjet, etc.) to rotate traffic and avoid quota limits or spam filtering.</p>
+              </div>
+              <button class="btn-sm" id="addMailerBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">+ Add Mailer Profile</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">Distribution Strategy</label>
+              <select class="cell-input" id="mailerRotationMode" style="max-width: 300px;">
+                <option value="round-robin">Round-Robin (Balanced rotation)</option>
+                <option value="random">Random Distribution</option>
+                <option value="fallback">Sequential Fallback (Try next if fail)</option>
+              </select>
+            </div>
+
+            <div id="mailersListContainer" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+              <!-- Dynamically populated via JS -->
+            </div>
+
+            <button class="btn-sm" id="saveMailerConfigBtn">Save Mailer Pool Settings</button>
+            <span class="muted" id="mailerConfigSavedMsg" style="margin-left:10px"></span>
           </div>
         </div>
       </div>
@@ -1093,6 +1121,187 @@
       showToast("Error: " + err.message, "error");
     }
   });
+
+  // Function to render mailer profile inputs dynamically
+function renderMailersList(mailers = []) {
+  const container = document.getElementById("mailersListContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+
+  if (mailers.length === 0) {
+    container.innerHTML = `<div class="muted" style="font-size: 13px; padding: 10px; border: 1px dashed var(--line); border-radius: 6px; text-align: center;">No mailers configured yet. Click "+ Add Mailer Profile" to get started.</div>`;
+    return;
+  }
+
+  mailers.forEach((m, index) => {
+    const card = document.createElement("div");
+    card.style.cssText = "background: var(--background); border: 1px solid var(--line); border-radius: 8px; padding: 15px; position: relative;";
+    
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="text" class="cell-input mailer-name" value="${m.name || `Mailer ${index + 1}`}" placeholder="Profile Name (e.g. Resend Primary)" style="font-weight: 600; width: 220px;">
+          <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+            <input type="checkbox" class="mailer-active" ${m.active !== false ? "checked" : ""}> Active
+          </label>
+        </div>
+        <button type="button" class="btn-sm remove-mailer-btn" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">SMTP Host</label>
+          <input type="text" class="cell-input mailer-host" value="${m.host || ""}" placeholder="smtp.resend.com">
+        </div>
+        <div>
+          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Port</label>
+          <input type="number" class="cell-input mailer-port" value="${m.port || 465}" placeholder="465">
+        </div>
+        <div>
+          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Secure (SSL/TLS)</label>
+          <select class="cell-input mailer-secure">
+            <option value="true" ${m.secure !== false ? "selected" : ""}>True (Port 465)</option>
+            <option value="false" ${m.secure === false ? "selected" : ""}>False (Port 587)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px;">
+        <div>
+          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Username</label>
+          <input type="text" class="cell-input mailer-username" value="${m.username || ""}" placeholder="resend">
+        </div>
+        <div>
+          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Password / API Key</label>
+          <input type="password" class="cell-input mailer-password" value="${m.password || ""}" placeholder="API Key">
+        </div>
+        <div>
+          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
+          <input type="text" class="cell-input mailer-sender" value="${m.sender || '"Sasta.pk" <noreply@sasta.pk>'}" placeholder='"Name" <email@domain.com>'>
+        </div>
+      </div>
+    `;
+
+    // Hook up remove button action
+    card.querySelector(".remove-mailer-btn").addEventListener("click", () => {
+      card.remove();
+      // If list is empty after removal, show placeholder
+      if (container.children.length === 0) {
+        renderMailersList([]);
+      }
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// Event listener for "+ Add Mailer Profile" button
+document.getElementById("addMailerBtn")?.addEventListener("click", () => {
+  const container = document.getElementById("mailersListContainer");
+  // Remove empty state message if present
+  if (container.querySelector(".muted") && container.children.length === 1) {
+    container.innerHTML = "";
+  }
+  
+  const currentMailers = gatherMailersFromDOM();
+  currentMailers.push({
+    name: `Mailer ${currentMailers.length + 1}`,
+    host: "smtp.resend.com",
+    port: 465,
+    secure: true,
+    username: "resend",
+    password: "",
+    sender: '"Sasta.pk" <noreply@sasta.pk>',
+    active: true
+  });
+  
+  renderMailersList(currentMailers);
+});
+
+// Helper to gather all mailer inputs from DOM before saving
+function gatherMailersFromDOM() {
+  const cards = document.querySelectorAll("#mailersListContainer > div");
+  const mailers = [];
+
+  cards.forEach(card => {
+    if (!card.querySelector(".mailer-name")) return; // Skip if it's the empty placeholder div
+    mailers.push({
+      name: card.querySelector(".mailer-name").value.trim(),
+      active: card.querySelector(".mailer-active").checked,
+      host: card.querySelector(".mailer-host").value.trim(),
+      port: parseInt(card.querySelector(".mailer-port").value.trim(), 10) || 465,
+      secure: card.querySelector(".mailer-secure").value === "true",
+      username: card.querySelector(".mailer-username").value.trim(),
+      password: card.querySelector(".mailer-password").value.trim(),
+      sender: card.querySelector(".mailer-sender").value.trim()
+    });
+  });
+
+  return mailers;
+}
+
+// Load mailer settings when settings page loads
+async function loadMailerSettings(alertsConfig) {
+  const rotationSelect = document.getElementById("mailerRotationMode");
+  if (rotationSelect) {
+    rotationSelect.value = alertsConfig.mailerRotationMode || "round-robin";
+  }
+
+  let mailers = alertsConfig.mailers || [];
+  // Fallback conversion if legacy single mailer settings exist
+  if (mailers.length === 0 && alertsConfig.mailServer) {
+    mailers = [{
+      name: "Legacy Configured Mailer",
+      host: alertsConfig.mailServer,
+      port: alertsConfig.mailPort || 465,
+      secure: alertsConfig.mailSecure !== false,
+      username: alertsConfig.mailUsername || "",
+      password: alertsConfig.mailPassword || "",
+      sender: alertsConfig.mailSender || '"Sasta.pk" <noreply@sasta.pk>',
+      active: true
+    }];
+  }
+
+  renderMailersList(mailers);
+}
+
+// Save Mailer Configurations Handler
+document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
+  const msgEl = document.getElementById("mailerConfigSavedMsg");
+  try {
+    // 1. Fetch current full settings object first so we don't overwrite cron/templates
+    const res = await fetch("/admin/api/settings");
+    const currentSettings = await res.json();
+
+    // 2. Update alertsConfig with new mailer pool settings
+    currentSettings.alertsConfig = currentSettings.alertsConfig || {};
+    currentSettings.alertsConfig.mailerRotationMode = document.getElementById("mailerRotationMode").value;
+    currentSettings.alertsConfig.mailers = gatherMailersFromDOM();
+
+    // 3. Send update back to backend settings save endpoint
+    const saveRes = await fetch("/admin/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentSettings)
+    });
+
+    if (saveRes.ok) {
+      if (msgEl) {
+        msgEl.style.color = "var(--success, #16a34a)";
+        msgEl.textContent = "Mailer pool saved successfully!";
+        setTimeout(() => { msgEl.textContent = ""; }, 3000);
+      }
+    } else {
+      throw new Error("Failed to save settings on server.");
+    }
+  } catch (err) {
+    console.error("Error saving mailer configs:", err);
+    if (msgEl) {
+      msgEl.style.color = "#dc2626";
+      msgEl.textContent = "Error saving settings.";
+    }
+  }
+});
+
 })();
 </script>
 </body>
