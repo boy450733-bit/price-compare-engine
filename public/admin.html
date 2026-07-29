@@ -1280,30 +1280,30 @@ async function loadMailerSettings(alertsConfig) {
 document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
   const msgEl = document.getElementById("mailerConfigSavedMsg");
   try {
-    // 1. Fetch current full settings object first so we don't overwrite cron/templates
-    const res = await fetch("/admin/api/settings");
-    const currentSettings = await res.json();
+    // 1. Use your app's existing api helper to fetch current settings securely
+    const existing = await api("/settings");
 
-    // 2. Update alertsConfig with new mailer pool settings
-    currentSettings.alertsConfig = currentSettings.alertsConfig || {};
-    currentSettings.alertsConfig.mailerRotationMode = document.getElementById("mailerRotationMode").value;
-    currentSettings.alertsConfig.mailers = gatherMailersFromDOM();
+    // 2. Build the updated payload including your multi-mailer pool settings
+    const payload = {
+      ...existing,
+      alertsConfig: {
+        ...(existing.alertsConfig || {}),
+        mailerRotationMode: document.getElementById("mailerRotationMode").value,
+        mailers: gatherMailersFromDOM()
+      }
+    };
 
-    // 3. Send update back to backend settings save endpoint
-    const saveRes = await fetch("/admin/api/settings", {
+    // 3. Save back using your app's existing api helper with POST method
+    const saveRes = await api("/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(currentSettings)
+      body: JSON.stringify(payload)
     });
 
-    if (saveRes.ok) {
-      if (msgEl) {
-        msgEl.style.color = "var(--success, #16a34a)";
-        msgEl.textContent = "Mailer pool saved successfully!";
-        setTimeout(() => { msgEl.textContent = ""; }, 3000);
-      }
-    } else {
-      throw new Error("Failed to save settings on server.");
+    if (msgEl) {
+      msgEl.style.color = "var(--success, #16a34a)";
+      msgEl.textContent = "Mailer pool saved successfully!";
+      setTimeout(() => { msgEl.textContent = ""; }, 3000);
     }
   } catch (err) {
     console.error("Error saving mailer configs:", err);
