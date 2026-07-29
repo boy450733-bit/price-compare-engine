@@ -505,12 +505,24 @@
     });
   });
 
-  document.querySelectorAll(".sub-tab-btn-alerts").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".sub-tab-btn-alerts").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById("alertsub-subscriptions").style.display = btn.dataset.alertsub === "subscriptions" ? "block" : "none";
-      document.getElementById("alertsub-settings").style.display = btn.dataset.alertsub === "settings" ? "block" : "none";
+  document.querySelectorAll(".sub-tab-btn-alerts").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      // 1. Remove active class from all sub-tab buttons
+      document.querySelectorAll(".sub-tab-btn-alerts").forEach(b => b.classList.remove("active"));
+      // Add active class to clicked button
+      e.target.classList.add("active");
+
+      const targetSub = e.target.getAttribute("data-alertsub"); // 'subscriptions', 'settings', or 'mailer'
+      // 2. Hide all sub-tab content containers
+      document.getElementById("alertsub-subscriptions").style.display = "none";
+      document.getElementById("alertsub-settings").style.display = "none";
+      document.getElementById("alertsub-mailer").style.display = "none";
+
+      // 3. Show the targeted container
+      const activeContainer = document.getElementById(`alertsub-${targetSub}`);
+      if (activeContainer) {
+        activeContainer.style.display = "block";
+      }
     });
   });
 
