@@ -1278,9 +1278,8 @@ async function loadMailerSettings(alertsConfig) {
 
 // Save Mailer Configurations Handler
 document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
-  const msgEl = document.getElementById("mailerConfigSavedMsg");
   try {
-    // 1. Use your app's existing api helper to fetch current settings securely
+    // 1. Fetch current full settings object securely using your app's built-in api helper
     const existing = await api("/settings");
 
     // 2. Build the updated payload including your multi-mailer pool settings
@@ -1293,24 +1292,17 @@ document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async 
       }
     };
 
-    // 3. Save back using your app's existing api helper with POST method
-    const saveRes = await api("/settings", {
-      method: "POST",
+    // 3. Save back using PUT method to match your backend route
+    await api("/settings", {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    if (msgEl) {
-      msgEl.style.color = "var(--success, #16a34a)";
-      msgEl.textContent = "Mailer pool saved successfully!";
-      setTimeout(() => { msgEl.textContent = ""; }, 3000);
-    }
+    showToast("Mailer pool saved successfully!", "success");
   } catch (err) {
     console.error("Error saving mailer configs:", err);
-    if (msgEl) {
-      msgEl.style.color = "#dc2626";
-      msgEl.textContent = "Error saving settings.";
-    }
+    showToast("Error saving settings: " + err.message, "error");
   }
 });
 
