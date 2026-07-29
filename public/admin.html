@@ -271,10 +271,15 @@
           <button class="sub-tab-btn-alerts" data-alertsub="settings">Cron &amp; Templates</button>
           <button class="sub-tab-btn-alerts" data-alertsub="mailer">Mailer Settings</button>
         </div>
-        <div id="alertsub-subscriptions">
-          <div class="toolbar"><input type="text" class="search-input" id="alertsFilter" placeholder="Filter by email or product..."><span class="result-count" id="alertsCount"></span></div>
-          <table id="alertsTable"><thead><tr><th>Email</th><th>Product Title</th><th>Target Price</th><th>Status</th><th>Subscribed Date</th></tr></thead><tbody></tbody></table>
+        <!-- HTML Layout Update for Subscriptions Tab -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
+          <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
+          <span id="alertsCount" class="muted" style="font-size: 12px; white-space: nowrap;">0 of 0</span>
         </div>
+        <button type="button" id="purgeAllAlertsBtn" class="btn-sm" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Purge All</button>
+      </div>
+
         <div id="alertsub-settings" style="display:none">
           <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
             <h3 style="font-size:15px; margin-bottom: 6px;">Background Cron Configuration</h3>
@@ -1104,23 +1109,88 @@
     });
   }
 
+// Updated JavaScript Functions for Subscriptions Table Management
+
   function renderAlerts(list) {
     document.getElementById("alertsCount").textContent = `${list.length} of ${alertsData.length}`;
     const tbody = document.querySelector("#alertsTable tbody");
     if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">No price alert subscriptions found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align: center; padding: 20px;">No price alert subscriptions found.</td></tr>`;
       return;
     }
+    
     tbody.innerHTML = list.map((a) => `
-      <tr>
+      <tr data-alert-id="${a.id}">
         <td><strong>${a.email}</strong></td>
         <td>${a.product_title || 'Unknown Product'}</td>
         <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
         <td>${a.notified ? '<span style="color:var(--ok)">Notified</span>' : '<span style="color:var(--accent)">Pending</span>'}</td>
         <td class="muted">${new Date(a.created_at).toLocaleDateString()}</td>
+        <td style="text-align: right; white-space: nowrap;">
+          <button type="button" class="btn-sm edit-alert-btn" title="Edit Target Price" style="background: var(--ink-soft); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 5px;">✏️</button>
+          <button type="button" class="btn-sm delete-alert-btn" title="Delete Subscription" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
+        </td>
       </tr>`).join("");
+
+    // Attach Delete Single Alert Handler
+    tbody.querySelectorAll(".delete-alert-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const alertId = row.dataset.alertId;
+        showConfirmModal("Are you sure you want to delete this alert subscription?", async () => {
+          try {
+            await api(`/alerts/${alertId}`, { method: "DELETE" });
+            showToast("Alert subscription deleted.", "success");
+            const alertsRes = await api("/alerts");
+            alertsData = alertsRes.alerts || [];
+            renderAlerts(alertsData);
+          } catch (err) {
+            showToast("Failed to delete alert: " + err.message, "error");
+          }
+        });
+      });
+    });
+
+    // Attach Edit Single Alert Handler
+    tbody.querySelectorAll(".edit-alert-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const alertId = row.dataset.alertId;
+        const currentAlert = alertsData.find(item => String(item.id) === String(alertId));
+        const newPrice = prompt("Enter new target price (leave blank for any price drop):", currentAlert?.target_price || "");
+        
+        if (newPrice === null) return; // Cancelled
+
+        try {
+          await api(`/alerts/${alertId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ target_price: newPrice.trim() ? Number(newPrice) : null })
+          });
+          showToast("Alert target price updated successfully!", "success");
+          const alertsRes = await api("/alerts");
+          alertsData = alertsRes.alerts || [];
+          renderAlerts(alertsData);
+        } catch (err) {
+          showToast("Failed to update alert: " + err.message, "error");
+        }
+      });
+    });
   }
 
+  // Purge All Alerts Handler
+  document.getElementById("purgeAllAlertsBtn")?.addEventListener("click", () => {
+    showConfirmModal("Are you sure you want to purge ALL price alert subscriptions? This cannot be undone.", async () => {
+      try {
+        await api("/alerts/purge", { method: "DELETE" });
+        showToast("All alert subscriptions purged successfully.", "success");
+        alertsData = [];
+        renderAlerts([]);
+      } catch (err) {
+        showToast("Failed to purge alerts: " + err.message, "error");
+      }
+    });
+  });
+  
   document.getElementById("storeFilter").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
