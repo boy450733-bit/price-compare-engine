@@ -106,7 +106,6 @@
   .sub-tab-btn, .sub-tab-btn-alerts { padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--ink-soft); border-bottom: 2px solid transparent; background: transparent; cursor: pointer; }
   .sub-tab-btn.active, .sub-tab-btn-alerts.active { color: var(--brand-dark); border-bottom-color: var(--brand); }
 
-  /* Accordion folded store card styles */
   .store-row-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 6px; }
   .store-row-header:hover { background: #FBFAF6; }
   .store-details-panel { display: none; background: var(--surface); border: 1px solid var(--line); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 16px; margin-top: -8px; margin-bottom: 10px; }
@@ -119,9 +118,10 @@
   <div id="customModal">
     <h3 id="modalTitle">Confirm Action</h3>
     <p id="modalMessage">Are you sure?</p>
+    <div id="modalCustomContent" style="margin-bottom: 20px; display: none;"></div>
     <div class="modal-actions">
       <button class="btn-sm" id="modalCancelBtn" style="background: var(--ink-soft);">Cancel</button>
-      <button class="btn-sm" id="modalConfirmBtn" style="background: var(--danger);">Delete Store</button>
+      <button class="btn-sm" id="modalConfirmBtn" style="background: var(--danger);">Confirm</button>
     </div>
   </div>
 </div>
@@ -180,7 +180,6 @@
           </div>
         </div>
 
-        <!-- Live Scraper Testing Sandbox Card -->
         <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 24px;">
           <h3 style="font-size: 15px; margin-bottom: 6px; color: var(--brand-dark);">🧪 Live Scraper Sandbox</h3>
           <p class="muted" style="margin-bottom: 14px;">Step 1: Check network response &amp; HTML body. Step 2: Extract structured products via selectors.</p>
@@ -206,7 +205,6 @@
             </div>
           </div>
           
-          <!-- Auto-named store & quick save button -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #F1ECDE; padding: 8px 12px; border-radius: 6px;">
             <span class="muted" style="font-size: 12px;">Auto-named store from base domain: <strong id="previewStoreNameLabel" style="color:var(--brand)">-</strong></span>
             <button class="btn-sm" id="quickSaveStoreBtn" style="background: var(--brand);">+ Save Store to List</button>
@@ -222,7 +220,6 @@
 }</textarea>
           </div>
 
-          <!-- Test Results Preview Container -->
           <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span id="testOutputTitle" class="muted" style="font-size:11px; font-weight: 600;">Sandbox Output:</span>
@@ -237,7 +234,6 @@
           <span class="result-count" id="storeCount"></span>
         </div>
         
-        <!-- Accordion Folded Stores Container -->
         <div id="savedStoresList"></div>
       </div>
 
@@ -271,32 +267,35 @@
           <button class="sub-tab-btn-alerts" data-alertsub="settings">Cron &amp; Templates</button>
           <button class="sub-tab-btn-alerts" data-alertsub="mailer">Mailer Settings</button>
         </div>
-  <!-- Subscriptions Tab Container Markup -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
-    <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
-      <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
-      <span id="alertsCount" class="muted" style="font-size: 12px; white-space: nowrap;">0 of 0</span>
-    </div>
-    <button type="button" id="purgeAllAlertsBtn" class="btn-sm" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Purge All</button>
-  </div>
 
-  <div class="table-container">
-    <table id="alertsTable" class="admin-table">
-      <thead>
-        <tr>
-          <th>Email</th>
-          <th>Product Title</th>
-          <th>Target Price</th>
-          <th>Status</th>
-          <th>Subscribed Date</th>
-          <th style="text-align: right;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Dynamically populated by renderAlerts() -->
-      </tbody>
-    </table>
-  </div>
+        <!-- Subscriptions Tab Content -->
+        <div id="alertsub-subscriptions">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
+              <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
+              <span id="alertsCount" class="muted" style="font-size: 12px; white-space: nowrap;">0 of 0</span>
+            </div>
+            <button type="button" id="purgeAllAlertsBtn" class="btn-sm" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Purge All</button>
+          </div>
+
+          <div class="table-container">
+            <table id="alertsTable" class="admin-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Product Title</th>
+                  <th>Target Price</th>
+                  <th>Status</th>
+                  <th>Subscribed Date</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Dynamically populated by renderAlerts() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         <div id="alertsub-settings" style="display:none">
           <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
@@ -321,6 +320,7 @@
             <span class="muted" id="alertConfigSavedMsg" style="margin-left:10px"></span>
           </div>
         </div>
+
         <div id="alertsub-mailer" style="display:none">
           <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -426,7 +426,6 @@
   </div>
 </div>
 
-// Replace your entire script block with this clean version
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
@@ -452,16 +451,32 @@
     setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 3000);
   }
 
-  function showConfirmModal(message, onConfirm) {
+  function showConfirmModal(message, onConfirm, customHTML = null, confirmButtonText = "Delete", confirmButtonColor = "var(--danger)") {
     const overlay = document.getElementById("modalOverlay");
+    const msgEl = document.getElementById("modalMessage");
+    const customContentEl = document.getElementById("modalCustomContent");
+    const confirmBtn = document.getElementById("modalConfirmBtn");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+
     if (!overlay) {
       if (confirm(message)) onConfirm();
       return;
     }
-    document.getElementById("modalMessage").textContent = message;
+
+    msgEl.textContent = message;
+    confirmBtn.textContent = confirmButtonText;
+    confirmBtn.style.background = confirmButtonColor;
+
+    if (customHTML) {
+      customContentEl.innerHTML = customHTML;
+      customContentEl.style.display = "block";
+    } else {
+      customContentEl.innerHTML = "";
+      customContentEl.style.display = "none";
+    }
+
     overlay.style.display = "flex";
-    const confirmBtn = document.getElementById("modalConfirmBtn");
-    const cancelBtn = document.getElementById("modalCancelBtn");
+
     const newConfirm = confirmBtn.cloneNode(true);
     const newCancel = cancelBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
@@ -1204,7 +1219,7 @@
           } catch (err) {
             showToast("Failed to delete alert: " + err.message, "error");
           }
-        });
+        }, null, "Delete", "var(--danger)");
       });
     });
 
@@ -1214,22 +1229,43 @@
         const alertId = row?.dataset?.alertId;
         if (!alertId) return;
         const currentAlert = alertsData.find(item => String(item.id) === String(alertId));
-        const newPrice = prompt("Enter new target price (leave blank for any price drop):", currentAlert?.target_price || "");
-        
-        if (newPrice === null) return;
 
-        try {
-          await api(`/alerts/${alertId}`, {
-            method: "PATCH",
-            body: JSON.stringify({ target_price: newPrice.trim() ? Number(newPrice) : null })
-          });
-          showToast("Alert target price updated successfully!", "success");
-          const alertsRes = await api("/alerts");
-          alertsData = alertsRes.alerts || [];
-          renderAlerts(alertsData);
-        } catch (err) {
-          showToast("Failed to update alert: " + err.message, "error");
-        }
+        const editFormHtml = `
+          <div style="text-align: left; display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: var(--ink-soft); display: block; margin-bottom: 4px;">Target Price (Rs)</label>
+              <input type="number" id="modalEditTargetPrice" class="cell-input" value="${currentAlert?.target_price || ""}" placeholder="Leave blank for any drop">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: var(--ink-soft); display: block; margin-bottom: 4px;">Status</label>
+              <select id="modalEditNotified" class="cell-input">
+                <option value="false" ${!currentAlert?.notified ? "selected" : ""}>Pending</option>
+                <option value="true" ${currentAlert?.notified ? "selected" : ""}>Notified</option>
+              </select>
+            </div>
+          </div>
+        `;
+
+        showConfirmModal(`Edit Alert Subscription (${currentAlert?.email || ''})`, async () => {
+          const newPrice = document.getElementById("modalEditTargetPrice")?.value.trim();
+          const newNotified = document.getElementById("modalEditNotified")?.value === "true";
+
+          try {
+            await api(`/alerts/${alertId}`, {
+              method: "PATCH",
+              body: JSON.stringify({
+                target_price: newPrice ? Number(newPrice) : null,
+                notified: newNotified
+              })
+            });
+            showToast("Alert subscription updated successfully!", "success");
+            const alertsRes = await api("/alerts");
+            alertsData = alertsRes.alerts || [];
+            renderAlerts(alertsData);
+          } catch (err) {
+            showToast("Failed to update alert: " + err.message, "error");
+          }
+        }, editFormHtml, "Save Changes", "var(--brand)");
       });
     });
   }
@@ -1237,14 +1273,14 @@
   document.getElementById("purgeAllAlertsBtn")?.addEventListener("click", () => {
     showConfirmModal("Are you sure you want to purge ALL price alert subscriptions? This cannot be undone.", async () => {
       try {
-        await api("/alerts/purge", { method: "DELETE" });
+        await api("/alerts", { method: "DELETE" });
         showToast("All alert subscriptions purged successfully.", "success");
         alertsData = [];
         renderAlerts([]);
       } catch (err) {
         showToast("Failed to purge alerts: " + err.message, "error");
       }
-    });
+    }, null, "Purge All", "var(--danger)");
   });
   
   document.getElementById("storeFilter")?.addEventListener("input", (e) => {
