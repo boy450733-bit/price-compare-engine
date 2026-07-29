@@ -349,9 +349,8 @@ router.post("/test-store-raw", async (req, res) => {
 });
 
 // Example code for your backend server.js / router file
-
 // 1. Delete a single alert subscription by ID
-app.delete('/admin/api/alerts/:id', verifyAdminToken, async (req, res) => {
+router.delete('/alerts/:id', async (req, res) => {
   try {
     const alertId = req.params.id;
     await pool.query('DELETE FROM price_alerts WHERE id = $1', [alertId]);
@@ -363,12 +362,30 @@ app.delete('/admin/api/alerts/:id', verifyAdminToken, async (req, res) => {
 });
 
 // 2. Purge all alert subscriptions
-app.delete('/admin/api/alerts', verifyAdminToken, async (req, res) => {
+router.delete('/alerts', async (req, res) => {
   try {
     await pool.query('DELETE FROM price_alerts');
     res.json({ success: true, message: "All alerts purged successfully" });
   } catch (err) {
     console.error("Error purging alerts:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update an existing price alert subscription by ID
+router.patch('/alerts/:id', async (req, res) => {
+  try {
+    const alertId = req.params.id;
+    const { target_price, notified } = req.body;
+    
+    await pool.query(
+      'UPDATE price_alerts SET target_price = $1, notified = $2 WHERE id = $3',
+      [target_price, notified, alertId]
+    );
+    
+    res.json({ success: true, message: "Alert updated successfully" });
+  } catch (err) {
+    console.error("Error updating alert:", err);
     res.status(500).json({ error: err.message });
   }
 });
