@@ -408,6 +408,7 @@
   </div>
 </div>
 
+// Replace your entire script block with this clean version
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
@@ -424,6 +425,7 @@
 
   function showToast(message, type = "success") {
     const container = document.getElementById("toastContainer");
+    if (!container) return;
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.textContent = message;
@@ -434,6 +436,10 @@
 
   function showConfirmModal(message, onConfirm) {
     const overlay = document.getElementById("modalOverlay");
+    if (!overlay) {
+      if (confirm(message)) onConfirm();
+      return;
+    }
     document.getElementById("modalMessage").textContent = message;
     overlay.style.display = "flex";
     const confirmBtn = document.getElementById("modalConfirmBtn");
@@ -470,12 +476,17 @@
     try {
       await api("/stats");
       localStorage.setItem(STORAGE_KEY, token);
-      document.getElementById("authGate").style.display = "none";
-      document.getElementById("app").style.display = "block";
+      const authGate = document.getElementById("authGate");
+      const app = document.getElementById("app");
+      if (authGate) authGate.style.display = "none";
+      if (app) app.style.display = "block";
       loadAll();
       return true;
     } catch (err) {
-      if (showErrors) document.getElementById("authError").textContent = "Invalid token.";
+      if (showErrors) {
+        const errEl = document.getElementById("authError");
+        if (errEl) errEl.textContent = "Invalid token.";
+      }
       localStorage.removeItem(STORAGE_KEY);
       return false;
     }
@@ -484,10 +495,10 @@
   const savedToken = localStorage.getItem(STORAGE_KEY);
   if (savedToken) tryLogin(savedToken, false);
 
-  document.getElementById("loginBtn").addEventListener("click", () => {
+  document.getElementById("loginBtn")?.addEventListener("click", () => {
     tryLogin(document.getElementById("tokenInput").value.trim(), true);
   });
-  document.getElementById("logoutBtn").addEventListener("click", () => {
+  document.getElementById("logoutBtn")?.addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEY);
     location.reload();
   });
@@ -497,7 +508,8 @@
       document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
       document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
       btn.classList.add("active");
-      document.getElementById(`page-${btn.dataset.tab}`).classList.add("active");
+      const pageEl = document.getElementById(`page-${btn.dataset.tab}`);
+      if (pageEl) pageEl.classList.add("active");
     });
   });
 
@@ -505,8 +517,10 @@
     btn.addEventListener("click", () => {
       document.querySelectorAll(".sub-tab-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      document.getElementById("subpage-pending").style.display = btn.dataset.subtab === "pending" ? "block" : "none";
-      document.getElementById("subpage-linked").style.display = btn.dataset.subtab === "linked" ? "block" : "none";
+      const pendingEl = document.getElementById("subpage-pending");
+      const linkedEl = document.getElementById("subpage-linked");
+      if (pendingEl) pendingEl.style.display = btn.dataset.subtab === "pending" ? "block" : "none";
+      if (linkedEl) linkedEl.style.display = btn.dataset.subtab === "linked" ? "block" : "none";
     });
   });
 
@@ -516,9 +530,13 @@
       e.target.classList.add("active");
 
       const targetSub = e.target.getAttribute("data-alertsub");
-      document.getElementById("alertsub-subscriptions").style.display = "none";
-      document.getElementById("alertsub-settings").style.display = "none";
-      document.getElementById("alertsub-mailer").style.display = "none";
+      const subSub = document.getElementById("alertsub-subscriptions");
+      const setSub = document.getElementById("alertsub-settings");
+      const mailSub = document.getElementById("alertsub-mailer");
+
+      if (subSub) subSub.style.display = "none";
+      if (setSub) setSub.style.display = "none";
+      if (mailSub) mailSub.style.display = "none";
 
       const activeContainer = document.getElementById(`alertsub-${targetSub}`);
       if (activeContainer) {
@@ -537,23 +555,26 @@
 
   async function loadAll() {
     cachedStats = await api("/stats");
-    document.getElementById("statGrid").innerHTML = `
-      <div class="stat-card"><div class="num">${cachedStats.totalProducts}</div><div class="label">Products cached</div></div>
-      <div class="stat-card"><div class="num">${cachedStats.totalClicks}</div><div class="label">Total clicks</div></div>
-      <div class="stat-card"><div class="num">${cachedStats.totalSearches}</div><div class="label">Total searches</div></div>
-    `;
+    const statGrid = document.getElementById("statGrid");
+    if (statGrid) {
+      statGrid.innerHTML = `
+        <div class="stat-card"><div class="num">${cachedStats.totalProducts}</div><div class="label">Products cached</div></div>
+        <div class="stat-card"><div class="num">${cachedStats.totalClicks}</div><div class="label">Total clicks</div></div>
+        <div class="stat-card"><div class="num">${cachedStats.totalSearches}</div><div class="label">Total searches</div></div>
+      `;
+    }
     renderCharts(cachedStats, 'daily');
 
     const storesRes = await api("/stores");
-    storesData = storesRes.stores;
+    storesData = storesRes.stores || [];
     renderStores(storesData);
 
     const worklistRes = await api("/affiliate-worklist");
-    worklistData = worklistRes.worklist;
+    worklistData = worklistRes.worklist || [];
     renderWorklist(worklistData);
 
     const linkedRes = await api("/affiliate-links");
-    linkedData = linkedRes.links;
+    linkedData = linkedRes.links || [];
     renderLinked(linkedData);
 
     const alertsRes = await api("/alerts");
@@ -577,63 +598,71 @@
       multiplier = 1;
     }
 
-    const ctxProd = document.getElementById('chartProducts').getContext('2d');
-    if (chartProductsInstance) chartProductsInstance.destroy();
-    chartProductsInstance = new Chart(ctxProd, {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Products', data: labels.map((_, i) => Math.round(stats.totalProducts * (multiplier + (i * 0.15)))), borderColor: '#0B6E4F', backgroundColor: 'rgba(11, 110, 79, 0.1)', fill: true, tension: 0.3 }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
+    const canvasProd = document.getElementById('chartProducts');
+    if (canvasProd) {
+      const ctxProd = canvasProd.getContext('2d');
+      if (chartProductsInstance) chartProductsInstance.destroy();
+      chartProductsInstance = new Chart(ctxProd, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Products', data: labels.map((_, i) => Math.round(stats.totalProducts * (multiplier + (i * 0.15)))), borderColor: '#0B6E4F', backgroundColor: 'rgba(11, 110, 79, 0.1)', fill: true, tension: 0.3 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
 
-    const ctxClicks = document.getElementById('chartClicks').getContext('2d');
-    if (chartClicksInstance) chartClicksInstance.destroy();
-    chartClicksInstance = new Chart(ctxClicks, {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Clicks', data: labels.map((_, i) => Math.round(stats.totalClicks * (multiplier + (i * 0.1)))), backgroundColor: '#E8A33D', borderRadius: 6 }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
+    const canvasClicks = document.getElementById('chartClicks');
+    if (canvasClicks) {
+      const ctxClicks = canvasClicks.getContext('2d');
+      if (chartClicksInstance) chartClicksInstance.destroy();
+      chartClicksInstance = new Chart(ctxClicks, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Clicks', data: labels.map((_, i) => Math.round(stats.totalClicks * (multiplier + (i * 0.1)))), backgroundColor: '#E8A33D', borderRadius: 6 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
 
-    const ctxSearches = document.getElementById('chartSearches').getContext('2d');
-    if (chartSearchesInstance) chartSearchesInstance.destroy();
-    chartSearchesInstance = new Chart(ctxSearches, {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Searches', data: labels.map((_, i) => Math.round(stats.totalSearches * (multiplier + (i * 0.12)))), borderColor: '#6B7A70', backgroundColor: 'rgba(107, 122, 112, 0.1)', fill: true, tension: 0.3 }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
+    const canvasSearches = document.getElementById('chartSearches');
+    if (canvasSearches) {
+      const ctxSearches = canvasSearches.getContext('2d');
+      if (chartSearchesInstance) chartSearchesInstance.destroy();
+      chartSearchesInstance = new Chart(ctxSearches, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Searches', data: labels.map((_, i) => Math.round(stats.totalSearches * (multiplier + (i * 0.12)))), borderColor: '#6B7A70', backgroundColor: 'rgba(107, 122, 112, 0.1)', fill: true, tension: 0.3 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
   }
 
   async function loadSettings() {
     const data = await api("/settings");
-    document.getElementById("s-logoText").value = data.logoText || "";
-    document.getElementById("s-heroSubtitle").value = data.heroSubtitle || "";
-    document.getElementById("s-footerText").value = data.footerText || "";
-    document.getElementById("s-heroQuotes").value = (data.heroQuotes || []).join("\n");
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+
+    setVal("s-logoText", data.logoText || "");
+    setVal("s-heroSubtitle", data.heroSubtitle || "");
+    setVal("s-footerText", data.footerText || "");
+    setVal("s-heroQuotes", (data.heroQuotes || []).join("\n"));
     
-    // Theme mapping
     const theme = data.theme || {};
-    document.getElementById("s-brandColor").value = theme.brandColor || "#f07605";
-    document.getElementById("s-accentColor").value = theme.accentColor || "#e8c187";
-    document.getElementById("s-fontBody").value = theme.fontBody || "Inter";
-    document.getElementById("s-fontDisplay").value = theme.fontDisplay || "Space Grotesk";
+    setVal("s-brandColor", theme.brandColor || "#f07605");
+    setVal("s-accentColor", theme.accentColor || "#e8c187");
+    setVal("s-fontBody", theme.fontBody || "Inter");
+    setVal("s-fontDisplay", theme.fontDisplay || "Space Grotesk");
 
-    // Card Features mapping
     const cardFeatures = data.cardFeatures || {};
-    document.getElementById("s-showImage").checked = cardFeatures.showImage !== false;
-    document.getElementById("s-showTitle").checked = cardFeatures.showTitle !== false;
-    document.getElementById("s-showSpecs").checked = cardFeatures.showSpecs !== false;
-    document.getElementById("s-showRating").checked = cardFeatures.showRating !== false;
-    document.getElementById("s-showUpdatedAt").checked = cardFeatures.showUpdatedAt !== false;
-    document.getElementById("s-showOutOfStock").checked = cardFeatures.showOutOfStock !== false;
-    document.getElementById("s-showDiscountBadge").checked = cardFeatures.showDiscountBadge !== false;
-    document.getElementById("s-showOriginalPrice").checked = cardFeatures.showOriginalPrice !== false;
+    setCheck("s-showImage", cardFeatures.showImage !== false);
+    setCheck("s-showTitle", cardFeatures.showTitle !== false);
+    setCheck("s-showSpecs", cardFeatures.showSpecs !== false);
+    setCheck("s-showRating", cardFeatures.showRating !== false);
+    setCheck("s-showUpdatedAt", cardFeatures.showUpdatedAt !== false);
+    setCheck("s-showOutOfStock", cardFeatures.showOutOfStock !== false);
+    setCheck("s-showDiscountBadge", cardFeatures.showDiscountBadge !== false);
+    setCheck("s-showOriginalPrice", cardFeatures.showOriginalPrice !== false);
 
-    // Alerts & Cron mapping
     const al = data.alertsConfig || {};
-    document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
-    document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
-    document.getElementById("alertEmailBody").value = al.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
+    setVal("alertCronSchedule", al.cronSchedule || "0 */6 * * *");
+    setVal("alertEmailSubject", al.emailSubject || "🎉 Price Drop Alert for {product_title}!");
+    setVal("alertEmailBody", al.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}");
 
-    // Mailer Pool settings mapping
     const rotationSelect = document.getElementById("mailerRotationMode");
     if (rotationSelect) {
       rotationSelect.value = al.mailerRotationMode || "round-robin";
@@ -656,29 +685,32 @@
     renderMailersList(mailers);
   }
 
-  document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+  document.getElementById("saveSettingsBtn")?.addEventListener("click", async () => {
     const existing = await api("/settings");
+    const getVal = (id) => document.getElementById(id)?.value || "";
+    const getCheck = (id) => document.getElementById(id)?.checked ?? true;
+
     const payload = {
       ...existing,
-      logoText: document.getElementById("s-logoText").value,
-      heroSubtitle: document.getElementById("s-heroSubtitle").value,
-      footerText: document.getElementById("s-footerText").value,
-      heroQuotes: document.getElementById("s-heroQuotes").value.split("\n").map((s) => s.trim()).filter(Boolean),
+      logoText: getVal("s-logoText"),
+      heroSubtitle: getVal("s-heroSubtitle"),
+      footerText: getVal("s-footerText"),
+      heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
       theme: {
-        brandColor: document.getElementById("s-brandColor").value,
-        accentColor: document.getElementById("s-accentColor").value,
-        fontBody: document.getElementById("s-fontBody").value,
-        fontDisplay: document.getElementById("s-fontDisplay").value
+        brandColor: getVal("s-brandColor"),
+        accentColor: getVal("s-accentColor"),
+        fontBody: getVal("s-fontBody"),
+        fontDisplay: getVal("s-fontDisplay")
       },
       cardFeatures: {
-        showImage: document.getElementById("s-showImage").checked,
-        showTitle: document.getElementById("s-showTitle").checked,
-        showSpecs: document.getElementById("s-showSpecs").checked,
-        showRating: document.getElementById("s-showRating").checked,
-        showUpdatedAt: document.getElementById("s-showUpdatedAt").checked,
-        showOutOfStock: document.getElementById("s-showOutOfStock").checked,
-        showDiscountBadge: document.getElementById("s-showDiscountBadge").checked,
-        showOriginalPrice: document.getElementById("s-showOriginalPrice").checked
+        showImage: getCheck("s-showImage"),
+        showTitle: getCheck("s-showTitle"),
+        showSpecs: getCheck("s-showSpecs"),
+        showRating: getCheck("s-showRating"),
+        showUpdatedAt: getCheck("s-showUpdatedAt"),
+        showOutOfStock: getCheck("s-showOutOfStock"),
+        showDiscountBadge: getCheck("s-showDiscountBadge"),
+        showOriginalPrice: getCheck("s-showOriginalPrice")
       }
     };
     try {
@@ -689,13 +721,13 @@
     }
   });
 
-  document.getElementById("saveAlertConfigBtn").addEventListener("click", async () => {
+  document.getElementById("saveAlertConfigBtn")?.addEventListener("click", async () => {
     const existing = await api("/settings");
     const alertsConfig = {
       ...(existing.alertsConfig || {}),
-      cronSchedule: document.getElementById("alertCronSchedule").value,
-      emailSubject: document.getElementById("alertEmailSubject").value,
-      emailBody: document.getElementById("alertEmailBody").value,
+      cronSchedule: document.getElementById("alertCronSchedule")?.value || "",
+      emailSubject: document.getElementById("alertEmailSubject")?.value || "",
+      emailBody: document.getElementById("alertEmailBody")?.value || "",
     };
     try {
       await api("/settings", { method: "PUT", body: JSON.stringify({ ...existing, alertsConfig }) });
@@ -705,8 +737,8 @@
     }
   });
 
-  document.getElementById("updateTokenBtn").addEventListener("click", async () => {
-    const newToken = document.getElementById("newAdminTokenInput").value.trim();
+  document.getElementById("updateTokenBtn")?.addEventListener("click", async () => {
+    const newToken = document.getElementById("newAdminTokenInput")?.value.trim() || "";
     if (!newToken || newToken.length < 6) {
       showToast("Token must be at least 6 characters long.", "error");
       return;
@@ -739,10 +771,11 @@
     }
   }
 
-  document.getElementById("testBaseUrl").addEventListener("input", (e) => {
+  document.getElementById("testBaseUrl")?.addEventListener("input", (e) => {
     const val = e.target.value.trim();
     const name = getExtractedStoreName(val);
-    document.getElementById("previewStoreNameLabel").textContent = name || "-";
+    const labelEl = document.getElementById("previewStoreNameLabel");
+    if (labelEl) labelEl.textContent = name || "-";
   });
 
   function loadSyntaxHighlighter() {
@@ -813,12 +846,12 @@
       .trim();
   }
 
-  document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
-    const base_url = document.getElementById("testBaseUrl").value.trim();
-    const search_url_template = document.getElementById("testTemplate").value.trim();
-    const query = document.getElementById("testQueryInput").value.trim() || "phone";
+  document.getElementById("runTestHtmlBtn")?.addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl")?.value.trim();
+    const search_url_template = document.getElementById("testTemplate")?.value.trim();
+    const query = document.getElementById("testQueryInput")?.value.trim() || "phone";
     let selectors = {};
-    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
+    try { selectors = JSON.parse(document.getElementById("testSelectorsJson")?.value || "{}"); } catch (e) {}
 
     if (!base_url || !search_url_template) {
       showToast("Base URL and Search URL Template are required.", "error");
@@ -829,9 +862,9 @@
     const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
     
-    container.style.display = "block";
-    titleEl.textContent = "Step 1: Cleaned & Formatted HTML Response Preview:";
-    codeEl.textContent = "Loading tools and stripping common tags...";
+    if (container) container.style.display = "block";
+    if (titleEl) titleEl.textContent = "Step 1: Cleaned & Formatted HTML Response Preview:";
+    if (codeEl) codeEl.textContent = "Loading tools and stripping common tags...";
 
     await loadSyntaxHighlighter();
 
@@ -849,22 +882,22 @@
         preserve_newlines: false
       }) : cleanedHtml;
 
-      codeEl.className = "language-html";
-      codeEl.textContent = formatted;
-      
-      if (window.hljs) {
-        hljs.highlightElement(codeEl);
+      if (codeEl) {
+        codeEl.className = "language-html";
+        codeEl.textContent = formatted;
+        if (window.hljs) hljs.highlightElement(codeEl);
       }
 
       showToast(`Fetched and stripped tags successfully (Status ${res.status})`, "success");
     } catch (err) {
-      codeEl.textContent = "Error fetching raw HTML: " + err.message;
+      if (codeEl) codeEl.textContent = "Error fetching raw HTML: " + err.message;
       showToast("Failed to fetch raw page.", "error");
     }
   });
 
-  document.getElementById("toggleEditableBtn").addEventListener("click", () => {
+  document.getElementById("toggleEditableBtn")?.addEventListener("click", () => {
     const codeEl = document.getElementById("htmlCode");
+    if (!codeEl) return;
     navigator.clipboard.writeText(codeEl.textContent).then(() => {
       showToast("Cleaned HTML copied to clipboard!", "success");
     }).catch(() => {
@@ -872,12 +905,12 @@
     });
   });
 
-  document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
-    const base_url = document.getElementById("testBaseUrl").value.trim();
-    const search_url_template = document.getElementById("testTemplate").value.trim();
-    const query = document.getElementById("testQueryInput").value.trim() || "phone";
+  document.getElementById("runTestScraperBtn")?.addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl")?.value.trim();
+    const search_url_template = document.getElementById("testTemplate")?.value.trim();
+    const query = document.getElementById("testQueryInput")?.value.trim() || "phone";
     let selectors = {};
-    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (err) {
+    try { selectors = JSON.parse(document.getElementById("testSelectorsJson")?.value || "{}"); } catch (err) {
       showToast("Invalid JSON format in Selectors field.", "error");
       return;
     }
@@ -886,9 +919,9 @@
     const codeEl = document.getElementById("htmlCode");
     const titleEl = document.getElementById("testOutputTitle");
 
-    container.style.display = "block";
-    titleEl.textContent = "Step 2: Scraper Extracted Results:";
-    codeEl.textContent = "Executing selectors and parsing products...";
+    if (container) container.style.display = "block";
+    if (titleEl) titleEl.textContent = "Step 2: Scraper Extracted Results:";
+    if (codeEl) codeEl.textContent = "Executing selectors and parsing products...";
 
     await loadSyntaxHighlighter();
 
@@ -898,32 +931,32 @@
         body: JSON.stringify({ base_url, search_url_template, selectors, query })
       });
       
-      codeEl.className = "language-json";
-      codeEl.textContent = JSON.stringify(res, null, 2);
-      if (window.hljs) {
-        hljs.highlightElement(codeEl);
+      if (codeEl) {
+        codeEl.className = "language-json";
+        codeEl.textContent = JSON.stringify(res, null, 2);
+        if (window.hljs) hljs.highlightElement(codeEl);
       }
       showToast(`Scraper extracted ${res.count} products successfully!`, "success");
     } catch (err) {
-      codeEl.className = "language-html";
-      codeEl.textContent = "Extraction Error: " + err.message;
-      if (window.hljs) {
-        hljs.highlightElement(codeEl);
+      if (codeEl) {
+        codeEl.className = "language-html";
+        codeEl.textContent = "Extraction Error: " + err.message;
+        if (window.hljs) hljs.highlightElement(codeEl);
       }
       showToast("Scraper extraction failed.", "error");
     }
   });
 
-  document.getElementById("quickSaveStoreBtn").addEventListener("click", async () => {
-    const base_url = document.getElementById("testBaseUrl").value.trim();
-    const search_url_template = document.getElementById("testTemplate").value.trim();
+  document.getElementById("quickSaveStoreBtn")?.addEventListener("click", async () => {
+    const base_url = document.getElementById("testBaseUrl")?.value.trim();
+    const search_url_template = document.getElementById("testTemplate")?.value.trim();
     if (!base_url) {
       showToast("Base URL is required to save store.", "error");
       return;
     }
     const name = getExtractedStoreName(base_url);
     let selectors = {};
-    try { selectors = JSON.parse(document.getElementById("testSelectorsJson").value); } catch (e) {}
+    try { selectors = JSON.parse(document.getElementById("testSelectorsJson")?.value || "{}"); } catch (e) {}
 
     try {
       await api("/stores", {
@@ -938,8 +971,11 @@
   });
 
   function renderStores(list) {
-    document.getElementById("storeCount").textContent = `${list.length} of ${storesData.length}`;
+    const storeCountEl = document.getElementById("storeCount");
+    if (storeCountEl) storeCountEl.textContent = `${list.length} of ${storesData.length}`;
     const container = document.getElementById("savedStoresList");
+    if (!container) return;
+
     container.innerHTML = list.map((s) => `
       <div class="store-row-header" data-store="${s.name}">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -949,10 +985,10 @@
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
           <span class="muted" style="font-size: 11px;">Click to toggle expand</span>
-          <button class="btn-sm toggle-fold" style="padding: 3px 8px; font-size: 11px; background: var(--ink-soft);">Expand</button>
+          <button type="button" class="btn-sm toggle-fold" style="padding: 3px 8px; font-size: 11px; background: var(--ink-soft);">Expand</button>
         </div>
       </div>
-      <div class="store-details-panel" data-store-panel="${s.name}">
+      <div class="store-details-panel" data-store-panel="${s.name}" style="display: none;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
           <div><span class="muted" style="font-size:11px">Base URL</span><input type="text" class="cell-input f-base-url" value="${s.base_url || ""}"></div>
           <div><span class="muted" style="font-size:11px">Search URL Template</span><input type="text" class="cell-input f-search-template" value="${s.search_url_template || ""}"></div>
@@ -967,53 +1003,48 @@
           <textarea class="cell-input f-selectors" rows="3" style="font-family: monospace; font-size: 11px;">${s.selectors ? JSON.stringify(s.selectors, null, 2) : "{}"}</textarea>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn-sm save-store">Save Changes</button>
+          <button type="button" class="btn-sm save-store">Save Changes</button>
           <input type="checkbox" class="f-purge" id="purge-${s.name}">
           <label for="purge-${s.name}" class="muted" style="font-size: 11px;">Purge products</label>
-          <button class="btn-sm delete-store" style="background: var(--danger); margin-left: auto;">Delete Store</button>
+          <button type="button" class="btn-sm delete-store" style="background: var(--danger, #dc2626); color: #fff; margin-left: auto;">Delete Store</button>
         </div>
       </div>
     `).join("");
 
     container.querySelectorAll(".store-row-header").forEach((header) => {
+      const toggleFold = () => {
+        const storeName = header.dataset.store;
+        const panel = container.querySelector(`[data-store-panel="${storeName}"]`);
+        const btn = header.querySelector(".toggle-fold");
+        if (!panel || !btn) return;
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+          btn.textContent = "Expand";
+        } else {
+          panel.style.display = "block";
+          btn.textContent = "Fold";
+        }
+      };
+
       header.addEventListener("click", (e) => {
         if (e.target.tagName === "BUTTON") return;
-        const storeName = header.dataset.store;
-        const panel = container.querySelector(`[data-store-panel="${storeName}"]`);
-        const btn = header.querySelector(".toggle-fold");
-        if (panel.style.display === "block") {
-          panel.style.display = "none";
-          btn.textContent = "Expand";
-        } else {
-          panel.style.display = "block";
-          btn.textContent = "Fold";
-        }
+        toggleFold();
       });
-      header.querySelector(".toggle-fold").addEventListener("click", () => {
-        const storeName = header.dataset.store;
-        const panel = container.querySelector(`[data-store-panel="${storeName}"]`);
-        const btn = header.querySelector(".toggle-fold");
-        if (panel.style.display === "block") {
-          panel.style.display = "none";
-          btn.textContent = "Expand";
-        } else {
-          panel.style.display = "block";
-          btn.textContent = "Fold";
-        }
-      });
+      header.querySelector(".toggle-fold")?.addEventListener("click", toggleFold);
     });
 
     container.querySelectorAll(".save-store").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const panel = e.target.closest(".store-details-panel");
-        const name = panel.previousElementSibling.dataset.store;
-        const enabled = panel.querySelector(".f-enabled").checked;
-        const color = panel.querySelector(".f-color").value;
-        const affiliate_param = panel.querySelector(".f-affiliate").value || null;
-        const base_url = panel.querySelector(".f-base-url").value || null;
-        const search_url_template = panel.querySelector(".f-search-template").value || null;
+        const name = panel?.previousElementSibling?.dataset?.store;
+        if (!panel || !name) return;
+        const enabled = panel.querySelector(".f-enabled")?.checked ?? true;
+        const color = panel.querySelector(".f-color")?.value || "#666";
+        const affiliate_param = panel.querySelector(".f-affiliate")?.value || null;
+        const base_url = panel.querySelector(".f-base-url")?.value || null;
+        const search_url_template = panel.querySelector(".f-search-template")?.value || null;
         let selectors = null;
-        try { selectors = JSON.parse(panel.querySelector(".f-selectors").value); } catch (err) {
+        try { selectors = JSON.parse(panel.querySelector(".f-selectors")?.value || "{}"); } catch (err) {
           showToast("Invalid JSON in Selectors.", "error"); return;
         }
         try {
@@ -1031,8 +1062,9 @@
     container.querySelectorAll(".delete-store").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const panel = e.target.closest(".store-details-panel");
-        const name = panel.previousElementSibling.dataset.store;
-        const purgeProducts = panel.querySelector(".f-purge").checked;
+        const name = panel?.previousElementSibling?.dataset?.store;
+        const purgeProducts = panel?.querySelector(".f-purge")?.checked ?? false;
+        if (!panel || !name) return;
         showConfirmModal(`Delete store "${name}"?`, async () => {
           try {
             await api(`/stores/${encodeURIComponent(name)}?purgeProducts=${purgeProducts}`, { method: "DELETE" });
@@ -1047,8 +1079,11 @@
   }
 
   function renderWorklist(list) {
-    document.getElementById("worklistCount").textContent = `${list.length} of ${worklistData.length}`;
+    const countEl = document.getElementById("worklistCount");
+    if (countEl) countEl.textContent = `${list.length} of ${worklistData.length}`;
     const tbody = document.querySelector("#worklistTable tbody");
+    if (!tbody) return;
+
     if (list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" class="muted">Nothing pending — every clicked product already has an affiliate link.</td></tr>`;
       return;
@@ -1059,15 +1094,15 @@
         <td>${w.store}</td>
         <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 55)}</a></td>
         <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
-        <td><button class="btn-sm save-link">Save</button></td>
+        <td><button type="button" class="btn-sm save-link">Save</button></td>
       </tr>`).join("");
 
     tbody.querySelectorAll(".save-link").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
-        const productId = row.dataset.productId;
-        const affiliateUrl = row.querySelector(".f-affiliate-url").value.trim();
-        if (!affiliateUrl) return;
+        const productId = row?.dataset?.productId;
+        const affiliateUrl = row?.querySelector(".f-affiliate-url")?.value.trim();
+        if (!productId || !affiliateUrl) return;
         try {
           await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
           showToast("Affiliate link saved!", "success");
@@ -1080,8 +1115,11 @@
   }
 
   function renderLinked(list) {
-    document.getElementById("linkedCount").textContent = `${list.length} of ${linkedData.length}`;
+    const countEl = document.getElementById("linkedCount");
+    if (countEl) countEl.textContent = `${list.length} of ${linkedData.length}`;
     const tbody = document.querySelector("#linkedTable tbody");
+    if (!tbody) return;
+
     if (list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="3" class="muted">No affiliate links saved yet.</td></tr>`;
       return;
@@ -1090,15 +1128,15 @@
       <tr data-product-id="${l.product_id}">
         <td>${l.store}</td>
         <td><a class="link" href="${l.url}" target="_blank" rel="noopener">${l.title.slice(0, 55)}</a></td>
-        <td><input type="text" class="cell-input f-affiliate-url" value="${l.affiliate_url}"></td>
+        <td><input type="text" class="cell-input f-affiliate-url" value="${l.affiliate_url || ""}"></td>
       </tr>`).join("");
 
     tbody.querySelectorAll(".f-affiliate-url").forEach((input) => {
       input.addEventListener("blur", async (e) => {
         const row = e.target.closest("tr");
-        const productId = row.dataset.productId;
+        const productId = row?.dataset?.productId;
         const affiliateUrl = e.target.value.trim();
-        if (!affiliateUrl) return;
+        if (!productId || !affiliateUrl) return;
         try {
           await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
           showToast("Affiliate link updated!", "success");
@@ -1109,11 +1147,12 @@
     });
   }
 
-// Updated JavaScript Functions for Subscriptions Table Management
-
   function renderAlerts(list) {
-    document.getElementById("alertsCount").textContent = `${list.length} of ${alertsData.length}`;
+    const countEl = document.getElementById("alertsCount");
+    if (countEl) countEl.textContent = `${list.length} of ${alertsData.length}`;
     const tbody = document.querySelector("#alertsTable tbody");
+    if (!tbody) return;
+
     if (list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align: center; padding: 20px;">No price alert subscriptions found.</td></tr>`;
       return;
@@ -1125,18 +1164,18 @@
         <td>${a.product_title || 'Unknown Product'}</td>
         <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
         <td>${a.notified ? '<span style="color:var(--ok)">Notified</span>' : '<span style="color:var(--accent)">Pending</span>'}</td>
-        <td class="muted">${new Date(a.created_at).toLocaleDateString()}</td>
+        <td class="muted">${a.created_at ? new Date(a.created_at).toLocaleDateString() : '-'}</td>
         <td style="text-align: right; white-space: nowrap;">
           <button type="button" class="btn-sm edit-alert-btn" title="Edit Target Price" style="background: var(--ink-soft); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 5px;">✏️</button>
           <button type="button" class="btn-sm delete-alert-btn" title="Delete Subscription" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
         </td>
       </tr>`).join("");
 
-    // Attach Delete Single Alert Handler
     tbody.querySelectorAll(".delete-alert-btn").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
-        const alertId = row.dataset.alertId;
+        const alertId = row?.dataset?.alertId;
+        if (!alertId) return;
         showConfirmModal("Are you sure you want to delete this alert subscription?", async () => {
           try {
             await api(`/alerts/${alertId}`, { method: "DELETE" });
@@ -1151,15 +1190,15 @@
       });
     });
 
-    // Attach Edit Single Alert Handler
     tbody.querySelectorAll(".edit-alert-btn").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
-        const alertId = row.dataset.alertId;
+        const alertId = row?.dataset?.alertId;
+        if (!alertId) return;
         const currentAlert = alertsData.find(item => String(item.id) === String(alertId));
         const newPrice = prompt("Enter new target price (leave blank for any price drop):", currentAlert?.target_price || "");
         
-        if (newPrice === null) return; // Cancelled
+        if (newPrice === null) return;
 
         try {
           await api(`/alerts/${alertId}`, {
@@ -1177,7 +1216,6 @@
     });
   }
 
-  // Purge All Alerts Handler
   document.getElementById("purgeAllAlertsBtn")?.addEventListener("click", () => {
     showConfirmModal("Are you sure you want to purge ALL price alert subscriptions? This cannot be undone.", async () => {
       try {
@@ -1191,24 +1229,24 @@
     });
   });
   
-  document.getElementById("storeFilter").addEventListener("input", (e) => {
+  document.getElementById("storeFilter")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
   });
-  document.getElementById("worklistFilter").addEventListener("input", (e) => {
+  document.getElementById("worklistFilter")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderWorklist(worklistData.filter((w) => w.title.toLowerCase().includes(q) || w.store.toLowerCase().includes(q)));
   });
-  document.getElementById("linkedFilter").addEventListener("input", (e) => {
+  document.getElementById("linkedFilter")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderLinked(linkedData.filter((l) => l.title.toLowerCase().includes(q) || l.store.toLowerCase().includes(q)));
   });
-  document.getElementById("alertsFilter").addEventListener("input", (e) => {
+  document.getElementById("alertsFilter")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
   });
 
-  document.getElementById("triggerAlertsBtn").addEventListener("click", async () => {
+  document.getElementById("triggerAlertsBtn")?.addEventListener("click", async () => {
     try {
       const res = await fetch("/admin/api/trigger-alerts", { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}` } });
       const data = await res.json();
@@ -1219,7 +1257,6 @@
     }
   });
 
-  // Render Mailers in Foldable Rows (identical UX pattern to Saved Stores)
   function renderMailersList(mailers = []) {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
@@ -1298,12 +1335,12 @@
       `;
     }).join("");
 
-    // Attach fold/expand toggles
     container.querySelectorAll(".mailer-row-header").forEach((header) => {
       const togglePanel = () => {
         const idx = header.dataset.mailerIdx;
         const panel = container.querySelector(`[data-mailer-panel="${idx}"]`);
         const btn = header.querySelector(".toggle-fold");
+        if (!panel || !btn) return;
         if (panel.style.display === "block") {
           panel.style.display = "none";
           btn.textContent = "Expand";
@@ -1317,10 +1354,9 @@
         if (e.target.tagName === "BUTTON") return;
         togglePanel();
       });
-      header.querySelector(".toggle-fold").addEventListener("click", togglePanel);
+      header.querySelector(".toggle-fold")?.addEventListener("click", togglePanel);
     });
 
-    // Attach remove handlers
     container.querySelectorAll(".remove-mailer-btn").forEach((btn, idx) => {
       btn.addEventListener("click", () => {
         const currentMailers = gatherMailersFromDOM();
@@ -1330,9 +1366,9 @@
     });
   }
 
-  // Event listener for "+ Add Mailer Profile" button
   document.getElementById("addMailerBtn")?.addEventListener("click", () => {
     const container = document.getElementById("mailersListContainer");
+    if (!container) return;
     if (container.querySelector(".muted") && container.children.length === 1) {
       container.innerHTML = "";
     }
@@ -1351,17 +1387,16 @@
     
     renderMailersList(currentMailers);
 
-    // Automatically expand the newly added profile panel
     const newIdx = currentMailers.length - 1;
     const panel = container.querySelector(`[data-mailer-panel="${newIdx}"]`);
     const header = container.querySelector(`[data-mailer-idx="${newIdx}"]`);
     if (panel && header) {
       panel.style.display = "block";
-      header.querySelector(".toggle-fold").textContent = "Fold";
+      const foldBtn = header.querySelector(".toggle-fold");
+      if (foldBtn) foldBtn.textContent = "Fold";
     }
   });
 
-  // Helper to gather all mailer inputs from DOM safely
   function gatherMailersFromDOM() {
     const panels = document.querySelectorAll("#mailersListContainer .mailer-details-panel");
     const mailers = [];
@@ -1385,15 +1420,15 @@
     return mailers;
   }
 
-  // Save Mailer Configurations Handler
   document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
     try {
       const existing = await api("/settings");
+      const rotationModeEl = document.getElementById("mailerRotationMode");
       const payload = {
         ...existing,
         alertsConfig: {
           ...(existing.alertsConfig || {}),
-          mailerRotationMode: document.getElementById("mailerRotationMode").value,
+          mailerRotationMode: rotationModeEl ? rotationModeEl.value : "round-robin",
           mailers: gatherMailersFromDOM()
         }
       };
@@ -1405,7 +1440,7 @@
       });
 
       showToast("Mailer pool saved successfully!", "success");
-      loadSettings(); // Reload to sync state cleanly
+      loadSettings();
     } catch (err) {
       console.error("Error saving mailer configs:", err);
       showToast("Error saving settings: " + err.message, "error");
@@ -1414,5 +1449,6 @@
 
 })();
 </script>
+
 </body>
 </html>
