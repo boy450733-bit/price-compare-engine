@@ -348,4 +348,29 @@ router.post("/test-store-raw", async (req, res) => {
   }
 });
 
+// Example code for your backend server.js / router file
+
+// 1. Delete a single alert subscription by ID
+app.delete('/admin/api/alerts/:id', verifyAdminToken, async (req, res) => {
+  try {
+    const alertId = req.params.id;
+    await pool.query('DELETE FROM price_alerts WHERE id = $1', [alertId]);
+    res.json({ success: true, message: "Alert deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting alert:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Purge all alert subscriptions
+app.delete('/admin/api/alerts', verifyAdminToken, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM price_alerts');
+    res.json({ success: true, message: "All alerts purged successfully" });
+  } catch (err) {
+    console.error("Error purging alerts:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
