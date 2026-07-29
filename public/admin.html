@@ -507,18 +507,14 @@
 
   document.querySelectorAll(".sub-tab-btn-alerts").forEach(btn => {
     btn.addEventListener("click", (e) => {
-      // 1. Remove active class from all sub-tab buttons
       document.querySelectorAll(".sub-tab-btn-alerts").forEach(b => b.classList.remove("active"));
-      // Add active class to clicked button
       e.target.classList.add("active");
 
-      const targetSub = e.target.getAttribute("data-alertsub"); // 'subscriptions', 'settings', or 'mailer'
-      // 2. Hide all sub-tab content containers
+      const targetSub = e.target.getAttribute("data-alertsub");
       document.getElementById("alertsub-subscriptions").style.display = "none";
       document.getElementById("alertsub-settings").style.display = "none";
       document.getElementById("alertsub-mailer").style.display = "none";
 
-      // 3. Show the targeted container
       const activeContainer = document.getElementById(`alertsub-${targetSub}`);
       if (activeContainer) {
         activeContainer.style.display = "block";
@@ -626,10 +622,33 @@
     document.getElementById("s-showDiscountBadge").checked = cardFeatures.showDiscountBadge !== false;
     document.getElementById("s-showOriginalPrice").checked = cardFeatures.showOriginalPrice !== false;
 
+    // Alerts & Cron mapping
     const al = data.alertsConfig || {};
     document.getElementById("alertCronSchedule").value = al.cronSchedule || "0 */6 * * *";
     document.getElementById("alertEmailSubject").value = al.emailSubject || "🎉 Price Drop Alert for {product_title}!";
     document.getElementById("alertEmailBody").value = al.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
+
+    // Mailer Pool settings mapping
+    const rotationSelect = document.getElementById("mailerRotationMode");
+    if (rotationSelect) {
+      rotationSelect.value = al.mailerRotationMode || "round-robin";
+    }
+
+    let mailers = al.mailers || [];
+    if (mailers.length === 0 && al.mailServer) {
+      mailers = [{
+        name: "Legacy Configured Mailer",
+        host: al.mailServer,
+        port: al.mailPort || 465,
+        secure: al.mailSecure !== false,
+        username: al.mailUsername || "",
+        password: al.mailPassword || "",
+        sender: al.mailSender || '"Sasta.pk" <noreply@sasta.pk>',
+        active: true
+      }];
+    }
+
+    renderMailersList(mailers);
   }
 
   document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
@@ -668,6 +687,7 @@
   document.getElementById("saveAlertConfigBtn").addEventListener("click", async () => {
     const existing = await api("/settings");
     const alertsConfig = {
+      ...(existing.alertsConfig || {}),
       cronSchedule: document.getElementById("alertCronSchedule").value,
       emailSubject: document.getElementById("alertEmailSubject").value,
       emailBody: document.getElementById("alertEmailBody").value,
@@ -720,7 +740,6 @@
     document.getElementById("previewStoreNameLabel").textContent = name || "-";
   });
 
-  // Dynamic CDN Loader for Syntax Highlighting & Beautification
   function loadSyntaxHighlighter() {
     return new Promise((resolve) => {
       if (window.hljs && window.html_beautify) {
@@ -756,7 +775,6 @@
     });
   }
 
-  // Helper to strip non-content tags and reduce HTML size
   function stripCommonTags(htmlString) {
     if (!htmlString) return "";
 
@@ -790,7 +808,6 @@
       .trim();
   }
 
-  // Step 1: Check HTML with Auto-Stripping, Beautifying & Syntax Highlighting
   document.getElementById("runTestHtmlBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -841,7 +858,6 @@
     }
   });
 
-  // Copy button implementation
   document.getElementById("toggleEditableBtn").addEventListener("click", () => {
     const codeEl = document.getElementById("htmlCode");
     navigator.clipboard.writeText(codeEl.textContent).then(() => {
@@ -851,7 +867,6 @@
     });
   });
 
-  // Step 2: Run Scraper Extraction
   document.getElementById("runTestScraperBtn").addEventListener("click", async () => {
     const base_url = document.getElementById("testBaseUrl").value.trim();
     const search_url_template = document.getElementById("testTemplate").value.trim();
@@ -1134,177 +1149,145 @@
     }
   });
 
-  // Function to render mailer profile inputs dynamically
-function renderMailersList(mailers = []) {
-  const container = document.getElementById("mailersListContainer");
-  if (!container) return;
-  
-  container.innerHTML = "";
-
-  if (mailers.length === 0) {
-    container.innerHTML = `<div class="muted" style="font-size: 13px; padding: 10px; border: 1px dashed var(--line); border-radius: 6px; text-align: center;">No mailers configured yet. Click "+ Add Mailer Profile" to get started.</div>`;
-    return;
-  }
-
-  mailers.forEach((m, index) => {
-    const card = document.createElement("div");
-    card.style.cssText = "background: var(--background); border: 1px solid var(--line); border-radius: 8px; padding: 15px; position: relative;";
+  function renderMailersList(mailers = []) {
+    const container = document.getElementById("mailersListContainer");
+    if (!container) return;
     
-    card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <input type="text" class="cell-input mailer-name" value="${m.name || `Mailer ${index + 1}`}" placeholder="Profile Name (e.g. Resend Primary)" style="font-weight: 600; width: 220px;">
-          <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-            <input type="checkbox" class="mailer-active" ${m.active !== false ? "checked" : ""}> Active
-          </label>
-        </div>
-        <button type="button" class="btn-sm remove-mailer-btn" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
-      </div>
-      <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 10px; margin-bottom: 10px;">
-        <div>
-          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">SMTP Host</label>
-          <input type="text" class="cell-input mailer-host" value="${m.host || ""}" placeholder="smtp.resend.com">
-        </div>
-        <div>
-          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Port</label>
-          <input type="number" class="cell-input mailer-port" value="${m.port || 465}" placeholder="465">
-        </div>
-        <div>
-          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Secure (SSL/TLS)</label>
-          <select class="cell-input mailer-secure">
-            <option value="true" ${m.secure !== false ? "selected" : ""}>True (Port 465)</option>
-            <option value="false" ${m.secure === false ? "selected" : ""}>False (Port 587)</option>
-          </select>
-        </div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px;">
-        <div>
-          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Username</label>
-          <input type="text" class="cell-input mailer-username" value="${m.username || ""}" placeholder="resend">
-        </div>
-        <div>
-          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Password / API Key</label>
-          <input type="password" class="cell-input mailer-password" value="${m.password || ""}" placeholder="API Key">
-        </div>
-        <div>
-          <label style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
-          <input type="text" class="cell-input mailer-sender" value="${m.sender || '"Sasta.pk" <noreply@sasta.pk>'}" placeholder='"Name" <email@domain.com>'>
-        </div>
-      </div>
-    `;
-
-    // Hook up remove button action
-    card.querySelector(".remove-mailer-btn").addEventListener("click", () => {
-      card.remove();
-      // If list is empty after removal, show placeholder
-      if (container.children.length === 0) {
-        renderMailersList([]);
-      }
-    });
-
-    container.appendChild(card);
-  });
-}
-
-// Event listener for "+ Add Mailer Profile" button
-document.getElementById("addMailerBtn")?.addEventListener("click", () => {
-  const container = document.getElementById("mailersListContainer");
-  // Remove empty state message if present
-  if (container.querySelector(".muted") && container.children.length === 1) {
     container.innerHTML = "";
-  }
-  
-  const currentMailers = gatherMailersFromDOM();
-  currentMailers.push({
-    name: `Mailer ${currentMailers.length + 1}`,
-    host: "smtp.resend.com",
-    port: 465,
-    secure: true,
-    username: "resend",
-    password: "",
-    sender: '"Sasta.pk" <noreply@sasta.pk>',
-    active: true
-  });
-  
-  renderMailersList(currentMailers);
-});
 
-// Helper to gather all mailer inputs from DOM before saving
-function gatherMailersFromDOM() {
-  const cards = document.querySelectorAll("#mailersListContainer > div");
-  const mailers = [];
+    if (mailers.length === 0) {
+      container.innerHTML = `<div class="muted" style="font-size: 13px; padding: 10px; border: 1px dashed var(--line); border-radius: 6px; text-align: center;">No mailers configured yet. Click "+ Add Mailer Profile" to get started.</div>`;
+      return;
+    }
 
-  cards.forEach(card => {
-    if (!card.querySelector(".mailer-name")) return; // Skip if it's the empty placeholder div
-    mailers.push({
-      name: card.querySelector(".mailer-name").value.trim(),
-      active: card.querySelector(".mailer-active").checked,
-      host: card.querySelector(".mailer-host").value.trim(),
-      port: parseInt(card.querySelector(".mailer-port").value.trim(), 10) || 465,
-      secure: card.querySelector(".mailer-secure").value === "true",
-      username: card.querySelector(".mailer-username").value.trim(),
-      password: card.querySelector(".mailer-password").value.trim(),
-      sender: card.querySelector(".mailer-sender").value.trim()
+    mailers.forEach((m, index) => {
+      const card = document.createElement("div");
+      card.style.cssText = "background: var(--background); border: 1px solid var(--line); border-radius: 8px; padding: 15px; position: relative; margin-bottom: 10px;";
+      
+      const uniqueId = index + Date.now();
+
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="text" class="cell-input mailer-name" value="${m.name || `Mailer ${index + 1}`}" placeholder="Profile Name (e.g. Resend Primary)" style="font-weight: 600; width: 220px;">
+            <label for="active-${uniqueId}" style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" id="active-${uniqueId}" class="mailer-active" ${m.active !== false ? "checked" : ""}> Active
+            </label>
+          </div>
+          <button type="button" class="btn-sm remove-mailer-btn" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label for="host-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">SMTP Host</label>
+            <input type="text" id="host-${uniqueId}" class="cell-input mailer-host" value="${m.host || ""}" placeholder="smtp.resend.com">
+          </div>
+          <div>
+            <label for="port-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Port</label>
+            <input type="number" id="port-${uniqueId}" class="cell-input mailer-port" value="${m.port || 465}" placeholder="465">
+          </div>
+          <div>
+            <label for="secure-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Secure (SSL/TLS)</label>
+            <select id="secure-${uniqueId}" class="cell-input mailer-secure">
+              <option value="true" ${m.secure !== false ? "selected" : ""}>True (Port 465)</option>
+              <option value="false" ${m.secure === false ? "selected" : ""}>False (Port 587)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px;">
+          <div>
+            <label for="user-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Username</label>
+            <input type="text" id="user-${uniqueId}" class="cell-input mailer-username" value="${m.username || ""}" placeholder="resend">
+          </div>
+          <div>
+            <label for="pass-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Password / API Key</label>
+            <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="${m.password || ""}" placeholder="API Key">
+          </div>
+          <div>
+            <label for="sender-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
+            <input type="text" id="sender-${uniqueId}" class="cell-input mailer-sender" value="${m.sender || '"Sasta.pk" <noreply@sasta.pk>'}" placeholder='"Name" <email@domain.com>'>
+          </div>
+        </div>
+      `;
+
+      card.querySelector(".remove-mailer-btn").addEventListener("click", () => {
+        card.remove();
+        if (container.children.length === 0) {
+          renderMailersList([]);
+        }
+      });
+
+      container.appendChild(card);
     });
-  });
-
-  return mailers;
-}
-
-// Load mailer settings when settings page loads
-async function loadMailerSettings(alertsConfig) {
-  const rotationSelect = document.getElementById("mailerRotationMode");
-  if (rotationSelect) {
-    rotationSelect.value = alertsConfig.mailerRotationMode || "round-robin";
   }
 
-  let mailers = alertsConfig.mailers || [];
-  // Fallback conversion if legacy single mailer settings exist
-  if (mailers.length === 0 && alertsConfig.mailServer) {
-    mailers = [{
-      name: "Legacy Configured Mailer",
-      host: alertsConfig.mailServer,
-      port: alertsConfig.mailPort || 465,
-      secure: alertsConfig.mailSecure !== false,
-      username: alertsConfig.mailUsername || "",
-      password: alertsConfig.mailPassword || "",
-      sender: alertsConfig.mailSender || '"Sasta.pk" <noreply@sasta.pk>',
+  document.getElementById("addMailerBtn")?.addEventListener("click", () => {
+    const container = document.getElementById("mailersListContainer");
+    if (container.querySelector(".muted") && container.children.length === 1) {
+      container.innerHTML = "";
+    }
+    
+    const currentMailers = gatherMailersFromDOM();
+    currentMailers.push({
+      name: `Mailer ${currentMailers.length + 1}`,
+      host: "",
+      port: 465,
+      secure: true,
+      username: "",
+      password: "",
+      sender: '"Sasta.pk" <noreply@sasta.pk>',
       active: true
-    }];
-  }
+    });
+    
+    renderMailersList(currentMailers);
+  });
 
-  renderMailersList(mailers);
-}
+  function gatherMailersFromDOM() {
+    const cards = document.querySelectorAll("#mailersListContainer > div");
+    const mailers = [];
 
-// Save Mailer Configurations Handler
-document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
-  try {
-    // 1. Fetch current full settings object securely using your app's built-in api helper
-    const existing = await api("/settings");
-
-    // 2. Build the updated payload including your multi-mailer pool settings
-    const payload = {
-      ...existing,
-      alertsConfig: {
-        ...(existing.alertsConfig || {}),
-        mailerRotationMode: document.getElementById("mailerRotationMode").value,
-        mailers: gatherMailersFromDOM()
-      }
-    };
-
-    // 3. Save back using PUT method to match your backend route
-    await api("/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+    cards.forEach(card => {
+      const nameInput = card.querySelector(".mailer-name");
+      if (!nameInput) return;
+      
+      mailers.push({
+        name: nameInput.value.trim(),
+        active: card.querySelector(".mailer-active")?.checked ?? true,
+        host: card.querySelector(".mailer-host")?.value.trim() || "",
+        port: parseInt(card.querySelector(".mailer-port")?.value.trim(), 10) || 465,
+        secure: card.querySelector(".mailer-secure")?.value === "true",
+        username: card.querySelector(".mailer-username")?.value.trim() || "",
+        password: card.querySelector(".mailer-password")?.value.trim() || "",
+        sender: card.querySelector(".mailer-sender")?.value.trim() || ""
+      });
     });
 
-    showToast("Mailer pool saved successfully!", "success");
-  } catch (err) {
-    console.error("Error saving mailer configs:", err);
-    showToast("Error saving settings: " + err.message, "error");
+    return mailers;
   }
-});
+
+  document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
+    try {
+      const existing = await api("/settings");
+      const payload = {
+        ...existing,
+        alertsConfig: {
+          ...(existing.alertsConfig || {}),
+          mailerRotationMode: document.getElementById("mailerRotationMode").value,
+          mailers: gatherMailersFromDOM()
+        }
+      };
+
+      await api("/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      showToast("Mailer pool saved successfully!", "success");
+    } catch (err) {
+      console.error("Error saving mailer configs:", err);
+      showToast("Error saving settings: " + err.message, "error");
+    }
+  });
 
 })();
 </script>
