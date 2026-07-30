@@ -13,9 +13,44 @@ function tokensMatch(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-// Secure authentication supporting both Database and Environment variables.
+// 1. Public Login Route: Sets HttpOnly Cookie
+router.post("/login", async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+
+  try {
+    const { rows } = await pool.query(`SELECT data->>'adminToken' as token FROM site_settings WHERE id = 1`);
+    const validToken = rows[0]?.token || process.env.ADMIN_TOKEN;
+
+    if (!validToken || !tokensMatch(token, validToken)) {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+
+    // Set secure HttpOnly cookie
+    res.cookie("sastapk_admin_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
+    });
+
+    res.json({ success: true, message: "Logged in successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Public Logout Route: Clears Cookie
+router.post("/logout", (req, res) => {
+  res.clearCookie("sastapk_admin_token");
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
+// Secure authentication middleware supporting HttpOnly cookies (Database & Env)
 router.use(async (req, res, next) => {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  const token = req.cookies?.sastapk_admin_token;
   if (!token) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -140,11 +175,8 @@ router.get("/alerts", async (_req, res) => {
 router.post("/trigger-alerts", async (_req, res) => {
   try {
     console.log("[admin routes] Manual alert trigger requested.");
-    
-    // If your checkAndSendPriceAlerts function returns results (e.g., counts of sent/failed emails), capture them:
     const result = await checkAndSendPriceAlerts(); 
     
-    // Optional: If you want it to flag as a warning/error when 0 emails go through due to issues
     if (result && result.failed > 0 && result.sent === 0) {
       return res.status(500).json({ error: "Alert check finished, but all emails failed to send (Connection timeout)." });
     }
@@ -235,37 +267,30 @@ router.post("/stores", async (req, res) => {
       ]
     );
 
-    // Invalidate in-memory adapter cache immediately
     invalidateStoreCache();
-
     res.json({ store: rows[0] });
   } catch (err) {
     res.status(500).json({ error: "Failed to create store: " + err.message });
   }
 });
 
-// Delete a store from the database (with safe cascade purging of allied product data)
+// Delete a store from the database
 router.delete("/stores/:name", async (req, res) => {
   const { name } = req.params;
   const purgeProducts = req.query.purgeProducts === "true";
 
   try {
     if (purgeProducts) {
-      // Delete dependent child records using subqueries where product_id is TEXT
       await db(`DELETE FROM clicks WHERE product_id IN (SELECT id FROM products WHERE store = $1)`, [name]);
       await db(`DELETE FROM affiliate_links WHERE product_id IN (SELECT id FROM products WHERE store = $1)`, [name]);
       await db(`DELETE FROM price_alerts WHERE product_id IN (SELECT id FROM products WHERE store = $1)`, [name]);
-      
-      // Delete the cached products for this store
       await db(`DELETE FROM products WHERE store = $1`, [name]);
     }
 
     const { rowCount } = await db(`DELETE FROM stores WHERE name = $1`, [name]);
     if (rowCount === 0) return res.status(404).json({ error: "Store not found" });
 
-    // Invalidate in-memory adapter cache immediately
     invalidateStoreCache();
-
     res.json({ success: true, purged: purgeProducts });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete store: " + err.message });
@@ -273,7 +298,6 @@ router.delete("/stores/:name", async (req, res) => {
 });
 
 import { createAdapter } from "../adapters/createAdapter.js";
-import { genericAdapter } from "../adapters/generic.js";
 
 // Test a store configuration live against a search term
 router.post("/test-store", async (req, res) => {
@@ -303,14 +327,14 @@ router.post("/test-store", async (req, res) => {
     res.json({ 
       success: true, 
       count: results.length, 
-      results: results.slice(0, 5) // Return top 5 scraped items for preview
+      results: results.slice(0, 5) 
     });
   } catch (err) {
     res.status(500).json({ success: false, error: "Scraping test failed: " + err.message });
   }
 });
 
-// 1. Raw HTML fetch test (Step 1)
+// Raw HTML fetch test
 router.post("/test-store-raw", async (req, res) => {
   const { base_url, search_url_template, query, selectors } = req.body;
   if (!search_url_template) {
@@ -335,14 +359,12 @@ router.post("/test-store-raw", async (req, res) => {
     const ok = response.ok;
     const htmlText = await response.text();
 
-    // Safe extraction: try to locate body content, otherwise use full HTML
     let bodyContent = htmlText;
     const bodyMatch = htmlText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (bodyMatch && bodyMatch[1] && bodyMatch[1].length > 500) {
       bodyContent = bodyMatch[1];
     }
 
-    // Allow a larger preview window (up to 400,000 chars) so products aren't cut off
     const maxLen = 400000;
     const truncatedHtml = bodyContent.length > maxLen ? bodyContent.slice(0, maxLen) + "\n\n... [Truncated]" : bodyContent;
 
@@ -357,8 +379,7 @@ router.post("/test-store-raw", async (req, res) => {
   }
 });
 
-// Example code for your backend server.js / router file
-// 1. Delete a single alert subscription by ID
+// Delete a single alert subscription by ID
 router.delete('/alerts/:id', async (req, res) => {
   try {
     const alertId = req.params.id;
@@ -370,7 +391,7 @@ router.delete('/alerts/:id', async (req, res) => {
   }
 });
 
-// 2. Purge all alert subscriptions
+// Purge all alert subscriptions
 router.delete('/alerts', async (req, res) => {
   try {
     await pool.query('DELETE FROM price_alerts');
