@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import fs from "node:fs";
 import path from "node:path";
 import "dotenv/config";
@@ -71,8 +72,12 @@ async function autoSetup() {
 }
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true // Required for browsers to accept HttpOnly cookies cross-origin/credentials mode
+}));
 app.use(express.json());
+app.use(cookieParser()); // Enables req.cookies parsing for HttpOnly tokens
 app.use(express.static("public"));
 
 app.use("/api", searchRoutes);
@@ -82,7 +87,6 @@ app.use("/admin/api", adminRoutes);
 app.use("/api", historyRoutes);
 app.use("/api", alertsRoutes);
 app.use("/admin/api", alertsRoutes);
-
 
 app.use("/", redirectRoutes);
 

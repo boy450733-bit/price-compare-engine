@@ -140,13 +140,22 @@ router.get("/alerts", async (_req, res) => {
 router.post("/trigger-alerts", async (_req, res) => {
   try {
     console.log("[admin routes] Manual alert trigger requested.");
-    await checkAndSendPriceAlerts();
+    
+    // If your checkAndSendPriceAlerts function returns results (e.g., counts of sent/failed emails), capture them:
+    const result = await checkAndSendPriceAlerts(); 
+    
+    // Optional: If you want it to flag as a warning/error when 0 emails go through due to issues
+    if (result && result.failed > 0 && result.sent === 0) {
+      return res.status(500).json({ error: "Alert check finished, but all emails failed to send (Connection timeout)." });
+    }
+
     res.json({ success: true, message: "Alert check executed successfully." });
   } catch (err) {
     console.error("[admin routes] Failed to trigger alerts:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 // Site settings
 router.get("/settings", async (_req, res) => {
   const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);

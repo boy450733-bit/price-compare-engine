@@ -425,12 +425,9 @@
     </div>
   </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
-  const STORAGE_KEY = "sastapk_admin_token";
-  let TOKEN = "";
   let storesData = [];
   let worklistData = [];
   let linkedData = [];
@@ -494,7 +491,8 @@
   function api(path, options = {}) {
     return fetch(`/admin/api${path}`, {
       ...options,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}`, ...(options.headers || {}) },
+      credentials: "include", // Automatically send HttpOnly session cookie
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     }).then(async (res) => {
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
@@ -505,10 +503,15 @@
   }
 
   async function tryLogin(token, showErrors) {
-    TOKEN = token;
     try {
-      await api("/stats");
-      localStorage.setItem(STORAGE_KEY, token);
+      const res = await fetch("/admin/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Invalid token.");
+
       const authGate = document.getElementById("authGate");
       const app = document.getElementById("app");
       if (authGate) authGate.style.display = "none";
@@ -520,19 +523,27 @@
         const errEl = document.getElementById("authError");
         if (errEl) errEl.textContent = "Invalid token.";
       }
-      localStorage.removeItem(STORAGE_KEY);
       return false;
     }
   }
 
-  const savedToken = localStorage.getItem(STORAGE_KEY);
-  if (savedToken) tryLogin(savedToken, false);
+  // Check initial login state by verifying stats endpoint using existing HttpOnly cookie session
+  api("/stats").then(() => {
+    const authGate = document.getElementById("authGate");
+    const app = document.getElementById("app");
+    if (authGate) authGate.style.display = "none";
+    if (app) app.style.display = "block";
+    loadAll();
+  }).catch(() => {});
 
   document.getElementById("loginBtn")?.addEventListener("click", () => {
     tryLogin(document.getElementById("tokenInput").value.trim(), true);
   });
-  document.getElementById("logoutBtn")?.addEventListener("click", () => {
-    localStorage.removeItem(STORAGE_KEY);
+  
+  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    try {
+      await fetch("/admin/api/logout", { method: "POST", credentials: "include" });
+    } catch (e) {}
     location.reload();
   });
 
@@ -777,15 +788,10 @@
       return;
     }
     try {
-      const res = await fetch("/admin/api/token", {
+      const data = await api("/token", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
         body: JSON.stringify({ newToken })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update token");
-      TOKEN = newToken;
-      localStorage.setItem(STORAGE_KEY, newToken);
       document.getElementById("newAdminTokenInput").value = "";
       showToast("Admin token updated successfully!", "success");
     } catch (err) {
@@ -1302,9 +1308,7 @@
 
   document.getElementById("triggerAlertsBtn")?.addEventListener("click", async () => {
     try {
-      const res = await fetch("/admin/api/trigger-alerts", { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}` } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
+      await api("/trigger-alerts", { method: "POST" });
       showToast("Price alerts check completed!", "success");
     } catch (err) {
       showToast("Error: " + err.message, "error");
