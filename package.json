@@ -25,6 +25,7 @@
     "nanoid": "^5.0.7",
     "nodemailer": "^6.9.14",
     "node-cron": "^3.0.3",
-    "string-similarity": "^4.0.4"
+    "string-similarity": "^4.0.4",
+    "cookie-parser": "^1.4.7"
   }
 }
