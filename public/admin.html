@@ -1435,6 +1435,7 @@
     
     const currentMailers = gatherMailersFromDOM();
     currentMailers.push({
+      id: "mailer_" + Date.now(), // Unique identifier
       name: `Mailer ${currentMailers.length + 1}`,
       host: "",
       port: 465,
@@ -1457,6 +1458,7 @@
     }
   });
 
+
   function gatherMailersFromDOM() {
     const panels = document.querySelectorAll("#mailersListContainer .mailer-details-panel");
     const mailers = [];
@@ -1466,6 +1468,7 @@
       if (!nameInput) return;
       
       mailers.push({
+        id: panel.dataset.mailerId || ("mailer_" + Math.random()),
         name: nameInput.value.trim() || "Mailer Profile",
         active: panel.querySelector(".mailer-active")?.checked ?? true,
         host: panel.querySelector(".mailer-host")?.value.trim() || "",

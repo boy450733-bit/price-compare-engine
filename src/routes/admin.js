@@ -13,7 +13,6 @@ function tokensMatch(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-// 1. Public Login Route: Sets HttpOnly Cookie
 router.post("/login", async (req, res) => {
   const { token } = req.body;
   if (!token) {
@@ -28,10 +27,12 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid token." });
     }
 
-    // Set secure HttpOnly cookie
+    // Detect if connection is secure (handles proxies like Nginx/Cloudflare)
+    const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https" || process.env.NODE_ENV === "production";
+
     res.cookie("sastapk_admin_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecure, // Automatically true on HTTPS / Production proxies
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
     });
@@ -41,6 +42,7 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // 2. Public Logout Route: Clears Cookie
 router.post("/logout", (req, res) => {
@@ -216,38 +218,35 @@ router.get("/settings", async (_req, res) => {
 
 router.put("/settings", async (req, res) => {
   try {
-    // 1. Fetch current database settings to preserve real passwords if masked dots were submitted
     const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
     const currentData = rows[0]?.data || {};
-    
     const incomingData = req.body;
 
-    // 2. Safeguard mailer passwords: if incoming password is "••••••••", keep the old password
+    // Safeguard mailer passwords using unique ID mapping instead of index
     if (incomingData.alertsConfig && Array.isArray(incomingData.alertsConfig.mailers)) {
       const oldMailers = currentData.alertsConfig?.mailers || [];
       
-      incomingData.alertsConfig.mailers = incomingData.alertsConfig.mailers.map((newMailer, idx) => {
+      incomingData.alertsConfig.mailers = incomingData.alertsConfig.mailers.map((newMailer) => {
         if (newMailer.password === "••••••••") {
+          // Find the exact old mailer by ID, fallback to matching by name if ID is missing
+          const existingMatch = oldMailers.find(m => m.id === newMailer.id || m.name === newMailer.name);
           return {
             ...newMailer,
-            password: oldMailers[idx]?.password || ""
+            password: existingMatch?.password || ""
           };
         }
         return newMailer;
       });
     }
 
-    // Safeguard legacy mailPassword
     if (incomingData.alertsConfig?.mailPassword === "••••••••") {
       incomingData.alertsConfig.mailPassword = currentData.alertsConfig?.mailPassword || "";
     }
 
-    // 3. Ensure the adminToken from the current database isn't wiped out if not explicitly provided in the payload
     if (currentData.adminToken && !incomingData.adminToken) {
       incomingData.adminToken = currentData.adminToken;
     }
 
-    // 4. Save the safely merged payload to the database
     await db(
       `INSERT INTO site_settings (id, data, updated_at) VALUES (1, $1::jsonb, now())
        ON CONFLICT (id) DO UPDATE SET data = $1::jsonb, updated_at = now()`,
