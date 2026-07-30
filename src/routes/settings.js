@@ -42,5 +42,4 @@ router.get("/settings", async (_req, res) => {
 
   res.json(publicSettings);
 });
-
 export default router;
