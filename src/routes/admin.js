@@ -188,19 +188,77 @@ router.post("/trigger-alerts", async (_req, res) => {
   }
 });
 
-// Site settings
+// Site settings (Sanitized to protect adminToken and passwords)
 router.get("/settings", async (_req, res) => {
   const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
-  res.json(rows[0]?.data || {});
+  const settings = rows[0]?.data || {};
+
+  const safeSettings = { ...settings };
+  
+  // Remove the admin token from the response
+  delete safeSettings.adminToken;
+
+  // Mask mailer passwords in the mailer pool list
+  if (safeSettings.alertsConfig && Array.isArray(safeSettings.alertsConfig.mailers)) {
+    safeSettings.alertsConfig.mailers = safeSettings.alertsConfig.mailers.map(mailer => ({
+      ...mailer,
+      password: mailer.password ? "••••••••" : ""
+    }));
+  }
+
+  // Mask legacy mailPassword if present
+  if (safeSettings.alertsConfig?.mailPassword) {
+    safeSettings.alertsConfig.mailPassword = "••••••••";
+  }
+
+  res.json(safeSettings);
 });
 
 router.put("/settings", async (req, res) => {
-  await db(
-    `INSERT INTO site_settings (id, data, updated_at) VALUES (1, $1::jsonb, now())
-     ON CONFLICT (id) DO UPDATE SET data = $1::jsonb, updated_at = now()`,
-    [JSON.stringify(req.body)]
-  );
-  res.json({ ok: true });
+  try {
+    // 1. Fetch current database settings to preserve real passwords if masked dots were submitted
+    const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
+    const currentData = rows[0]?.data || {};
+    
+    const incomingData = req.body;
+
+    // 2. Safeguard mailer passwords: if incoming password is "••••••••", keep the old password
+    if (incomingData.alertsConfig && Array.isArray(incomingData.alertsConfig.mailers)) {
+      const oldMailers = currentData.alertsConfig?.mailers || [];
+      
+      incomingData.alertsConfig.mailers = incomingData.alertsConfig.mailers.map((newMailer, idx) => {
+        if (newMailer.password === "••••••••") {
+          return {
+            ...newMailer,
+            password: oldMailers[idx]?.password || ""
+          };
+        }
+        return newMailer;
+      });
+    }
+
+    // Safeguard legacy mailPassword
+    if (incomingData.alertsConfig?.mailPassword === "••••••••") {
+      incomingData.alertsConfig.mailPassword = currentData.alertsConfig?.mailPassword || "";
+    }
+
+    // 3. Ensure the adminToken from the current database isn't wiped out if not explicitly provided in the payload
+    if (currentData.adminToken && !incomingData.adminToken) {
+      incomingData.adminToken = currentData.adminToken;
+    }
+
+    // 4. Save the safely merged payload to the database
+    await db(
+      `INSERT INTO site_settings (id, data, updated_at) VALUES (1, $1::jsonb, now())
+       ON CONFLICT (id) DO UPDATE SET data = $1::jsonb, updated_at = now()`,
+      [JSON.stringify(incomingData)]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Error updating settings:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Basic stats

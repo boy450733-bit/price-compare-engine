@@ -1381,10 +1381,11 @@
               <input type="text" id="user-${uniqueId}" class="cell-input mailer-username" value="${m.username || ""}" placeholder="resend">
             </div>
             <div>
-              <label for="pass-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Password / API Key</label>
-              <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="${m.password || ""}" placeholder="API Key">
+              <label for="pass-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">
+                Password / API Key ${m.password ? "(Configured)" : ""}
+              </label>
+              <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="" placeholder="${m.password ? '•••••••• (Leave blank to keep)' : 'Enter API Key'}">
             </div>
-            <div>
               <label for="sender-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
               <input type="text" id="sender-${uniqueId}" class="cell-input mailer-sender" value="${m.sender || '"Sasta.pk" <noreply@sasta.pk>'}" placeholder='"Name" <email@domain.com>'>
             </div>
