@@ -167,7 +167,7 @@
     <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
     <p id="heroSubtitle">Search once, compare instantly across Pakistan's top online stores.</p>
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Search e.g. Vivo Y31d" autocomplete="off" aria-label="Search for a product">
+      <input type="text" id="searchInput" placeholder="Search e.g. Xiaomi Redmi 15c" autocomplete="off" aria-label="Search for a product">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
     </div>
   </section>
@@ -220,7 +220,7 @@
         <span class="filter-label" style="min-width: unset;">Trend</span>
         <select id="trendSelect" class="filter-select">
           <option value="">All Trends</option>
-          <option value="dropped">Price Dropped <span id="countDropped"></span></option>
+          <option value="dropped">Price Dropped</option>
           <option value="increased">Price Increased</option>
           <option value="stable">Stable Price</option>
         </select>
@@ -696,7 +696,7 @@
       `).join("") : "";
 
       const offersHtml = sortedOffers.map((o) => `
-        <a href="${CFG.API_BASE_URL}/out/${id}" target="_blank" rel="noopener" class="offer-row-link">
+        <a href="${CFG.API_BASE_URL}/out/${o.id}" target="_blank" rel="noopener" class="offer-row-link">
           <div class="store-info-left">
             <span class="store-badge" style="background:${o.storeColor || '#0B6E4F'}">${o.store}</span>
           </div>
@@ -871,6 +871,12 @@
 
   loadSettings();
   loadStores();
+
+  // Initial load trigger so products load automatically on page start
+  input.value = "Xiaomi Redmi 15c";
+  filterBar.classList.add("visible");
+  results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+  fetchNewSearch("Xiaomi Redmi 15c");
 })();
 </script>
 
