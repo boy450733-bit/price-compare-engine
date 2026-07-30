@@ -28,7 +28,26 @@ function mergeSettings(defaults, stored = {}) {
 router.get("/settings", async (_req, res) => {
   const { rows } = await db(`SELECT data FROM site_settings WHERE id = 1`);
   const settings = mergeSettings(defaultSettings, rows[0]?.data || {});
-  res.json(settings);
+
+  // Create a safe clone to prevent leaking secrets to public users
+  const publicSettings = { ...settings };
+
+  // 1. Strip the admin token entirely
+  delete publicSettings.adminToken;
+
+  // 2. Strip or sanitize mailer passwords if present in public config
+  if (publicSettings.alertsConfig && Array.isArray(publicSettings.alertsConfig.mailers)) {
+    publicSettings.alertsConfig.mailers = publicSettings.alertsConfig.mailers.map(mailer => ({
+      ...mailer,
+      password: "" // Blank out passwords entirely for public viewers
+    }));
+  }
+
+  if (publicSettings.alertsConfig?.mailPassword) {
+    publicSettings.alertsConfig.mailPassword = "";
+  }
+
+  res.json(publicSettings);
 });
 
 export default router;

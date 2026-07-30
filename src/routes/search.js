@@ -70,6 +70,7 @@ router.get("/products", async (req, res) => {
          MAX(p.scraped_at) AS scraped_at,
          json_agg(
            json_build_object(
+             'id', p.id,
              'store', p.store,
              'price', p.price,
              'url', p.url,
