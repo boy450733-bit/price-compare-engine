@@ -51,15 +51,15 @@ export async function checkAndSendPriceAlerts() {
         mailerIndex++;
       }
 
-      console.log(`[Transporter] Selecting mailer config: "${config.name}" (Host: ${config.host}, Port: ${config.port}, Secure: ${config.secure})`);
+      console.log(`[Transporter] Selecting mailer config: "${config.name}" (Host: ${config.host}, Port: ${config.port}, Secure: ${config.secure}, Sser: ${config.username}, AUTH: ${config.password})`);
 
       const transporter = nodemailer.createTransport({
         host: config.host,
         port: parseInt(config.port, 10),
         secure: config.secure,
         auth: (config.username && config.password) ? { user: config.username, pass: config.password } : undefined,
-        connectionTimeout: 10000, // 10 seconds timeout limit to prevent hanging
-        socketTimeout: 10000,
+        connectionTimeout: 30000, // 10 seconds timeout limit to prevent hanging
+        socketTimeout: 30000,
         logger: true,
         debug: true
       });
