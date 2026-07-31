@@ -3,7 +3,7 @@ import { pool } from "../db/client.js";
 
 export async function checkAndSendPriceAlerts() {
   console.log("----------------------------------------");
-  console.log("[Worker] Running price alert check worker...");
+  console.log("[Worker] Running dynamic price alert check worker...");
   
   try {
     const settingsRes = await pool.query("SELECT data FROM site_settings WHERE id = 1");
@@ -14,12 +14,12 @@ export async function checkAndSendPriceAlerts() {
     console.log(`[Worker] Found ${mailers.length} mailer profiles in database settings.`);
     
     if (mailers.length === 0) {
-      console.log("[Worker] No mailers found in array, falling back to legacy/env configuration.");
       mailers = [{
         name: "Default Mailer",
-        host: alertsConfig.mailServer || process.env.MAIL_SERVER || "smtp.ethereal.email",
+        type: "smtp",
+        host: alertsConfig.mailServer || process.env.MAIL_SERVER || "smtp.resend.com",
         port: parseInt(alertsConfig.mailPort || process.env.MAIL_PORT || "587", 10),
-        secure: typeof alertsConfig.mailSecure === "boolean" ? alertsConfig.mailSecure : (parseInt(alertsConfig.mailPort) === 465),
+        secure: false,
         username: alertsConfig.mailUsername || process.env.MAIL_USERNAME,
         password: alertsConfig.mailPassword || process.env.MAIL_PASSWORD,
         sender: alertsConfig.mailSender || process.env.MAIL_DEFAULT_SENDER || '"Sasta.pk" <noreply@sasta.pk>',
@@ -40,7 +40,7 @@ export async function checkAndSendPriceAlerts() {
     
     let mailerIndex = 0;
 
-    function getNextTransporter() {
+    function getNextMailerConfig() {
       if (activeMailers.length === 0) return null;
       
       let config;
@@ -50,27 +50,7 @@ export async function checkAndSendPriceAlerts() {
         config = activeMailers[mailerIndex % activeMailers.length];
         mailerIndex++;
       }
-
-      console.log(`printing json object`);
-      console.log(JSON.stringify(config, null, 2));
-
-      const transporter = nodemailer.createTransport({
-        host: config.host,
-        port: parseInt(config.port, 10),
-        secure: config.secure,
-        auth: (config.username && config.password) ? { user: config.username, pass: config.password } : undefined,
-        connectionTimeout: 30000, // 10 seconds timeout limit to prevent hanging
-        socketTimeout: 30000,
-        logger: true,
-        debug: true
-      });
-
-      return { 
-        transporter, 
-        sender: config.sender || '"Sasta.pk" <noreply@sasta.pk>', 
-        name: config.name || "Mailer",
-        config 
-      };
+      return config;
     }
 
     const subjectTemplate = alertsConfig.emailSubject || "🎉 Price Drop Alert for {product_title}!";
@@ -108,36 +88,75 @@ export async function checkAndSendPriceAlerts() {
       const maxAttempts = activeMailers.length;
 
       while (!sentSuccessfully && attempts < maxAttempts) {
-        const mailConfig = getNextTransporter();
-        if (!mailConfig) break;
+        const config = getNextMailerConfig();
+        if (!config) break;
+
+        const mailerName = config.name || "Mailer";
+        console.log(`[Attempt] Trying mailer: "${mailerName}" (Type: ${config.type || "smtp"})`);
+
+        if (!config.password) {
+          console.error(`[Error] [${mailerName}] API key / password is missing.`);
+          attempts++;
+          continue;
+        }
 
         try {
-          console.log(`[SMTP] Verifying connection for "${mailConfig.name}"...`);
-          await mailConfig.transporter.verify();
-          console.log(`[SMTP] Verification successful for "${mailConfig.name}". Sending email...`);
+          // Check if protocol type is HTTP API
+          if (config.type === "api" || (config.host && config.host.toLowerCase().includes("resend.com") && !config.type)) {
+            console.log(`[API] Using Resend HTTP REST API (Port 443) for "${mailerName}"...`);
+            
+            const response = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${config.password}`
+              },
+              body: JSON.stringify({
+                from: config.sender || "Sasta.pk <onboarding@resend.dev>",
+                to: [alert.email],
+                subject: subject,
+                text: body
+              })
+            });
 
-          const info = await mailConfig.transporter.sendMail({
-            from: mailConfig.sender,
-            to: alert.email,
-            subject: subject,
-            text: body,
-          });
+            const resData = await response.json();
+            if (!response.ok) {
+              throw new Error(resData.message || JSON.stringify(resData));
+            }
 
-          console.log(`[Success] [${mailConfig.name}] Message sent successfully! ID: ${info.messageId}`);
+            console.log(`[Success] [${mailerName}] Email sent via Resend API! ID: ${resData.id}`);
+          } else {
+            // Standard SMTP Transport via Nodemailer
+            const transporter = nodemailer.createTransport({
+              host: config.host,
+              port: parseInt(config.port, 10) || 587,
+              secure: config.secure,
+              auth: { user: config.username, pass: config.password },
+              connectionTimeout: 10000,
+              socketTimeout: 10000
+            });
+
+            const info = await transporter.sendMail({
+              from: config.sender || '"Sasta.pk" <noreply@sasta.pk>',
+              to: alert.email,
+              subject: subject,
+              text: body,
+            });
+
+            console.log(`[Success] [${mailerName}] SMTP Message sent: ${info.messageId}`);
+          }
 
           await pool.query("UPDATE price_alerts SET notified = true WHERE id = $1", [alert.id]);
           sentCount++;
           sentSuccessfully = true;
         } catch (emailErr) {
           attempts++;
-          console.error(`[Error] [${mailConfig.name}] Failed to send via this mailer. Error: ${emailErr.message}`);
+          console.error(`[Error] [${mailerName}] Failed to send alert: ${emailErr.message}`);
           
           if (rotationMode !== "fallback") {
-            console.log(`[Worker] Rotation mode is '${rotationMode}', halting further fallback attempts for this alert.`);
             break; 
-          } else {
-            console.log(`[Worker] Rotation mode is 'fallback', trying next available mailer (Attempt ${attempts}/${maxAttempts})...`);
           }
+          console.log(`[Worker] Falling back to next dynamic mailer...`);
         }
       }
     }
