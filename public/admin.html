@@ -308,12 +308,34 @@
                 <tr>
                   <td>Email HTML Body Template</td>
                   <td>
-                    <textarea id="alertEmailBody" rows="7" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea>
+                    <textarea id="alertEmailBody" rows="12" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"><div style="font-family: Arial, sans-serif; background-color: #F7F5EF; padding: 20px; color: #17231D;">
+                      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 10px; border: 1px solid #E7E1D2; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <h2 style="font-family: 'Space Grotesk', sans-serif; color: #0B6E4F; margin-top: 0; margin-bottom: 20px;">
+                          Sasta<span style="color: #E8A33D;">.pk</span> Price Drop Alert
+                        </h2>
+                        <p style="font-size: 15px; line-height: 1.5; color: #17231D;">Hello,</p>
+                        <p style="font-size: 15px; line-height: 1.5; color: #17231D;">
+                          Great news! The price for <strong>{product_title}</strong> at <strong>{store_name}</strong> has dropped.
+                        </p>
+                        <div style="background: #F1ECDE; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center;">
+                          <span style="font-size: 13px; color: #6B7A70; display: block; text-transform: uppercase;">New Target Price</span>
+                          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #0B6E4F;">{target_price}</span>
+                          <div style="font-size: 12px; color: #6B7A70; margin-top: 4px;">(Previous tracked current price: {current_price})</div>
+                        </div>
+                        <div style="text-align: center; margin: 30px 0;">
+                          <a href="{product_url}" target="_blank" style="background-color: #0B6E4F; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-block;">
+                            View Deal on Store →
+                          </a>
+                        </div>
+                        <p style="font-size: 12px; color: #6B7A70; margin-top: 30px; border-top: 1px solid #E7E1D2; padding-top: 15px; text-align: center;">
+                          You received this email because you subscribed to price drop alerts on Sasta.pk.
+                        </p>
+                      </div>
+                    </div></textarea>
                     <div class="muted" style="font-size: 11px; margin-top: 6px;">
                       <strong>Available Dynamic Fields:</strong> 
-                      <code>{product_title}</code>, <code>{target_price}</code>, <code>{current_price}</code>, <code>{store_name}</code>, <code>{product_url}</code>
+                      <code>{product_title}</code>, <code>{target_price}</code>, <code>{current_price}</code>, <code>{store_name}</code>, <code>{product_url}</code> <span style="color: var(--brand);">(Automatically routes clicks through your affiliate tracker)</span>
                     </div>
-                  </td>
                 </tr>
               </tbody>
             </table>
@@ -359,6 +381,7 @@
         <table style="margin-bottom:24px">
           <tbody>
             <tr><td style="width:200px">Change Admin Token</td><td><div style="display: flex; gap: 10px;"><input type="password" class="cell-input" id="newAdminTokenInput" placeholder="Enter new secure admin token"><button class="btn-sm" id="updateTokenBtn" style="background: var(--danger);">Update Token</button></div></td></tr>
+            <tr><td>Site Domain URL</td><td><input type="text" class="cell-input" id="s-siteUrl" placeholder="https://sasta.pk"></td></tr>
           </tbody>
         </table>
 
@@ -1525,14 +1548,48 @@
     renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
   });
 
-  document.getElementById("triggerAlertsBtn")?.addEventListener("click", async () => {
-    try {
-      await api("/trigger-alerts", { method: "POST" });
-      showToast("Price alerts check completed!", "success");
-    } catch (err) {
-      showToast("Error: " + err.message, "error");
-    }
-  });
+document.getElementById("triggerAlertsBtn")?.addEventListener("click", async (e) => {
+  const btn = e.target;
+  const originalText = btn.textContent;
+  
+  // Instant feedback on the button
+  btn.disabled = true;
+  btn.style.opacity = "0.8";
+  btn.textContent = "⏳ Running...";
+
+  try {
+    await api("/trigger-alerts", { method: "POST" });
+    
+    btn.textContent = "✓ Success!";
+    btn.style.background = "var(--ok, #0B6E4F)";
+    btn.style.color = "#fff";
+    
+    showToast("Price alerts check completed!", "success");
+
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = "var(--accent)";
+      btn.style.color = "#2A1B04";
+      btn.disabled = false;
+      btn.style.opacity = "1";
+    }, 2500);
+
+  } catch (err) {
+    btn.textContent = "❌ Failed";
+    btn.style.background = "var(--danger, #dc2626)";
+    btn.style.color = "#fff";
+    
+    showToast("Error: " + err.message, "error");
+
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = "var(--accent)";
+      btn.style.color = "#2A1B04";
+      btn.disabled = false;
+      btn.style.opacity = "1";
+    }, 3000);
+  }
+});
 
 })();
 </script>

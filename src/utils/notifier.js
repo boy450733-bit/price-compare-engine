@@ -57,7 +57,7 @@ export async function checkAndSendPriceAlerts() {
     const bodyTemplate = alertsConfig.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
 
     const alertsRes = await pool.query(`
-      SELECT a.id, a.email, a.target_price, p.title AS product_title, p.price AS current_price, p.url AS product_url, p.store AS store_name
+      SELECT a.id, a.email, a.target_price, p.id AS product_id, p.title AS product_title, p.price AS current_price, p.url AS product_url, p.store AS store_name
       FROM price_alerts a
       JOIN products p ON a.product_id = p.id
       WHERE a.notified = false AND (a.target_price IS NULL OR p.price <= a.target_price)
@@ -76,12 +76,18 @@ export async function checkAndSendPriceAlerts() {
         .replace(/{current_price}/g, alert.current_price ? `Rs ${Number(alert.current_price).toLocaleString()}` : "N/A")
         .replace(/{store_name}/g, alert.store_name || "Store");
 
+      // Grab siteUrl from your settings JSON (with an environment fallback)
+      const siteUrl = settings.siteUrl || process.env.SITE_URL || "https://sasta.pk";
+
+      // Build the tracked affiliate route dynamically using /out/
+      const affiliateRouteUrl = `${siteUrl}/out?id=${alert.product_id}`;
+
       const body = bodyTemplate
         .replace(/{product_title}/g, alert.product_title || "Product")
         .replace(/{target_price}/g, alert.target_price ? `Rs ${Number(alert.target_price).toLocaleString()}` : "N/A")
         .replace(/{current_price}/g, alert.current_price ? `Rs ${Number(alert.current_price).toLocaleString()}` : "N/A")
         .replace(/{store_name}/g, alert.store_name || "Store")
-        .replace(/{product_url}/g, alert.product_url || "#");
+        .replace(/{product_url}/g, affiliateRouteUrl);
 
       let sentSuccessfully = false;
       let attempts = 0;
@@ -115,7 +121,7 @@ export async function checkAndSendPriceAlerts() {
                 from: config.sender || "Sasta.pk <onboarding@resend.dev>",
                 to: [alert.email],
                 subject: subject,
-                text: body
+                html: body // Use html property instead of text
               })
             });
 
@@ -140,7 +146,7 @@ export async function checkAndSendPriceAlerts() {
               from: config.sender || '"Sasta.pk" <noreply@sasta.pk>',
               to: alert.email,
               subject: subject,
-              text: body,
+              html: body, // Use html property instead of text
             });
 
             console.log(`[Success] [${mailerName}] SMTP Message sent: ${info.messageId}`);
