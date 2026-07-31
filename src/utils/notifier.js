@@ -51,7 +51,8 @@ export async function checkAndSendPriceAlerts() {
         mailerIndex++;
       }
 
-      console.log(`[Transporter] Selecting mailer config: "${config.name}" (Host: ${config.host}, Port: ${config.port}, Secure: ${config.secure}, Sser: ${config.username}, AUTH: ${config.password})`);
+      console.log(`printing json object`);
+      console.log(JSON.stringify(config, null, 2));
 
       const transporter = nodemailer.createTransport({
         host: config.host,
