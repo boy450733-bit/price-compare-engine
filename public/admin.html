@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -258,7 +259,7 @@
       <div class="page" id="page-alerts">
         <div class="page-header">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div><h2>Price Drop Alerts</h2><p>Monitor subscribers, configure background cron behavior, customize templates, and manage SMTP credentials.</p></div>
+            <div><h2>Price Drop Alerts</h2><p>Monitor subscribers, configure background cron behavior, customize templates, and manage SMTP or API credentials.</p></div>
             <button class="btn-sm" id="triggerAlertsBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">Run Alert Check Now</button>
           </div>
         </div>
@@ -325,8 +326,8 @@
           <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
               <div>
-                <h3 style="font-size:15px; margin-bottom: 4px;">Multi-SMTP Mailer Pool</h3>
-                <p class="muted" style="font-size: 12px;">Add multiple accounts (Resend, Mailjet, etc.) to rotate traffic and avoid quota limits or spam filtering.</p>
+                <h3 style="font-size:15px; margin-bottom: 4px;">Multi-Mailer &amp; API Gateway Pool</h3>
+                <p class="muted" style="font-size: 12px;">Add SMTP accounts or Cloud HTTP APIs (like Resend) to rotate traffic and bypass cloud hosting port blocks.</p>
               </div>
               <button class="btn-sm" id="addMailerBtn" style="background: var(--accent); color: #2A1B04; font-weight: 700;">+ Add Mailer Profile</button>
             </div>
@@ -425,6 +426,7 @@
     </div>
   </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
@@ -491,7 +493,7 @@
   function api(path, options = {}) {
     return fetch(`/admin/api${path}`, {
       ...options,
-      credentials: "include", // Automatically send HttpOnly session cookie
+      credentials: "include",
       headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     }).then(async (res) => {
       if (!res.ok) {
@@ -527,7 +529,6 @@
     }
   }
 
-  // Check initial login state by verifying stats endpoint using existing HttpOnly cookie session
   api("/stats").then(() => {
     const authGate = document.getElementById("authGate");
     const app = document.getElementById("app");
@@ -676,6 +677,223 @@
     }
   }
 
+  function renderMailersList(mailers = []) {
+    const container = document.getElementById("mailersListContainer");
+    if (!container) return;
+    
+    container.innerHTML = "";
+
+    if (mailers.length === 0) {
+      container.innerHTML = `<div class="muted" style="font-size: 13px; padding: 10px; border: 1px dashed var(--line); border-radius: 6px; text-align: center;">No mailers configured yet. Click "+ Add Mailer Profile" to get started.</div>`;
+      return;
+    }
+
+    container.innerHTML = mailers.map((m, index) => {
+      const uniqueId = index + Date.now();
+      const profileName = m.name || `Mailer ${index + 1}`;
+      const mailerType = m.type || "smtp";
+      const hostDisplay = mailerType === "api" ? "HTTP REST API" : (m.host || "Not configured");
+
+      return `
+        <div class="store-row-header mailer-row-header" data-mailer-idx="${index}">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="status-dot ${m.active !== false ? "on" : "off"}"></span>
+            <strong>${profileName}</strong>
+            <span class="muted" style="font-size: 11.5px;">(${hostDisplay})</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="muted" style="font-size: 11px;">Click to toggle expand</span>
+            <button type="button" class="btn-sm toggle-fold" style="padding: 3px 8px; font-size: 11px; background: var(--ink-soft);">Expand</button>
+          </div>
+        </div>
+        <div class="store-details-panel mailer-details-panel" data-mailer-panel="${index}" data-mailer-id="${m.id || ''}" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+              <div>
+                <label for="name-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Profile Name</label>
+                <input type="text" id="name-${uniqueId}" class="cell-input mailer-name" value="${profileName}" placeholder="Resend Primary" style="font-weight: 600; width: 180px;">
+              </div>
+              <div>
+                <label for="type-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Protocol Type</label>
+                <select id="type-${uniqueId}" class="cell-input mailer-type" style="width: 160px;">
+                  <option value="smtp" ${mailerType !== "api" ? "selected" : ""}>Standard SMTP</option>
+                  <option value="api" ${mailerType === "api" ? "selected" : ""}>HTTP API (Port 443)</option>
+                </select>
+              </div>
+              <div style="padding-top: 15px;">
+                <label for="active-${uniqueId}" style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                  <input type="checkbox" id="active-${uniqueId}" class="mailer-active" ${m.active !== false ? "checked" : ""}> Active
+                </label>
+              </div>
+            </div>
+            <button type="button" class="btn-sm remove-mailer-btn" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 12px;">Delete Profile</button>
+          </div>
+
+          <!-- SMTP Conditional Fields Block -->
+          <div class="smtp-fields" style="display: ${mailerType === "api" ? "none" : "grid"}; grid-template-columns: 2fr 1fr 1.5fr; gap: 8px; margin-bottom: 8px;">
+            <div>
+              <label for="host-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">SMTP Host</label>
+              <input type="text" id="host-${uniqueId}" class="cell-input mailer-host" value="${m.host || ""}" placeholder="smtp.resend.com">
+            </div>
+            <div>
+              <label for="port-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Port</label>
+              <input type="number" id="port-${uniqueId}" class="cell-input mailer-port" value="${m.port || 465}" placeholder="465">
+            </div>
+            <div>
+              <label for="secure-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Secure (SSL/TLS)</label>
+              <select id="secure-${uniqueId}" class="cell-input mailer-secure">
+                <option value="true" ${m.secure !== false ? "selected" : ""}>True (Port 465)</option>
+                <option value="false" ${m.secure === false ? "selected" : ""}>False (Port 587)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 8px;">
+            <div>
+              <label for="user-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Username / API User</label>
+              <input type="text" id="user-${uniqueId}" class="cell-input mailer-username" value="${m.username || ""}" placeholder="resend">
+            </div>
+            <div>
+              <label for="pass-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">
+                Password / API Key ${m.password ? "(Configured)" : ""}
+              </label>
+              <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="" placeholder="${m.password ? '•••••••• (Leave blank to keep)' : 'Enter API Key'}">
+            </div>
+            <div>
+              <label for="sender-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
+              <input type="text" id="sender-${uniqueId}" class="cell-input mailer-sender" value="${m.sender || '"Sasta.pk" <noreply@sasta.pk>'}" placeholder='"Name" <email@domain.com>'>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".mailer-type").forEach((selectEl) => {
+      selectEl.addEventListener("change", (e) => {
+        const panel = e.target.closest(".mailer-details-panel");
+        const smtpFields = panel.querySelector(".smtp-fields");
+        if (smtpFields) {
+          smtpFields.style.display = e.target.value === "api" ? "none" : "grid";
+        }
+      });
+    });
+
+    container.querySelectorAll(".mailer-row-header").forEach((header) => {
+      const togglePanel = () => {
+        const idx = header.dataset.mailerIdx;
+        const panel = container.querySelector(`[data-mailer-panel="${idx}"]`);
+        const btn = header.querySelector(".toggle-fold");
+        if (!panel || !btn) return;
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+          btn.textContent = "Expand";
+        } else {
+          panel.style.display = "block";
+          btn.textContent = "Fold";
+        }
+      };
+
+      header.addEventListener("click", (e) => {
+        if (e.target.tagName === "BUTTON") return;
+        togglePanel();
+      });
+      header.querySelector(".toggle-fold")?.addEventListener("click", togglePanel);
+    });
+
+    container.querySelectorAll(".remove-mailer-btn").forEach((btn, idx) => {
+      btn.addEventListener("click", () => {
+        const currentMailers = gatherMailersFromDOM();
+        currentMailers.splice(idx, 1);
+        renderMailersList(currentMailers);
+      });
+    });
+  }
+
+  document.getElementById("addMailerBtn")?.addEventListener("click", () => {
+    const container = document.getElementById("mailersListContainer");
+    if (!container) return;
+    if (container.querySelector(".muted") && container.children.length === 1) {
+      container.innerHTML = "";
+    }
+    
+    const currentMailers = gatherMailersFromDOM();
+    currentMailers.push({
+      id: "mailer_" + Date.now(),
+      name: `Mailer ${currentMailers.length + 1}`,
+      type: "smtp",
+      host: "",
+      port: 465,
+      secure: true,
+      username: "",
+      password: "",
+      sender: '"Sasta.pk" <noreply@sasta.pk>',
+      active: true
+    });
+    
+    renderMailersList(currentMailers);
+
+    const newIdx = currentMailers.length - 1;
+    const panel = container.querySelector(`[data-mailer-panel="${newIdx}"]`);
+    const header = container.querySelector(`[data-mailer-idx="${newIdx}"]`);
+    if (panel && header) {
+      panel.style.display = "block";
+      const foldBtn = header.querySelector(".toggle-fold");
+      if (foldBtn) foldBtn.textContent = "Fold";
+    }
+  });
+
+  function gatherMailersFromDOM() {
+    const panels = document.querySelectorAll("#mailersListContainer .mailer-details-panel");
+    const mailers = [];
+
+    panels.forEach(panel => {
+      const nameInput = panel.querySelector(".mailer-name");
+      if (!nameInput) return;
+      
+      mailers.push({
+        id: panel.dataset.mailerId || ("mailer_" + Math.random()),
+        name: nameInput.value.trim() || "Mailer Profile",
+        type: panel.querySelector(".mailer-type")?.value || "smtp",
+        active: panel.querySelector(".mailer-active")?.checked ?? true,
+        host: panel.querySelector(".mailer-host")?.value.trim() || "",
+        port: parseInt(panel.querySelector(".mailer-port")?.value.trim(), 10) || 465,
+        secure: panel.querySelector(".mailer-secure")?.value === "true",
+        username: panel.querySelector(".mailer-username")?.value.trim() || "",
+        password: panel.querySelector(".mailer-password")?.value.trim() || "",
+        sender: panel.querySelector(".mailer-sender")?.value.trim() || ""
+      });
+    });
+
+    return mailers;
+  }
+
+  document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
+    try {
+      const existing = await api("/settings");
+      const rotationModeEl = document.getElementById("mailerRotationMode");
+      const payload = {
+        ...existing,
+        alertsConfig: {
+          ...(existing.alertsConfig || {}),
+          mailerRotationMode: rotationModeEl ? rotationModeEl.value : "round-robin",
+          mailers: gatherMailersFromDOM()
+        }
+      };
+
+      await api("/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      showToast("Mailer pool saved successfully!", "success");
+      loadSettings();
+    } catch (err) {
+      console.error("Error saving mailer configs:", err);
+      showToast("Error saving settings: " + err.message, "error");
+    }
+  });
+
   async function loadSettings() {
     const data = await api("/settings");
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
@@ -716,6 +934,7 @@
     if (mailers.length === 0 && al.mailServer) {
       mailers = [{
         name: "Legacy Configured Mailer",
+        type: "smtp",
         host: al.mailServer,
         port: al.mailPort || 465,
         secure: al.mailSecure !== false,
@@ -788,7 +1007,7 @@
       return;
     }
     try {
-      const data = await api("/token", {
+      await api("/token", {
         method: "PUT",
         body: JSON.stringify({ newToken })
       });
@@ -1312,201 +1531,6 @@
       showToast("Price alerts check completed!", "success");
     } catch (err) {
       showToast("Error: " + err.message, "error");
-    }
-  });
-
-  function renderMailersList(mailers = []) {
-    const container = document.getElementById("mailersListContainer");
-    if (!container) return;
-    
-    container.innerHTML = "";
-
-    if (mailers.length === 0) {
-      container.innerHTML = `<div class="muted" style="font-size: 13px; padding: 10px; border: 1px dashed var(--line); border-radius: 6px; text-align: center;">No mailers configured yet. Click "+ Add Mailer Profile" to get started.</div>`;
-      return;
-    }
-
-    container.innerHTML = mailers.map((m, index) => {
-      const uniqueId = index + Date.now();
-      const profileName = m.name || `Mailer ${index + 1}`;
-      const hostDisplay = m.host || "Not configured";
-
-      return `
-        <div class="store-row-header mailer-row-header" data-mailer-idx="${index}">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span class="status-dot ${m.active !== false ? "on" : "off"}"></span>
-            <strong>${profileName}</strong>
-            <span class="muted" style="font-size: 11.5px;">(${hostDisplay})</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span class="muted" style="font-size: 11px;">Click to toggle expand</span>
-            <button type="button" class="btn-sm toggle-fold" style="padding: 3px 8px; font-size: 11px; background: var(--ink-soft);">Expand</button>
-          </div>
-        </div>
-        <div class="store-details-panel mailer-details-panel" data-mailer-panel="${index}" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div>
-                <label for="name-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Profile Name</label>
-                <input type="text" id="name-${uniqueId}" class="cell-input mailer-name" value="${profileName}" placeholder="Resend Primary" style="font-weight: 600; width: 220px;">
-              </div>
-              <div style="padding-top: 15px;">
-                <label for="active-${uniqueId}" style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                  <input type="checkbox" id="active-${uniqueId}" class="mailer-active" ${m.active !== false ? "checked" : ""}> Active
-                </label>
-              </div>
-            </div>
-            <button type="button" class="btn-sm remove-mailer-btn" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 12px;">Delete Profile</button>
-          </div>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 8px; margin-bottom: 8px;">
-            <div>
-              <label for="host-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">SMTP Host</label>
-              <input type="text" id="host-${uniqueId}" class="cell-input mailer-host" value="${m.host || ""}" placeholder="smtp.resend.com">
-            </div>
-            <div>
-              <label for="port-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Port</label>
-              <input type="number" id="port-${uniqueId}" class="cell-input mailer-port" value="${m.port || 465}" placeholder="465">
-            </div>
-            <div>
-              <label for="secure-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Secure (SSL/TLS)</label>
-              <select id="secure-${uniqueId}" class="cell-input mailer-secure">
-                <option value="true" ${m.secure !== false ? "selected" : ""}>True (Port 465)</option>
-                <option value="false" ${m.secure === false ? "selected" : ""}>False (Port 587)</option>
-              </select>
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 8px;">
-            <div>
-              <label for="user-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Username</label>
-              <input type="text" id="user-${uniqueId}" class="cell-input mailer-username" value="${m.username || ""}" placeholder="resend">
-            </div>
-            <div>
-              <label for="pass-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">
-                Password / API Key ${m.password ? "(Configured)" : ""}
-              </label>
-              <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="" placeholder="${m.password ? '•••••••• (Leave blank to keep)' : 'Enter API Key'}">
-            </div>
-            <div>
-              <label for="sender-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
-              <input type="text" id="sender-${uniqueId}" class="cell-input mailer-sender" value="${m.sender || '"Sasta.pk" <noreply@sasta.pk>'}" placeholder='"Name" <email@domain.com>'>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    container.querySelectorAll(".mailer-row-header").forEach((header) => {
-      const togglePanel = () => {
-        const idx = header.dataset.mailerIdx;
-        const panel = container.querySelector(`[data-mailer-panel="${idx}"]`);
-        const btn = header.querySelector(".toggle-fold");
-        if (!panel || !btn) return;
-        if (panel.style.display === "block") {
-          panel.style.display = "none";
-          btn.textContent = "Expand";
-        } else {
-          panel.style.display = "block";
-          btn.textContent = "Fold";
-        }
-      };
-
-      header.addEventListener("click", (e) => {
-        if (e.target.tagName === "BUTTON") return;
-        togglePanel();
-      });
-      header.querySelector(".toggle-fold")?.addEventListener("click", togglePanel);
-    });
-
-    container.querySelectorAll(".remove-mailer-btn").forEach((btn, idx) => {
-      btn.addEventListener("click", () => {
-        const currentMailers = gatherMailersFromDOM();
-        currentMailers.splice(idx, 1);
-        renderMailersList(currentMailers);
-      });
-    });
-  }
-
-  document.getElementById("addMailerBtn")?.addEventListener("click", () => {
-    const container = document.getElementById("mailersListContainer");
-    if (!container) return;
-    if (container.querySelector(".muted") && container.children.length === 1) {
-      container.innerHTML = "";
-    }
-    
-    const currentMailers = gatherMailersFromDOM();
-    currentMailers.push({
-      id: "mailer_" + Date.now(), // Unique identifier
-      name: `Mailer ${currentMailers.length + 1}`,
-      host: "",
-      port: 465,
-      secure: true,
-      username: "",
-      password: "",
-      sender: '"Sasta.pk" <noreply@sasta.pk>',
-      active: true
-    });
-    
-    renderMailersList(currentMailers);
-
-    const newIdx = currentMailers.length - 1;
-    const panel = container.querySelector(`[data-mailer-panel="${newIdx}"]`);
-    const header = container.querySelector(`[data-mailer-idx="${newIdx}"]`);
-    if (panel && header) {
-      panel.style.display = "block";
-      const foldBtn = header.querySelector(".toggle-fold");
-      if (foldBtn) foldBtn.textContent = "Fold";
-    }
-  });
-
-
-  function gatherMailersFromDOM() {
-    const panels = document.querySelectorAll("#mailersListContainer .mailer-details-panel");
-    const mailers = [];
-
-    panels.forEach(panel => {
-      const nameInput = panel.querySelector(".mailer-name");
-      if (!nameInput) return;
-      
-      mailers.push({
-        id: panel.dataset.mailerId || ("mailer_" + Math.random()),
-        name: nameInput.value.trim() || "Mailer Profile",
-        active: panel.querySelector(".mailer-active")?.checked ?? true,
-        host: panel.querySelector(".mailer-host")?.value.trim() || "",
-        port: parseInt(panel.querySelector(".mailer-port")?.value.trim(), 10) || 465,
-        secure: panel.querySelector(".mailer-secure")?.value === "true",
-        username: panel.querySelector(".mailer-username")?.value.trim() || "",
-        password: panel.querySelector(".mailer-password")?.value.trim() || "",
-        sender: panel.querySelector(".mailer-sender")?.value.trim() || ""
-      });
-    });
-
-    return mailers;
-  }
-
-  document.getElementById("saveMailerConfigBtn")?.addEventListener("click", async () => {
-    try {
-      const existing = await api("/settings");
-      const rotationModeEl = document.getElementById("mailerRotationMode");
-      const payload = {
-        ...existing,
-        alertsConfig: {
-          ...(existing.alertsConfig || {}),
-          mailerRotationMode: rotationModeEl ? rotationModeEl.value : "round-robin",
-          mailers: gatherMailersFromDOM()
-        }
-      };
-
-      await api("/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      showToast("Mailer pool saved successfully!", "success");
-      loadSettings();
-    } catch (err) {
-      console.error("Error saving mailer configs:", err);
-      showToast("Error saving settings: " + err.message, "error");
     }
   });
 
