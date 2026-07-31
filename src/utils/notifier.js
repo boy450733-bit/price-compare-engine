@@ -53,6 +53,8 @@ export async function checkAndSendPriceAlerts() {
         port: parseInt(config.port, 10),
         secure: config.secure,
         auth: (config.username && config.password) ? { user: config.username, pass: config.password } : undefined,
+        logger: true,
+        debug: true
       });
 
       return { transporter, sender: config.sender || '"Sasta.pk" <noreply@sasta.pk>', name: config.name || "Mailer" };
@@ -96,7 +98,20 @@ export async function checkAndSendPriceAlerts() {
         if (!mailConfig) break;
 
         try {
+          await mailConfig.transporter.verify();
+
+          console.log("SMTP connection successful");
+
+          console.log("Sending through:", mailConfig.name);
+          console.log({
+              host: config.host,
+              port: config.port,
+              user: config.username,
+            });
+
           const info = await mailConfig.transporter.sendMail({
+
+
             from: mailConfig.sender,
             to: alert.email,
             subject: subject,
