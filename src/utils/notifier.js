@@ -58,14 +58,24 @@ export async function checkAndSendPriceAlerts() {
     const bodyTemplate = alertsConfig.emailBody || "Hello,\n\nGood news! The price for {product_title} has dropped to {target_price}.\n\nCheck it out here: {product_url}";
 
     const alertsRes = await pool.query(`
-      SELECT a.id, a.email, a.target_price, p.id AS product_id, p.title AS product_title, p.price AS current_price, p.url AS product_url, p.store AS store_name
-      FROM price_alerts a
-      JOIN products p ON a.product_id = p.id
-      WHERE a.notified = false AND (a.target_price IS NULL OR p.price <= a.target_price)
-    `);
+        SELECT a.id, a.email, a.target_price, p.id AS product_id, p.title AS product_title, p.price AS current_price, p.url AS product_url, p.store AS store_name
+        FROM price_alerts a
+        JOIN products p ON a.product_id = p.id
+        WHERE a.notified = false 
+          AND a.target_price IS NOT NULL 
+          AND a.target_price > 0 
+          AND p.price <= a.target_price
+      `);
 
     const pendingAlerts = alertsRes.rows;
     console.log(`[Worker] Found ${pendingAlerts.length} pending price alerts to send.`);
+    
+    // Inside your route or helper function
+    const protocol = req.protocol; // 'http' or 'https'
+    const host = req.get('host');  // e.g., 'sasta.pk' or 'localhost:3000'
+    const dynamicSiteUrl = `${protocol}://${host}`;
+
+    const affiliateRouteUrl = `${dynamicSiteUrl}/out?id=${alert.product_id}`;
 
     let sentCount = 0;
     for (const alert of pendingAlerts) {
@@ -78,10 +88,10 @@ export async function checkAndSendPriceAlerts() {
         .replace(/{store_name}/g, alert.store_name || "Store");
 
       // Grab siteUrl from your settings JSON (with an environment fallback)
-      const siteUrl = settings.siteUrl || process.env.SITE_URL || "https://sasta.pk";
+      const siteUrl = settings.siteUrl || `${protocol}://${host}` || process.env.SITE_URL;
 
       // Build the tracked affiliate route dynamically using /out/
-      const affiliateRouteUrl = `${siteUrl}/out?id=${alert.product_id}`;
+      const affiliateRouteUrl = `${siteUrl}/out/${alert.product_id}`;
 
       const body = bodyTemplate
         .replace(/{product_title}/g, alert.product_title || "Product")
