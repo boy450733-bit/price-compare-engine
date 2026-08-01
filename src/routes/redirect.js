@@ -52,7 +52,7 @@ router.get("/out/:id", async (req, res) => {
     const ipHash = clientIp ? crypto.createHash('sha256').update(clientIp).digest('hex') : null;
     
     // Checks for ?aff=..., ?ref=..., ?source=..., or ?click_ref=...
-    const clickRef = req.query.aff || req.query.ref || req.query.source || req.query.click_ref || || req.query.refid || req.query.referal || req.query.uid null;
+    const clickRef = req.query.aff || req.query.ref || req.query.source || req.query.click_ref || req.query.refid || req.query.referal || req.query.uid null;
 
     // 5. Log the click asynchronously including ip_hash and click_ref
     db(
