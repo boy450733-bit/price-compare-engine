@@ -32,12 +32,14 @@ router.get("/settings", async (_req, res) => {
   // Send ONLY safe public configuration properties
   const publicSettings = {
     logoText: settings.logoText,
-    siteUrl: settings.siteUrl,
+    siteUrl: settings.siteUrl || "",
     heroSubtitle: settings.heroSubtitle,
     heroQuotes: settings.heroQuotes,
     footerText: settings.footerText,
     theme: settings.theme,
-    cardFeatures: settings.cardFeatures
+    cardFeatures: settings.cardFeatures,
+    customHead: settings.customHead || "" // Added for your head/revenue tags
+  };
     // Note: alertsConfig and adminToken are completely excluded here
   };
 

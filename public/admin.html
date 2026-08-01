@@ -382,6 +382,7 @@
           <tbody>
             <tr><td style="width:200px">Change Admin Token</td><td><div style="display: flex; gap: 10px;"><input type="password" class="cell-input" id="newAdminTokenInput" placeholder="Enter new secure admin token"><button class="btn-sm" id="updateTokenBtn" style="background: var(--danger);">Update Token</button></div></td></tr>
             <tr><td>Site Domain URL</td><td><input type="text" class="cell-input" id="s-siteUrl" placeholder="https://sasta.pk"></td></tr>
+            <tr><td>Code (Analytics / Monetization):</td><td><textarea name="customHead" id="customHead" rows="6" style="width:100%; font-family:monospace;" placeholder="<script>...</script>">${settings.customHead || ''}</textarea></td></tr>
           </tbody>
         </table>
 
