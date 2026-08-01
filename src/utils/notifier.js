@@ -113,6 +113,24 @@ export async function checkAndSendPriceAlerts() {
             const targetApiUrl = config.apiUrl || "https://api.resend.com/emails";
             console.log(`[API] Using Universal HTTP REST API for "${mailerName}" at: ${targetApiUrl}`);
             
+            // Format 'from' and 'to' dynamically based on the target API
+            let fromPayload = config.sender || "Sasta.pk <noreply@sasta.pk>";
+            let toPayload = [alert.email];
+
+            if (targetApiUrl.includes("mailtrap.io")) {
+              // Parse "Name <email@domain.com>" string into Mailtrap's required object format
+              const matchEmail = fromPayload.match(/<([^>]+)>/);
+              const matchName = fromPayload.match(/^"([^"]+)"/);
+              
+              fromPayload = {
+                email: matchEmail ? matchEmail[1] : "hello@demomailtrap.co",
+                name: matchName ? matchName[1] : (config.name || "Sasta.pk")
+              };
+              
+              // Mailtrap expects recipient list as an array of objects: [{ email: "..." }]
+              toPayload = [{ email: alert.email }];
+            }
+
             const response = await fetch(targetApiUrl, {
               method: "POST",
               headers: {
@@ -120,8 +138,8 @@ export async function checkAndSendPriceAlerts() {
                 "Authorization": `Bearer ${config.password}`
               },
               body: JSON.stringify({
-                from: config.sender || "Sasta.pk <onboarding@resend.dev>",
-                to: [alert.email],
+                from: fromPayload,
+                to: toPayload,
                 subject: subject,
                 html: body
               })
@@ -139,7 +157,7 @@ export async function checkAndSendPriceAlerts() {
               throw new Error(resData.message || JSON.stringify(resData));
             }
 
-            console.log(`[Success] [${mailerName}] Email sent via Universal HTTP API! Response ID/Data:`, resData.id || resData);
+            console.log(`[Success] [${mailerName}] Email sent via Universal HTTP API! Response:`, resData);
           } else {
             // Standard SMTP Transport via Nodemailer
             console.log(`[SMTP] Connecting to host: ${config.host}:${config.port} (Secure: ${config.secure}) for "${mailerName}"...`);
