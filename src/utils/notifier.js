@@ -17,6 +17,7 @@ export async function checkAndSendPriceAlerts() {
       mailers = [{
         name: "Default Mailer",
         type: "smtp",
+        apiUrl: "",
         host: alertsConfig.mailServer || process.env.MAIL_SERVER || "smtp.resend.com",
         port: parseInt(alertsConfig.mailPort || process.env.MAIL_PORT || "587", 10),
         secure: false,
@@ -98,7 +99,7 @@ export async function checkAndSendPriceAlerts() {
         if (!config) break;
 
         const mailerName = config.name || "Mailer";
-        console.log(`[Attempt] Trying mailer: "${mailerName}" (Type: ${config.type || "smtp"})`);
+        console.log(`[Attempt] Trying mailer: "${mailerName}" (Protocol Type: ${config.type || "smtp"})`);
 
         if (!config.password) {
           console.error(`[Error] [${mailerName}] API key / password is missing.`);
@@ -107,11 +108,12 @@ export async function checkAndSendPriceAlerts() {
         }
 
         try {
-          // Check if protocol type is HTTP API
-          if (config.type === "api" || (config.host && config.host.toLowerCase().includes("resend.com") && !config.type)) {
-            console.log(`[API] Using Resend HTTP REST API (Port 443) for "${mailerName}"...`);
+          // Check if protocol type is HTTP API (Universal Endpoint support)
+          if (config.type === "api") {
+            const targetApiUrl = config.apiUrl || "https://api.resend.com/emails";
+            console.log(`[API] Using Universal HTTP REST API for "${mailerName}" at: ${targetApiUrl}`);
             
-            const response = await fetch("https://api.resend.com/emails", {
+            const response = await fetch(targetApiUrl, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -121,18 +123,27 @@ export async function checkAndSendPriceAlerts() {
                 from: config.sender || "Sasta.pk <onboarding@resend.dev>",
                 to: [alert.email],
                 subject: subject,
-                html: body // Use html property instead of text
+                html: body
               })
             });
 
-            const resData = await response.json();
+            const resText = await response.text();
+            let resData;
+            try {
+              resData = JSON.parse(resText);
+            } catch (e) {
+              resData = { message: resText };
+            }
+
             if (!response.ok) {
               throw new Error(resData.message || JSON.stringify(resData));
             }
 
-            console.log(`[Success] [${mailerName}] Email sent via Resend API! ID: ${resData.id}`);
+            console.log(`[Success] [${mailerName}] Email sent via Universal HTTP API! Response ID/Data:`, resData.id || resData);
           } else {
             // Standard SMTP Transport via Nodemailer
+            console.log(`[SMTP] Connecting to host: ${config.host}:${config.port} (Secure: ${config.secure}) for "${mailerName}"...`);
+            
             const transporter = nodemailer.createTransport({
               host: config.host,
               port: parseInt(config.port, 10) || 587,
@@ -146,15 +157,16 @@ export async function checkAndSendPriceAlerts() {
               from: config.sender || '"Sasta.pk" <noreply@sasta.pk>',
               to: alert.email,
               subject: subject,
-              html: body, // Use html property instead of text
+              html: body,
             });
 
-            console.log(`[Success] [${mailerName}] SMTP Message sent: ${info.messageId}`);
+            console.log(`[Success] [${mailerName}] SMTP Message sent successfully! MessageID: ${info.messageId}`);
           }
 
           await pool.query("UPDATE price_alerts SET notified = true WHERE id = $1", [alert.id]);
           sentCount++;
           sentSuccessfully = true;
+          console.log(`[Alert] Alert ID ${alert.id} marked as notified in database.`);
         } catch (emailErr) {
           attempts++;
           console.error(`[Error] [${mailerName}] Failed to send alert: ${emailErr.message}`);
@@ -162,7 +174,7 @@ export async function checkAndSendPriceAlerts() {
           if (rotationMode !== "fallback") {
             break; 
           }
-          console.log(`[Worker] Falling back to next dynamic mailer...`);
+          console.log(`[Worker] Falling back to next dynamic mailer due to failure...`);
         }
       }
     }
