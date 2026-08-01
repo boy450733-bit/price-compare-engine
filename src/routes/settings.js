@@ -41,8 +41,7 @@ router.get("/settings", async (_req, res) => {
     customHead: settings.customHead || "" // Added for your head/revenue tags
   };
     // Note: alertsConfig and adminToken are completely excluded here
-  };
-
+  
   res.json(publicSettings);
 });
 export default router;
