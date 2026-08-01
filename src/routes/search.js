@@ -150,4 +150,25 @@ router.get("/products", async (req, res) => {
   });
 });
 
+// Inside your admin or public API routes
+router.get("/top-searches", async (req, res) => {
+  try {
+    // Groups by query, counts them, sorts by popularity, and grabs the top 10
+    const { rows } = await db(`
+      SELECT query, COUNT(*) as query_count 
+      FROM searches 
+      GROUP BY query 
+      ORDER BY query_count DESC 
+      LIMIT 10
+    `);
+    
+    // If no searches exist yet, provide fallback queries
+    const queries = rows.length > 0 ? rows.map(r => r.query) : ["Xiaomi Redmi", "Samsung Galaxy", "Infinix"];
+    res.json({ queries });
+  } catch (err) {
+    console.error("Failed to fetch top searches:", err.message);
+    res.status(500).json({ queries: ["Xiaomi Redmi", "Samsung Galaxy"] });
+  }
+});
+
 export default router;
