@@ -700,7 +700,7 @@
     }
   }
 
- function renderMailersList(mailers = []) {
+function renderMailersList(mailers = []) {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
     
@@ -752,6 +752,12 @@
             <button type="button" class="btn-sm remove-mailer-btn" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 12px;">Delete Profile</button>
           </div>
 
+          <!-- API Conditional Endpoint URL Field Block -->
+          <div class="api-fields" style="display: ${mailerType === "api" ? "block" : "none"}; margin-bottom: 8px;">
+            <label for="apiUrl-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">API Endpoint URL</label>
+            <input type="text" id="apiUrl-${uniqueId}" class="cell-input mailer-api-url" value="${m.apiUrl || ""}" placeholder="https://send.api.mailtrap.io/api/send or https://api.resend.com/emails">
+          </div>
+
           <!-- SMTP Conditional Fields Block -->
           <div class="smtp-fields" style="display: ${mailerType === "api" ? "none" : "grid"}; grid-template-columns: 2fr 1fr 1.5fr; gap: 8px; margin-bottom: 8px;">
             <div>
@@ -780,7 +786,7 @@
               <label for="pass-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">
                 Password / API Key ${m.password ? "(Configured)" : ""}
               </label>
-              <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="" placeholder="${m.password ? '•••••••• (Leave blank to keep)' : 'Enter API Key'}">
+              <input type="password" id="pass-${uniqueId}" class="cell-input mailer-password" value="" placeholder="${m.password ? '•••••••• (Leave blank to keep)' : 'Enter API Key / Token'}">
             </div>
             <div>
               <label for="sender-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">Default Sender Address</label>
@@ -795,8 +801,14 @@
       selectEl.addEventListener("change", (e) => {
         const panel = e.target.closest(".mailer-details-panel");
         const smtpFields = panel.querySelector(".smtp-fields");
-        if (smtpFields) {
-          smtpFields.style.display = e.target.value === "api" ? "none" : "grid";
+        const apiFields = panel.querySelector(".api-fields");
+        
+        if (e.target.value === "api") {
+          if (smtpFields) smtpFields.style.display = "none";
+          if (apiFields) apiFields.style.display = "block";
+        } else {
+          if (smtpFields) smtpFields.style.display = "grid";
+          if (apiFields) apiFields.style.display = "none";
         }
       });
     });
@@ -832,6 +844,7 @@
     });
   }
   
+  
   document.getElementById("addMailerBtn")?.addEventListener("click", () => {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
@@ -839,11 +852,12 @@
       container.innerHTML = "";
     }
     
-    const currentMailers = gatherMailersFromDOM();
+const currentMailers = gatherMailersFromDOM();
     currentMailers.push({
       id: "mailer_" + Date.now(),
       name: `Mailer ${currentMailers.length + 1}`,
       type: "smtp",
+      apiUrl: "",
       host: "",
       port: 465,
       secure: true,
@@ -852,7 +866,6 @@
       sender: '"Sasta.pk" <noreply@sasta.pk>',
       active: true
     });
-    
     renderMailersList(currentMailers);
 
     const newIdx = currentMailers.length - 1;
@@ -887,12 +900,13 @@ function gatherMailersFromDOM() {
         id: panel.dataset.mailerId || ("mailer_" + Math.random()),
         name: nameInput.value.trim() || "Mailer Profile",
         type: panel.querySelector(".mailer-type")?.value || "smtp",
+        apiUrl: panel.querySelector(".mailer-api-url")?.value.trim() || "", // <--- Dynamic URL field
         active: panel.querySelector(".mailer-active")?.checked ?? true,
         host: panel.querySelector(".mailer-host")?.value.trim() || "",
         port: parseInt(panel.querySelector(".mailer-port")?.value.trim(), 10) || 465,
         secure: panel.querySelector(".mailer-secure")?.value === "true",
         username: panel.querySelector(".mailer-username")?.value.trim() || "",
-        password: finalPassword, // Preserves old password if input was blank!
+        password: finalPassword,
         sender: panel.querySelector(".mailer-sender")?.value.trim() || ""
       });
     });
