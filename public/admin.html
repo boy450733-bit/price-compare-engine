@@ -466,7 +466,6 @@
     </div>
   </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
@@ -717,7 +716,7 @@
     }
   }
 
-function renderMailersList(mailers = []) {
+  function renderMailersList(mailers = []) {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
     
@@ -861,7 +860,6 @@ function renderMailersList(mailers = []) {
     });
   }
   
-  
   document.getElementById("addMailerBtn")?.addEventListener("click", () => {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
@@ -869,7 +867,7 @@ function renderMailersList(mailers = []) {
       container.innerHTML = "";
     }
     
-const currentMailers = gatherMailersFromDOM();
+    const currentMailers = gatherMailersFromDOM();
     currentMailers.push({
       id: "mailer_" + Date.now(),
       name: `Mailer ${currentMailers.length + 1}`,
@@ -895,10 +893,8 @@ const currentMailers = gatherMailersFromDOM();
     }
   });
 
-function gatherMailersFromDOM() {
+  function gatherMailersFromDOM() {
     const panels = document.querySelectorAll("#mailersListContainer .mailer-details-panel");
-    // Grab existing mailers from the global scope or reload settings to reference old passwords if needed,
-    // or store the original password data as a dataset attribute on the panel.
     const mailers = [];
 
     panels.forEach(panel => {
@@ -908,16 +904,13 @@ function gatherMailersFromDOM() {
       const passwordInput = panel.querySelector(".mailer-password");
       const typedPassword = passwordInput?.value.trim() || "";
       const existingPassword = panel.dataset.existingPassword || "";
-
-      // If the user left the password field blank, keep the old password. 
-      // If they typed something new, use the new password.
       const finalPassword = typedPassword !== "" ? typedPassword : existingPassword;
 
       mailers.push({
         id: panel.dataset.mailerId || ("mailer_" + Math.random()),
         name: nameInput.value.trim() || "Mailer Profile",
         type: panel.querySelector(".mailer-type")?.value || "smtp",
-        apiUrl: panel.querySelector(".mailer-api-url")?.value.trim() || "", // <--- Dynamic URL field
+        apiUrl: panel.querySelector(".mailer-api-url")?.value.trim() || "",
         active: panel.querySelector(".mailer-active")?.checked ?? true,
         host: panel.querySelector(".mailer-host")?.value.trim() || "",
         port: parseInt(panel.querySelector(".mailer-port")?.value.trim(), 10) || 465,
@@ -964,7 +957,8 @@ function gatherMailersFromDOM() {
     const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
 
     setVal("s-logoText", data.logoText || "");
-    etVal("s-siteUrl", data.siteUrl || "");
+    setVal("s-siteUrl", data.siteUrl || "");
+    setVal("s-customHead", data.customHead || ""); // Populates custom head code
     setVal("s-heroSubtitle", data.heroSubtitle || "");
     setVal("s-footerText", data.footerText || "");
     setVal("s-heroQuotes", (data.heroQuotes || []).join("\n"));
@@ -1022,6 +1016,7 @@ function gatherMailersFromDOM() {
       ...existing,
       logoText: getVal("s-logoText"),
       siteUrl: getVal("s-siteUrl"),
+      customHead: getVal("s-customHead"), // Saves custom head code
       heroSubtitle: getVal("s-heroSubtitle"),
       footerText: getVal("s-footerText"),
       heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
@@ -1591,51 +1586,49 @@ function gatherMailersFromDOM() {
     renderAlerts(alertsData.filter((a) => (a.email && a.email.toLowerCase().includes(q)) || (a.product_title && a.product_title.toLowerCase().includes(q))));
   });
 
-document.getElementById("triggerAlertsBtn")?.addEventListener("click", async (e) => {
-  const btn = e.target;
-  const originalText = btn.textContent;
-  
-  // Instant feedback on the button
-  btn.disabled = true;
-  btn.style.opacity = "0.8";
-  btn.textContent = "⏳ Running...";
-
-  try {
-    await api("/trigger-alerts", { method: "POST" });
+  document.getElementById("triggerAlertsBtn")?.addEventListener("click", async (e) => {
+    const btn = e.target;
+    const originalText = btn.textContent;
     
-    btn.textContent = "✓ Success!";
-    btn.style.background = "var(--ok, #0B6E4F)";
-    btn.style.color = "#fff";
-    
-    showToast("Price alerts check completed!", "success");
+    btn.disabled = true;
+    btn.style.opacity = "0.8";
+    btn.textContent = "⏳ Running...";
 
-    setTimeout(() => {
-      btn.textContent = originalText;
-      btn.style.background = "var(--accent)";
-      btn.style.color = "#2A1B04";
-      btn.disabled = false;
-      btn.style.opacity = "1";
-    }, 2500);
+    try {
+      await api("/trigger-alerts", { method: "POST" });
+      
+      btn.textContent = "✓ Success!";
+      btn.style.background = "var(--ok, #0B6E4F)";
+      btn.style.color = "#fff";
+      
+      showToast("Price alerts check completed!", "success");
 
-  } catch (err) {
-    btn.textContent = "❌ Failed";
-    btn.style.background = "var(--danger, #dc2626)";
-    btn.style.color = "#fff";
-    
-    showToast("Error: " + err.message, "error");
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = "var(--accent)";
+        btn.style.color = "#2A1B04";
+        btn.disabled = false;
+        btn.style.opacity = "1";
+      }, 2500);
 
-    setTimeout(() => {
-      btn.textContent = originalText;
-      btn.style.background = "var(--accent)";
-      btn.style.color = "#2A1B04";
-      btn.disabled = false;
-      btn.style.opacity = "1";
-    }, 3000);
-  }
-});
+    } catch (err) {
+      btn.textContent = "❌ Failed";
+      btn.style.background = "var(--danger, #dc2626)";
+      btn.style.color = "#fff";
+      
+      showToast("Error: " + err.message, "error");
+
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = "var(--accent)";
+        btn.style.color = "#2A1B04";
+        btn.disabled = false;
+        btn.style.opacity = "1";
+      }, 3000);
+    }
+  });
 
 })();
 </script>
-
 </body>
 </html>
