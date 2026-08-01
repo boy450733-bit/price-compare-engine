@@ -700,7 +700,7 @@
     }
   }
 
-  function renderMailersList(mailers = []) {
+ function renderMailersList(mailers = []) {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
     
@@ -729,7 +729,7 @@
             <button type="button" class="btn-sm toggle-fold" style="padding: 3px 8px; font-size: 11px; background: var(--ink-soft);">Expand</button>
           </div>
         </div>
-        <div class="store-details-panel mailer-details-panel" data-mailer-panel="${index}" data-mailer-id="${m.id || ''}" style="display: none;">
+        <div class="store-details-panel mailer-details-panel" data-mailer-panel="${index}" data-mailer-id="${m.id || ''}" data-existing-password="${m.password || ''}" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
               <div>
@@ -831,7 +831,7 @@
       });
     });
   }
-
+  
   document.getElementById("addMailerBtn")?.addEventListener("click", () => {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
