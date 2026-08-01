@@ -529,7 +529,7 @@
     }
   }
 
-  async function loadCardPriceTrends() {
+async function loadCardPriceTrends() {
     const badges = document.querySelectorAll(".price-trend-badge");
     let droppedCount = 0;
     let increasedCount = 0;
@@ -545,6 +545,10 @@
         const prices = history.map(h => Number(h.price));
         const firstPrice = prices[0];
         const latestPrice = prices[prices.length - 1];
+        
+        // Extract latest timestamp or date if available in history records
+        const latestRecord = history[history.length - 1];
+        const latestDate = latestRecord?.created_at ? new Date(latestRecord.created_at).toLocaleDateString() : "Latest";
         
         let trend = "stable";
         if (latestPrice < firstPrice) {
@@ -580,18 +584,32 @@
           </svg>
         `;
 
+        // Format tooltip details text
+        const tooltipText = `${trend.toUpperCase()}: Rs ${latestPrice.toLocaleString()} (${latestDate})`;
+
+        // Wrap inside container with tooltip popup
+        const wrappedHtml = `
+          <div class="sparkline-tooltip-wrapper" style="position: relative; display: inline-block; cursor: pointer;">
+            ${sparklineSvg}
+            <div class="sparkline-popup" style="display: none; position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; pointer-events: none; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              ${tooltipText}
+            </div>
+          </div>
+        `;
+
         if (latestPrice < firstPrice) {
-          el.innerHTML = `<span style="color: var(--color-brand);">↓ Dropped</span>${sparklineSvg}`;
+          el.innerHTML = `<span style="color: var(--color-brand);">↓ Dropped</span>${wrappedHtml}`;
         } else if (latestPrice > firstPrice) {
-          el.innerHTML = `<span style="color: var(--color-danger);">↑ Increased</span>${sparklineSvg}`;
+          el.innerHTML = `<span style="color: var(--color-danger);">↑ Increased</span>${wrappedHtml}`;
         } else {
-          el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable</span>${sparklineSvg}`;
+          el.innerHTML = `<span style="color: var(--color-ink-soft);">Stable</span>${wrappedHtml}`;
         }
       }
     }
 
     updateTrendDropdownCounts(droppedCount, increasedCount, stableCount);
   }
+
 
   function updateTrendDropdownCounts(dropped, increased, stable) {
     const opts = trendSelectEl.options;
@@ -869,6 +887,22 @@
     }
   });
 
+
+  document.addEventListener("mouseenter", (e) => {
+  const wrapper = e.target.closest(".sparkline-tooltip-wrapper");
+  if (!wrapper) return;
+  const popup = wrapper.querySelector(".sparkline-popup");
+  if (popup) popup.style.display = "block";
+  }, true);
+
+  document.addEventListener("mouseleave", (e) => {
+    const wrapper = e.target.closest(".sparkline-tooltip-wrapper");
+    if (!wrapper) return;
+    const popup = wrapper.querySelector(".sparkline-popup");
+    if (popup) popup.style.display = "none";
+  }, true);
+
+
   loadSettings();
   loadStores();
 
@@ -877,6 +911,8 @@
   filterBar.classList.add("visible");
   results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
   fetchNewSearch("Xiaomi Redmi 15c");
+
+
 })();
 </script>
 
