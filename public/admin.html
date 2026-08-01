@@ -865,14 +865,24 @@
     }
   });
 
-  function gatherMailersFromDOM() {
+function gatherMailersFromDOM() {
     const panels = document.querySelectorAll("#mailersListContainer .mailer-details-panel");
+    // Grab existing mailers from the global scope or reload settings to reference old passwords if needed,
+    // or store the original password data as a dataset attribute on the panel.
     const mailers = [];
 
     panels.forEach(panel => {
       const nameInput = panel.querySelector(".mailer-name");
       if (!nameInput) return;
       
+      const passwordInput = panel.querySelector(".mailer-password");
+      const typedPassword = passwordInput?.value.trim() || "";
+      const existingPassword = panel.dataset.existingPassword || "";
+
+      // If the user left the password field blank, keep the old password. 
+      // If they typed something new, use the new password.
+      const finalPassword = typedPassword !== "" ? typedPassword : existingPassword;
+
       mailers.push({
         id: panel.dataset.mailerId || ("mailer_" + Math.random()),
         name: nameInput.value.trim() || "Mailer Profile",
@@ -882,7 +892,7 @@
         port: parseInt(panel.querySelector(".mailer-port")?.value.trim(), 10) || 465,
         secure: panel.querySelector(".mailer-secure")?.value === "true",
         username: panel.querySelector(".mailer-username")?.value.trim() || "",
-        password: panel.querySelector(".mailer-password")?.value.trim() || "",
+        password: finalPassword, // Preserves old password if input was blank!
         sender: panel.querySelector(".mailer-sender")?.value.trim() || ""
       });
     });
