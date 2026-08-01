@@ -793,7 +793,9 @@
     statusLine.innerHTML = `Found <strong>${list.length}</strong> product listings across <strong>${storeText}</strong>`;
   }
 
-async function fetchNewSearch(query) {
+  let currentController = null;
+
+  async function fetchNewSearch(query) {
     // If no query is provided on initial page load, fetch top searches and pick a random one
     if (!query) {
       try {
@@ -815,9 +817,18 @@ async function fetchNewSearch(query) {
     }
 
     currentQuery = query;
+
+    // Abort any ongoing search request from previous keystrokes
+    if (currentController) {
+      currentController.abort();
+    }
+    currentController = new AbortController();
+
     try {
       const params = new URLSearchParams({ q: query, limit: "50" });
-      const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`);
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`, {
+        signal: currentController.signal // Attach abort signal here
+      });
       const data = await res.json();
       
       if (query === currentQuery) {
@@ -832,7 +843,13 @@ async function fetchNewSearch(query) {
         applyClientFiltersAndRender();
       }
     } catch (err) {
-      if (query === currentQuery) renderEmpty("Connection Error", "Unable to reach price comparison backend. Please check your network connection.");
+      if (err.name === 'AbortError') {
+        // Request was cancelled due to a newer search query — safe to ignore
+        return;
+      }
+      if (query === currentQuery) {
+        renderEmpty("Connection Error", "Unable to reach price comparison backend. Please check your network connection.");
+      }
     }
   }
 
