@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query as db } from "../db/client.js";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -46,13 +47,20 @@ router.get("/out/:id", async (req, res) => {
       }
     }
 
-    // 4. Log the click asynchronously matching the clicks table schema
+    // Capture IP hash and check for any reference/affiliate query parameters in the URL
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    const ipHash = clientIp ? crypto.createHash('sha256').update(clientIp).digest('hex') : null;
+    
+    // Checks for ?aff=..., ?ref=..., ?source=..., or ?click_ref=...
+    const clickRef = req.query.aff || req.query.ref || req.query.source || req.query.click_ref || || req.query.refid || req.query.referal || req.query.uid null;
+
+    // 5. Log the click asynchronously including ip_hash and click_ref
     db(
-      `INSERT INTO clicks (product_id, clicked_at) VALUES ($1, now())`,
-      [product.id]
+      `INSERT INTO clicks (product_id, ip_hash, click_ref, clicked_at) VALUES ($1, $2, $3, now())`,
+      [product.id, ipHash, clickRef]
     ).catch((err) => console.error("Failed to log click:", err.message));
 
-    // 5. Perform the final redirect
+    // 6. Perform the final redirect
     return res.redirect(302, finalDestinationUrl);
   } catch (err) {
     console.error("Redirection error:", err.message);

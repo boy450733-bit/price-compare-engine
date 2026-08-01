@@ -529,7 +529,7 @@
     }
   }
 
-async function loadCardPriceTrends() {
+  async function loadCardPriceTrends() {
     const badges = document.querySelectorAll(".price-trend-badge");
     let droppedCount = 0;
     let increasedCount = 0;
@@ -584,8 +584,13 @@ async function loadCardPriceTrends() {
           </svg>
         `;
 
-        // Format tooltip details text
-        const tooltipText = `${trend.toUpperCase()}: Rs ${latestPrice.toLocaleString()} (${latestDate})`;
+        // Format tooltip details text based on trend state
+        let tooltipText = `Stable (${latestDate})`;
+        if (latestPrice < firstPrice) {
+          tooltipText = `Decreased (Previous: Rs ${firstPrice.toLocaleString()})`;
+        } else if (latestPrice > firstPrice) {
+          tooltipText = `Increased (Previous: Rs ${firstPrice.toLocaleString()})`;
+        }
 
         // Wrap inside container with tooltip popup
         const wrappedHtml = `
@@ -609,7 +614,6 @@ async function loadCardPriceTrends() {
 
     updateTrendDropdownCounts(droppedCount, increasedCount, stableCount);
   }
-
 
   function updateTrendDropdownCounts(dropped, increased, stable) {
     const opts = trendSelectEl.options;
