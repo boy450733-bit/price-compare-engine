@@ -587,16 +587,16 @@
         // Format tooltip details text based on trend state
         let tooltipText = `Stable (${latestDate})`;
         if (latestPrice < firstPrice) {
-          tooltipText = `Decreased (Previous: Rs ${firstPrice.toLocaleString()})`;
+          tooltipText = `Decreased (From: Rs ${firstPrice.toLocaleString()})`;
         } else if (latestPrice > firstPrice) {
-          tooltipText = `Increased (Previous: Rs ${firstPrice.toLocaleString()})`;
+          tooltipText = `Increased (From: Rs ${firstPrice.toLocaleString()})`;
         }
 
         // Wrap inside container with tooltip popup
         const wrappedHtml = `
           <div class="sparkline-tooltip-wrapper" style="position: relative; display: inline-block; cursor: pointer;">
             ${sparklineSvg}
-            <div class="sparkline-popup" style="display: none; position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; pointer-events: none; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <div class="sparkline-popup" style="display: none; position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--color-brand); color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; pointer-events: none; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
               ${tooltipText}
             </div>
           </div>

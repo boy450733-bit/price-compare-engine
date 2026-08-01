@@ -947,6 +947,7 @@ function gatherMailersFromDOM() {
     const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
 
     setVal("s-logoText", data.logoText || "");
+    etVal("s-siteUrl", data.siteUrl || "");
     setVal("s-heroSubtitle", data.heroSubtitle || "");
     setVal("s-footerText", data.footerText || "");
     setVal("s-heroQuotes", (data.heroQuotes || []).join("\n"));
@@ -1003,6 +1004,7 @@ function gatherMailersFromDOM() {
     const payload = {
       ...existing,
       logoText: getVal("s-logoText"),
+      siteUrl: getVal("s-siteUrl"),
       heroSubtitle: getVal("s-heroSubtitle"),
       footerText: getVal("s-footerText"),
       heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
