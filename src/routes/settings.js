@@ -32,6 +32,7 @@ router.get("/settings", async (_req, res) => {
   // Send ONLY safe public configuration properties
   const publicSettings = {
     logoText: settings.logoText,
+    siteUrl: settings.siteUrl,
     heroSubtitle: settings.heroSubtitle,
     heroQuotes: settings.heroQuotes,
     footerText: settings.footerText,
