@@ -70,12 +70,12 @@ export async function checkAndSendPriceAlerts() {
     const pendingAlerts = alertsRes.rows;
     console.log(`[Worker] Found ${pendingAlerts.length} pending price alerts to send.`);
     
+    
     // Inside your route or helper function
-    const protocol = req.protocol; // 'http' or 'https'
-    const host = req.get('host');  // e.g., 'sasta.pk' or 'localhost:3000'
-    const dynamicSiteUrl = `${protocol}://${host}`;
+    // Grab siteUrl with dynamic fallbacks
+    const siteUrl = settings.siteUrl || process.env.SITE_URL || (process.env.PORT ? `http://localhost:${process.env.PORT}` : "https://sasta.pk");
 
-    const affiliateRouteUrl = `${dynamicSiteUrl}/out?id=${alert.product_id}`;
+    
 
     let sentCount = 0;
     for (const alert of pendingAlerts) {
@@ -86,9 +86,6 @@ export async function checkAndSendPriceAlerts() {
         .replace(/{target_price}/g, alert.target_price ? `Rs ${Number(alert.target_price).toLocaleString()}` : "N/A")
         .replace(/{current_price}/g, alert.current_price ? `Rs ${Number(alert.current_price).toLocaleString()}` : "N/A")
         .replace(/{store_name}/g, alert.store_name || "Store");
-
-      // Grab siteUrl from your settings JSON (with an environment fallback)
-      const siteUrl = settings.siteUrl || `${protocol}://${host}` || process.env.SITE_URL;
 
       // Build the tracked affiliate route dynamically using /out/
       const affiliateRouteUrl = `${siteUrl}/out/${alert.product_id}`;
