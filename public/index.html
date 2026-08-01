@@ -594,19 +594,23 @@
           </svg>
         `;
 
-        // Format tooltip details text based on trend state
+        // Format tooltip details text and match background color based on trend state
         let tooltipText = `Stable (${latestDate})`;
+        let tooltipBg = "var(--color-brand)"; // Default for stable
+
         if (latestPrice < firstPrice) {
           tooltipText = `Decreased (From: Rs ${firstPrice.toLocaleString()})`;
+          tooltipBg = "var(--color-ok, #0B6E4F)"; // Green or your success color
         } else if (latestPrice > firstPrice) {
           tooltipText = `Increased (From: Rs ${firstPrice.toLocaleString()})`;
+          tooltipBg = "var(--color-danger, #dc2626)"; // Red for increased
         }
 
         // Wrap inside container with tooltip popup
         const wrappedHtml = `
           <div class="sparkline-tooltip-wrapper" style="position: relative; display: inline-block; cursor: pointer;">
             ${sparklineSvg}
-            <div class="sparkline-popup" style="display: none; position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--color-brand); color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; pointer-events: none; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <div class="sparkline-popup" style="display: none; position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); background: ${tooltipBg}; color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; pointer-events: none; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
               ${tooltipText}
             </div>
           </div>
