@@ -151,12 +151,13 @@ router.get("/products", async (req, res) => {
 });
 
 // Inside your admin or public API routes
+// Inside your /top-searches route
 router.get("/top-searches", async (req, res) => {
   try {
-    // Groups by query, counts them, sorts by popularity, and grabs the top 10
+    // Fixed table name from "searches" to "search_log" to match your insert statement
     const { rows } = await db(`
       SELECT query, COUNT(*) as query_count 
-      FROM searches 
+      FROM search_log 
       GROUP BY query 
       ORDER BY query_count DESC 
       LIMIT 10

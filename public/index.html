@@ -266,6 +266,9 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- Include the NLP parser script -->
+<script src="/js/nlpParser.js"></script>
+
 <script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "Sasta.pk" };
@@ -858,16 +861,43 @@
   }
 
   input.addEventListener("input", (e) => {
-    const query = e.target.value.trim();
+    const rawInput = e.target.value.trim();
     clearTimeout(debounceTimer);
-    if (!query) {
-      currentQuery = ""; cachedProducts = []; results.innerHTML = ""; statusLine.innerHTML = ""; filterBar.classList.remove("visible");
+    
+    if (!rawInput) {
+      currentQuery = ""; 
+      cachedProducts = []; 
+      results.innerHTML = ""; 
+      statusLine.innerHTML = ""; 
+      filterBar.classList.remove("visible");
       return;
     }
+
     filterBar.classList.add("visible");
     results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
     statusLine.innerHTML = "";
-    debounceTimer = setTimeout(() => fetchNewSearch(query), 500);
+
+    debounceTimer = setTimeout(async () => {
+      // 1. Run natural language parsing on the raw typed input
+      const parsed = parseNaturalQuery(rawInput);
+
+      // 2. Fetch products using the cleaned keyword
+      await fetchNewSearch(parsed.keyword);
+
+      // 3. Automatically manipulate UI filter controls if parameters were detected
+      if (parsed.brand) {
+        const brandSelect = document.getElementById("filterBrand"); 
+        if (brandSelect) { brandSelect.value = parsed.brand; }
+      }
+
+      if (parsed.maxPrice) {
+        const priceInput = document.getElementById("filterMaxPrice");
+        if (priceInput) { priceInput.value = parsed.maxPrice; }
+      }
+
+      // 4. Refresh client-side layout filters to instantly reflect changes
+      applyClientFiltersAndRender();
+    }, 500);
   });
 
   clearFiltersBtn.addEventListener("click", () => {
