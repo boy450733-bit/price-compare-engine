@@ -269,9 +269,9 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
 <!-- Include the NLP parser script -->
 <script src="/js/nlpParser.js"></script>
-
 <script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "Sasta.pk" };
@@ -478,9 +478,22 @@
         if (homeCols > 0) {
           resultsContainer.style.setProperty("grid-template-columns", `repeat(${homeCols}, minmax(0, 1fr))`, "important");
         } else {
-          resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))", "important");
+          resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(310px, 1fr))", "important");
         }
       }
+
+      // Apply Admin Theme Colors & Fonts dynamically to :root root variables
+      const theme = settings.theme || {};
+      const brandColor = theme.brandColor || "#0B6E4F";
+      const accentColor = theme.accentColor || "#E8A33D";
+      const fontBody = theme.fontBody || "Inter";
+      const fontDisplay = theme.fontDisplay || "Space Grotesk";
+
+      const rootStyle = document.documentElement.style;
+      rootStyle.setProperty("--color-brand", brandColor);
+      rootStyle.setProperty("--color-accent", accentColor);
+      rootStyle.setProperty("--font-body", `"${fontBody}", sans-serif`);
+      rootStyle.setProperty("--font-display", `"${fontDisplay}", sans-serif`);
 
       if (settings.customHead) {
         const tempDiv = document.createElement("div");
