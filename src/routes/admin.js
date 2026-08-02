@@ -115,7 +115,10 @@ router.patch("/stores/:name", async (req, res) => {
 });
 
 // Affiliate worklist
-router.get("/affiliate-worklist", async (_req, res) => {
+router.get("/affiliate-worklist", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 10, 20);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+
   const { rows } = await db(`
     SELECT p.id, p.title, p.store, p.url, COUNT(c.id) AS clicks
     FROM clicks c
@@ -124,20 +127,25 @@ router.get("/affiliate-worklist", async (_req, res) => {
     WHERE al.product_id IS NULL
     GROUP BY p.id, p.title, p.store, p.url
     ORDER BY clicks DESC
-    LIMIT 50
-  `);
+    LIMIT $1 OFFSET $2
+  `, [limit, offset]);
+  
   res.json({ worklist: rows });
 });
 
 // Existing affiliate links
-router.get("/affiliate-links", async (_req, res) => {
+router.get("/affiliate-links", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 500);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+
   const { rows } = await db(`
     SELECT al.product_id, al.affiliate_url, al.created_at, p.title, p.store, p.url
     FROM affiliate_links al
     JOIN products p ON p.id = al.product_id
     ORDER BY al.created_at DESC
-    LIMIT 200
-  `);
+    LIMIT $1 OFFSET $2
+  `, [limit, offset]);
+  
   res.json({ links: rows });
 });
 
@@ -171,19 +179,19 @@ router.delete("/affiliate-links/:productId", async (req, res) => {
 });
 
 // Price Alert Subscriptions list
-router.get("/alerts", async (_req, res) => {
-  try {
-    const { rows } = await db(`
-      SELECT a.id, a.email, a.target_price, a.notified, a.created_at, p.title as product_title 
-      FROM price_alerts a
-      JOIN products p ON a.product_id = p.id
-      ORDER BY a.created_at DESC
-      LIMIT 100
-    `);
-    res.json({ alerts: rows });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.get("/alerts", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 500);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+  const { rows } = await db(`
+    SELECT a.id, a.email, a.target_price, a.notified, a.created_at, p.title as product_title 
+    FROM price_alerts a
+    JOIN products p ON a.product_id = p.id
+    ORDER BY a.created_at DESC
+    LIMIT $1 OFFSET $2
+  `, [limit, offset]);
+  
+  res.json({ alerts: rows });
 });
 
 // Trigger manual price alert check
