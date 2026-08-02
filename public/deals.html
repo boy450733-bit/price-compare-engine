@@ -205,14 +205,18 @@
     const fontBody = theme.fontBody || "Inter";
     const fontDisplay = theme.fontDisplay || "Space Grotesk";
 
-    // Dynamic Columns Configuration for Deals Page using dealsColCount
+// Dynamic Columns Configuration for Deals Page using dealsColCount
     const cols = data.dealsColCount ? Number(data.dealsColCount) : 0;
-    if (cols > 0) {
-      results.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-    } else {
-      results.style.gridTemplateColumns = "repeat(auto-fill, minmax(260px, 1fr))";
+    const resultsEl = document.getElementById("results");
+    
+    if (resultsEl) {
+      if (cols > 0) {
+        // Use setProperty with 'important' to guarantee it overrides any CSS file rules
+        resultsEl.style.setProperty("grid-template-columns", `repeat(${cols}, minmax(0, 1fr))`, "important");
+      } else {
+        resultsEl.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))", "important");
+      }
     }
-
     // Update CSS variables dynamically
     const rootStyle = document.documentElement.style;
     rootStyle.setProperty("--color-brand", brandColor);
