@@ -973,23 +973,40 @@
   });
 
 
-  document.addEventListener("mouseenter", (e) => {
-  const wrapper = e.target.closest(".sparkline-tooltip-wrapper");
+document.addEventListener("mouseover", (e) => {
+  // Ensure we are working with a valid Element node
+  const targetElement = e.target.nodeType === 3 ? e.target.parentNode : e.target;
+  
+  // Safely find the wrapper using .closest() with a fallback loop
+  const wrapper = targetElement.closest ? targetElement.closest(".sparkline-tooltip-wrapper") : findClosestWrapper(targetElement);
+
   if (!wrapper) return;
   const popup = wrapper.querySelector(".sparkline-popup");
   if (popup) popup.style.display = "block";
-  }, true);
+});
 
-  document.addEventListener("mouseleave", (e) => {
-    const wrapper = e.target.closest(".sparkline-tooltip-wrapper");
-    if (!wrapper) return;
-    const popup = wrapper.querySelector(".sparkline-popup");
-    if (popup) popup.style.display = "none";
-  }, true);
+document.addEventListener("mouseout", (e) => {
+  const targetElement = e.target.nodeType === 3 ? e.target.parentNode : e.target;
+  const wrapper = targetElement.closest ? targetElement.closest(".sparkline-tooltip-wrapper") : findClosestWrapper(targetElement);
 
+  if (!wrapper) return;
+  const popup = wrapper.querySelector(".sparkline-popup");
+  if (popup) popup.style.display = "none";
+});
 
-  loadSettings();
-  loadStores();
+// Fallback helper function in case .closest() is missing on specific SVG nodes
+function findClosestWrapper(el) {
+  while (el && el !== document) {
+    if (el.classList && el.classList.contains("sparkline-tooltip-wrapper")) {
+      return el;
+    }
+    el = el.parentNode;
+  }
+  return null;
+}
+
+loadSettings();
+loadStores();
 
   // Initial load trigger so products load automatically on page start
 fetchNewSearch();

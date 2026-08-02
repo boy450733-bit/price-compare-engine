@@ -141,11 +141,17 @@ router.get("/affiliate-links", async (_req, res) => {
   res.json({ links: rows });
 });
 
-// Save affiliate link
+// Save or Update affiliate link (already handles add & edit via ON CONFLICT)
 router.post("/affiliate-links", async (req, res) => {
   const { productId, affiliateUrl } = req.body;
-  if (!productId || !affiliateUrl) {
-    return res.status(400).json({ error: "productId and affiliateUrl are required" });
+  if (!productId) {
+    return res.status(400).json({ error: "productId is required" });
+  }
+
+  // If affiliateUrl is empty or cleared, you can choose to delete or save empty
+  if (!affiliateUrl) {
+    await db(`DELETE FROM affiliate_links WHERE product_id = $1`, [productId]);
+    return res.json({ ok: true, action: "deleted" });
   }
 
   await db(
@@ -154,7 +160,14 @@ router.post("/affiliate-links", async (req, res) => {
      ON CONFLICT (product_id) DO UPDATE SET affiliate_url = EXCLUDED.affiliate_url`,
     [productId, affiliateUrl]
   );
-  res.json({ ok: true });
+  res.json({ ok: true, action: "saved" });
+});
+
+// Delete affiliate link explicitly
+router.delete("/affiliate-links/:productId", async (req, res) => {
+  const { productId } = req.params;
+  await db(`DELETE FROM affiliate_links WHERE product_id = $1`, [productId]);
+  res.json({ ok: true, action: "deleted" });
 });
 
 // Price Alert Subscriptions list
