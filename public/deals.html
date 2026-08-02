@@ -113,7 +113,7 @@
       <p id="heroSubtitle">We automatically track price changes around the clock. Grab these products now while stores offer their lowest historical rates.</p>
     </div>
     <div class="hero-badge-box">
-      <div class="num" id="heroTotalDeals">0</div>
+      div class="num" id="heroTotalDeals" style="font-size: 2rem; font-weight: bold; color: #fff;">0</div>
       <div class="lbl">Active Deals Found</div>
     </div>
   </div>
@@ -124,6 +124,7 @@
       <span style="font-size: 12px; font-weight: 600; color: var(--color-ink-soft); text-transform: uppercase;">Filter:</span>
       <button class="filter-btn active" data-filter="all">All Deals</button>
       <button class="filter-btn" data-filter="huge">Big Drops (&gt;10% Off)</button>
+      <button class="filter-btn" data-filter="medium">Medium Drops (&gt;5% Off)</button>
     </div>
     <div class="filter-group">
       <span style="font-size: 12px; font-weight: 600; color: var(--color-ink-soft); text-transform: uppercase;">Sort By:</span>
@@ -286,7 +287,9 @@
     if (currentFilter === "huge") {
       list = list.filter(p => Number(p.discount_pct) >= 10);
     }
-
+    if (currentFilter === "medium") {
+      list = list.filter(p => Number(p.discount_pct) >= 5);
+    }
     list.sort((a, b) => {
       if (currentSort === "pct_desc") {
         return (Number(b.discount_pct) || 0) - (Number(a.discount_pct) || 0);
