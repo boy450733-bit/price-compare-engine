@@ -269,7 +269,6 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
-
 <!-- Include the NLP parser script -->
 <script src="/js/nlpParser.js"></script>
 
@@ -472,17 +471,15 @@
     document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
     document.getElementById("footerSlot").innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${settings.footerText || ""}</div></div>`;
     
-    // Dynamically inject custom head / analytics / monetization tags into <head>
     if (settings.customHead) {
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = settings.customHead;
-      
-      // Move all parsed elements into document.head
       while (tempDiv.firstChild) {
         document.head.appendChild(tempDiv.firstChild);
       }
     }
   }
+
   async function loadStores() {
     try {
       const res = await fetch(`${CFG.API_BASE_URL}/api/stores`);
@@ -563,7 +560,6 @@
         const firstPrice = prices[0];
         const latestPrice = prices[prices.length - 1];
         
-        // Extract latest timestamp or date if available in history records
         const latestRecord = history[history.length - 1];
         const latestDate = latestRecord?.created_at ? new Date(latestRecord.created_at).toLocaleDateString() : "Latest";
         
@@ -601,19 +597,17 @@
           </svg>
         `;
 
-        // Format tooltip details text and match background color based on trend state
         let tooltipText = `Stable (${latestDate})`;
-        let tooltipBg = "var(--color-brand)"; // Default for stable
+        let tooltipBg = "var(--color-brand)";
 
         if (latestPrice < firstPrice) {
           tooltipText = `Decreased (From: Rs ${firstPrice.toLocaleString()})`;
-          tooltipBg = "var(--color-ok, #0B6E4F)"; // Green or your success color
+          tooltipBg = "var(--color-ok, #0B6E4F)";
         } else if (latestPrice > firstPrice) {
           tooltipText = `Increased (From: Rs ${firstPrice.toLocaleString()})`;
-          tooltipBg = "var(--color-danger, #dc2626)"; // Red for increased
+          tooltipBg = "var(--color-danger, #dc2626)";
         }
 
-        // Wrap inside container with tooltip popup
         const wrappedHtml = `
           <div class="sparkline-tooltip-wrapper" style="position: relative; display: inline-block; cursor: pointer;">
             ${sparklineSvg}
@@ -644,6 +638,90 @@
       else if (val === "increased") opts[i].text = `Price Increased (${increased})`;
       else if (val === "stable") opts[i].text = `Stable Price (${stable})`;
     }
+  }
+
+  function renderProductCardsMarkup(items) {
+    return items.map((p) => {
+      const validOffers = (p.offers || []).filter(o => !excludedStores.has(o.store));
+      const sortedOffers = [...validOffers].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+      const titleText = p.title || `Product Series`;
+      const displayRating = p.max_rating && p.max_rating !== "0" ? p.max_rating : null;
+      const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
+      const cardChips = getCardChips(p);
+
+      const cf = settings && settings.cardFeatures ? settings.cardFeatures : {};
+
+      const showImage = cf.showImage !== false;
+      const showTitle = cf.showTitle !== false;
+      const showSpecs = cf.showSpecs !== false;
+      const showRating = cf.showRating !== false;
+      const showUpdatedAt = cf.showUpdatedAt !== false;
+      const showOutOfStock = cf.showOutOfStock !== false;
+
+      const ratingHtml = (showRating && displayRating) 
+        ? `<div class="card-rating"><span class="stars">★</span> ${Number(displayRating).toFixed(1)}</div>` 
+        : (showRating ? `<div class="card-rating"><span class="stars">★</span> Verified Deal</div>` : ``);
+
+      const specsHtml = showSpecs ? cardChips.map(s => `
+        <span class="spec-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          ${s.label}
+        </span>
+      `).join("") : "";
+
+      const offersHtml = sortedOffers.map((o) => `
+        <a href="${CFG.API_BASE_URL}/out/${o.id}" target="_blank" rel="noopener" class="offer-row-link">
+          <div class="store-info-left">
+            <span class="store-badge" style="background:${o.storeColor || '#0B6E4F'}">${o.store}</span>
+          </div>
+          <div class="offer-price-right">
+            ${(showOutOfStock && o.in_stock === false) ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
+            <span class="offer-price">${formatPKR(o.price)}</span>
+          </div>
+        </a>
+      `).join("");
+
+      return `
+        <div class="card" data-product-id="${p.id}">
+          <div class="card-header-banner">
+            <div class="best-ribbon">Best: ${formatPKR(p.min_price)}</div>
+            ${relevanceScore ? `<div class="match-badge">${relevanceScore}% match</div>` : ""}
+          </div>
+          ${showImage ? `
+            <div class="card-image">
+              ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📱</span>`}
+            </div>
+          ` : ``}
+          <div class="card-body">
+            <div>
+              <div class="meta-container">
+              <span class="category-pill">${p.category}</span>
+              <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText}" data-product-min-price="${p.min_price || ''}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
+                🔔 Track Price Drop
+              </button>
+              </div>
+            </div>
+            ${showTitle ? `<div class="card-title" title="${titleText}">${titleText}</div>` : ``}
+            ${showSpecs ? `<div class="specs-bar">${specsHtml}</div>` : ``}
+            <hr class="card-divider">
+            <div class="card-meta-row">
+              ${ratingHtml}
+              <span class="meta-separator">|</span>
+              <span class="price-trend-badge" data-product-id="${p.id}" style="font-weight: 700;"></span>
+              <span class="meta-separator">|</span>
+              <span style="font-weight: 500; color: var(--color-ink-soft);">${sortedOffers.length} store offer${sortedOffers.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="offers-section">
+              <div class="offers-heading"><span>Available Stores</span><span>Price</span></div>
+              ${offersHtml}
+            </div>
+            <div class="card-footer-info">
+              <span>Secure checkout via partners</span>
+              <span>${(showUpdatedAt && p.scraped_at) ? relativeTime(p.scraped_at) : ''}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
   }
   
   function applyClientFiltersAndRender() {
@@ -710,87 +788,7 @@
       return;
     }
 
-    results.innerHTML = list.map((p) => {
-      const validOffers = (p.offers || []).filter(o => !excludedStores.has(o.store));
-      const sortedOffers = [...validOffers].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
-      const titleText = p.title || `Product Series`;
-      const displayRating = p.max_rating && p.max_rating !== "0" ? p.max_rating : null;
-      const relevanceScore = p.relevance ? Math.round(p.relevance * 100) : null;
-      const cardChips = getCardChips(p);
-
-      const cf = settings && settings.cardFeatures ? settings.cardFeatures : {};
-
-      const showImage = cf.showImage !== false;
-      const showTitle = cf.showTitle !== false;
-      const showSpecs = cf.showSpecs !== false;
-      const showRating = cf.showRating !== false;
-      const showUpdatedAt = cf.showUpdatedAt !== false;
-      const showOutOfStock = cf.showOutOfStock !== false;
-
-      const ratingHtml = (showRating && displayRating) 
-        ? `<div class="card-rating"><span class="stars">★</span> ${Number(displayRating).toFixed(1)}</div>` 
-        : (showRating ? `<div class="card-rating"><span class="stars">★</span> Verified Deal</div>` : ``);
-
-      const specsHtml = showSpecs ? cardChips.map(s => `
-        <span class="spec-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          ${s.label}
-        </span>
-      `).join("") : "";
-
-      const offersHtml = sortedOffers.map((o) => `
-        <a href="${CFG.API_BASE_URL}/out/${o.id}" target="_blank" rel="noopener" class="offer-row-link">
-          <div class="store-info-left">
-            <span class="store-badge" style="background:${o.storeColor || '#0B6E4F'}">${o.store}</span>
-          </div>
-          <div class="offer-price-right">
-            ${(showOutOfStock && o.in_stock === false) ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
-            <span class="offer-price">${formatPKR(o.price)}</span>
-          </div>
-        </a>
-      `).join("");
-
-      return `
-        <div class="card">
-          <div class="card-header-banner">
-            <div class="best-ribbon">Best: ${formatPKR(p.min_price)}</div>
-            ${relevanceScore ? `<div class="match-badge">${relevanceScore}% match</div>` : ""}
-          </div>
-          ${showImage ? `
-            <div class="card-image">
-              ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📱</span>`}
-            </div>
-          ` : ``}
-          <div class="card-body">
-            <div>
-              <div class="meta-container">
-              <span class="category-pill">${p.category}</span>
-              <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText}" data-product-min-price="${p.min_price || ''}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
-                🔔 Track Price Drop
-              </button>
-              </div>
-            </div>
-            ${showTitle ? `<div class="card-title" title="${titleText}">${titleText}</div>` : ``}
-            ${showSpecs ? `<div class="specs-bar">${specsHtml}</div>` : ``}
-            <hr class="card-divider">
-            <div class="card-meta-row">
-              ${ratingHtml}
-              <span class="meta-separator">|</span>
-              <span class="price-trend-badge" data-product-id="${p.id}" style="font-weight: 700;"></span>
-              <span class="meta-separator">|</span>
-              <span style="font-weight: 500; color: var(--color-ink-soft);">${sortedOffers.length} store offer${sortedOffers.length > 1 ? 's' : ''}</span>
-            </div>
-            <div class="offers-section">
-              <div class="offers-heading"><span>Available Stores</span><span>Price</span></div>
-              ${offersHtml}
-            </div>
-            <div class="card-footer-info">
-              <span>Secure checkout via partners</span>
-              <span>${(showUpdatedAt && p.scraped_at) ? relativeTime(p.scraped_at) : ''}</span>
-            </div>
-          </div>
-        </div>`;
-    }).join("");
+    results.innerHTML = renderProductCardsMarkup(list);
 
     loadCardPriceTrends();
 
@@ -807,7 +805,6 @@
   let currentController = null;
 
   async function fetchNewSearch(query) {
-    // If no query is provided on initial page load, fetch top searches and pick a random one
     if (!query) {
       try {
         const topRes = await fetch(`${CFG.API_BASE_URL}/api/top-searches`);
@@ -815,30 +812,29 @@
         const queries = topData.queries || [];
         query = queries.length > 0 ? queries[Math.floor(Math.random() * queries.length)] : "Xiaomi Redmi";
       } catch (e) {
-        query = "Xiaomi Redmi"; // Fallback if API fails
+        query = "Xiaomi Redmi";
       }
       
-      const input = document.getElementById("searchInput");
-      const filterBar = document.getElementById("filterBar");
-      const results = document.getElementById("resultsContainer");
+      const inputEl = document.getElementById("searchInput");
+      const filterBarEl = document.getElementById("filterBar");
+      const resultsEl = document.getElementById("results");
       
-      if (input) input.value = query;
-      if (filterBar) filterBar.classList.add("visible");
-      if (results) results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+      if (inputEl) inputEl.value = query;
+      if (filterBarEl) filterBarEl.classList.add("visible");
+      if (resultsEl) resultsEl.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
     }
 
     currentQuery = query;
 
-    // Abort any ongoing search request from previous keystrokes
     if (currentController) {
       currentController.abort();
     }
     currentController = new AbortController();
 
     try {
-      const params = new URLSearchParams({ q: query, limit: "50" });
+      const params = new URLSearchParams({ q: query, limit: "50", offset: "0" });
       const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`, {
-        signal: currentController.signal // Attach abort signal here
+        signal: currentController.signal
       });
       const data = await res.json();
       
@@ -855,7 +851,6 @@
       }
     } catch (err) {
       if (err.name === 'AbortError') {
-        // Request was cancelled due to a newer search query — safe to ignore
         return;
       }
       if (query === currentQuery) {
@@ -882,13 +877,9 @@
     statusLine.innerHTML = "";
 
     debounceTimer = setTimeout(async () => {
-      // 1. Run natural language parsing on the raw typed input
       const parsed = parseNaturalQuery(rawInput);
-
-      // 2. Fetch products using the cleaned keyword
       await fetchNewSearch(parsed.keyword);
 
-      // 3. Automatically manipulate UI filter controls if parameters were detected
       if (parsed.brand) {
         const brandSelect = document.getElementById("filterBrand"); 
         if (brandSelect) { brandSelect.value = parsed.brand; }
@@ -899,7 +890,6 @@
         if (priceInput) { priceInput.value = parsed.maxPrice; }
       }
 
-      // 4. Refresh client-side layout filters to instantly reflect changes
       applyClientFiltersAndRender();
     }, 500);
   });
@@ -976,100 +966,36 @@
     }
   });
 
+  document.addEventListener("mouseover", (e) => {
+    const targetElement = e.target.nodeType === 3 ? e.target.parentNode : e.target;
+    const wrapper = targetElement.closest ? targetElement.closest(".sparkline-tooltip-wrapper") : findClosestWrapper(targetElement);
 
-document.addEventListener("mouseover", (e) => {
-  // Ensure we are working with a valid Element node
-  const targetElement = e.target.nodeType === 3 ? e.target.parentNode : e.target;
-  
-  // Safely find the wrapper using .closest() with a fallback loop
-  const wrapper = targetElement.closest ? targetElement.closest(".sparkline-tooltip-wrapper") : findClosestWrapper(targetElement);
-
-  if (!wrapper) return;
-  const popup = wrapper.querySelector(".sparkline-popup");
-  if (popup) popup.style.display = "block";
-});
-
-document.addEventListener("mouseout", (e) => {
-  const targetElement = e.target.nodeType === 3 ? e.target.parentNode : e.target;
-  const wrapper = targetElement.closest ? targetElement.closest(".sparkline-tooltip-wrapper") : findClosestWrapper(targetElement);
-
-  if (!wrapper) return;
-  const popup = wrapper.querySelector(".sparkline-popup");
-  if (popup) popup.style.display = "none";
-});
-
-// Fallback helper function in case .closest() is missing on specific SVG nodes
-function findClosestWrapper(el) {
-  while (el && el !== document) {
-    if (el.classList && el.classList.contains("sparkline-tooltip-wrapper")) {
-      return el;
-    }
-    el = el.parentNode;
-  }
-  return null;
-}
-
-// loading pagination data
-document.addEventListener("DOMContentLoaded", () => {
-  let allProductsData = [];
-
-  // Initial load of the first batch (e.g., 12 products)
-  loadInitialProducts();
-
-  // Setup infinite scroll for subsequent chunks
-  setupInfiniteScroll({
-    containerSelector: "#results",
-    sentinelId: "productsSentinel",
-    fetchUrl: "/api/products",
-    pageSize: 12,
-    renderCallback: (items, container) => {
-      allProductsData.push(...items);
-      const html = items.map(p => `
-        <div class="product-card" data-product-id="${p.id}">
-          ${p.image ? `<img src="${p.image}" alt="${p.title}" class="product-img">` : ''}
-          <div class="product-info">
-            <h4 class="product-title"><a href="${p.url}" target="_blank" rel="noopener">${p.title}</a></h4>
-            <div class="product-price">Rs ${Number(p.current_price || p.price || 0).toLocaleString()}</div>
-            <span class="store-badge">${p.store}</span>
-          </div>
-        </div>
-      `).join("");
-      
-      container.insertAdjacentHTML("beforeend", html);
-    }
+    if (!wrapper) return;
+    const popup = wrapper.querySelector(".sparkline-popup");
+    if (popup) popup.style.display = "block";
   });
 
-  async function loadInitialProducts() {
-    const container = document.getElementById("results");
-    if (!container) return;
+  document.addEventListener("mouseout", (e) => {
+    const targetElement = e.target.nodeType === 3 ? e.target.parentNode : e.target;
+    const wrapper = targetElement.closest ? targetElement.closest(".sparkline-tooltip-wrapper") : findClosestWrapper(targetElement);
 
-    try {
-      const res = await fetch("/api/products?limit=12&offset=0");
-      const data = await res.json();
-      const items = data.products || data.rows || data.items || [];
-      allProductsData = items;
+    if (!wrapper) return;
+    const popup = wrapper.querySelector(".sparkline-popup");
+    if (popup) popup.style.display = "none";
+  });
 
-      if (items.length === 0) {
-        container.innerHTML = `<div class="muted" style="text-align: center; padding: 30px;">No products found.</div>`;
-        return;
+  function findClosestWrapper(el) {
+    while (el && el !== document) {
+      if (el.classList && el.classList.contains("sparkline-tooltip-wrapper")) {
+        return el;
       }
-
-      container.innerHTML = items.map(p => `
-        <div class="product-card" data-product-id="${p.id}">
-          ${p.image ? `<img src="${p.image}" alt="${p.title}" class="product-img">` : ''}
-          <div class="product-info">
-            <h4 class="product-title"><a href="${p.url}" target="_blank" rel="noopener">${p.title}</a></h4>
-            <div class="product-price">Rs ${Number(p.current_price || p.price || 0).toLocaleString()}</div>
-            <span class="store-badge">${p.store}</span>
-          </div>
-        </div>
-      `).join("");
-    } catch (err) {
-      console.error("Failed to load initial products:", err);
+      el = el.parentNode;
     }
+    return null;
   }
 
-  function setupInfiniteScroll({ containerSelector, sentinelId, fetchUrl, renderCallback, pageSize = 12 }) {
+  // Setup infinite scroll pagination engine
+  function setupInfiniteScroll({ containerSelector, sentinelId, pageSize = 12 }) {
     let offset = 0;
     let isLoading = false;
     let hasMore = true;
@@ -1084,8 +1010,8 @@ document.addEventListener("DOMContentLoaded", () => {
         offset += pageSize;
 
         try {
-          const separator = fetchUrl.includes("?") ? "&" : "?";
-          const res = await fetch(`${fetchUrl}${separator}limit=${pageSize}&offset=${offset}`);
+          const params = new URLSearchParams({ q: currentQuery || "phone", limit: String(pageSize), offset: String(offset) });
+          const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`);
           const data = await res.json();
           const items = data.products || data.rows || data.items || [];
 
@@ -1095,7 +1021,10 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           if (items.length > 0) {
-            renderCallback(items, container);
+            const processedItems = items.map(extractSpecsAndMetadata);
+            cachedProducts.push(...processedItems);
+            container.insertAdjacentHTML("beforeend", renderProductCardsMarkup(processedItems));
+            loadCardPriceTrends();
           }
         } catch (err) {
           console.error("Failed to load more products:", err);
@@ -1107,14 +1036,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     observer.observe(sentinel);
   }
-});
 
+  loadSettings();
+  loadStores();
 
-loadSettings();
-loadStores();
-
-  // Initial load trigger so products load automatically on page start
-fetchNewSearch();
+  // Initial load trigger with dynamic query fallback
+  fetchNewSearch().then(() => {
+    setupInfiniteScroll({
+      containerSelector: "#results",
+      sentinelId: "productsSentinel",
+      pageSize: 12
+    });
+  });
 
 })();
 </script>
