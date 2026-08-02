@@ -467,20 +467,18 @@
     trendSelectEl.value = curTrend;
   }
 
-  async function loadSettings() {
-    try {
-      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
-      settings = await res.json();
-    } catch (err) {
-      settings = { theme: {}, cardFeatures: {} };
-    }
-    applySettings();
-  }
-
-  function applySettings() {
+function applySettings() {
     if (!settings) return;
-    
-    const rawLogoText = settings.logoText || "";
+
+    // 1. Extract theme colors first so they are available immediately
+    const theme = settings.theme || {};
+    const brandColor = theme.brandColor || "#0B6E4F";
+    const accentColor = theme.accentColor || "#E8A33D";
+    const fontBody = theme.fontBody || "Inter";
+    const fontDisplay = theme.fontDisplay || "Space Grotesk";
+
+    // 2. Logo processing logic
+    const rawLogoText = settings.logoText || "Sasta.pk";
     let namePart = rawLogoText;
     let tldPart = "";
 
@@ -503,29 +501,25 @@
     }
 
     document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
-    document.getElementById("footerTxt").innerHTML = `${settings.footerText || ""}`;
+    document.getElementById("footerSlot").innerHTML = '<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>' + (settings.footerText || "") + '</div></div>';
     
+    // 3. Columns configuration
     const homeCols = settings.homeColCount ? Number(settings.homeColCount) : 0;
     const resultsContainer = document.getElementById("results");
     if (resultsContainer) {
       if (homeCols > 0) {
-        resultsContainer.style.setProperty("grid-template-columns", `repeat(${homeCols}, minmax(0, 1fr))`, "important");
+        resultsContainer.style.setProperty("grid-template-columns", "repeat(" + homeCols + ", minmax(0, 1fr))", "important");
       } else {
         resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(310px, 1fr))", "important");
       }
     }
 
-    const theme = settings.theme || {};
-    const brandColor = theme.brandColor || "#0B6E4F";
-    const accentColor = theme.accentColor || "#E8A33D";
-    const fontBody = theme.fontBody || "Inter";
-    const fontDisplay = theme.fontDisplay || "Space Grotesk";
-
+    // 4. Apply CSS Root variables
     const rootStyle = document.documentElement.style;
     rootStyle.setProperty("--color-brand", brandColor);
     rootStyle.setProperty("--color-accent", accentColor);
-    rootStyle.setProperty("--font-body", `"${fontBody}", sans-serif`);
-    rootStyle.setProperty("--font-display", `"${fontDisplay}", sans-serif`);
+    rootStyle.setProperty("--font-body", '"' + fontBody + '", sans-serif');
+    rootStyle.setProperty("--font-display", '"' + fontDisplay + '", sans-serif');
 
     if (settings.customHead) {
       const tempDiv = document.createElement("div");
