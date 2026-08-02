@@ -480,17 +480,25 @@
 
   function applySettings() {
       if (!settings) return;
-  // Split logo text from admin settings (e.g. "Sasta.pk" or just "Sasta")
-      const rawLogoText = settings.logoText || "Sasta.pk";
+    // Split logo text from admin settings (e.g. "Sasta.pk" or just "Sasta")
+    const rawLogoText = settings.logoText || "Sasta.pk";
       let namePart = rawLogoText;
-      let tldPart = ".pk";
+      let tldPart = "";
 
-      if (rawLogoText.includes(".")) {
-        const parts = rawLogoText.split(".");
-        namePart = parts[0];
-        tldPart = "." + parts.slice(1).join(".");
+      // Regular expression to test for a valid domain with a TLD (e.g., text.extension)
+      const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+
+      if (domainRegex.test(rawLogoText)) {
+        // Valid domain logic: split by the first dot or handle subdomains
+        const firstDotIndex = rawLogoText.indexOf(".");
+        namePart = rawLogoText.substring(0, firstDotIndex);
+        tldPart = rawLogoText.substring(firstDotIndex);
+      } else {
+        // Non-domain fallback logic: split length into two halves
+        const mid = Math.floor(rawLogoText.length / 2);
+        namePart = rawLogoText.substring(0, mid);
+        tldPart = rawLogoText.substring(mid);
       }
-
       const logoSlot = document.getElementById("logoSlot");
       if (logoSlot) {
         logoSlot.innerHTML = `<span class="logo-name">${namePart}</span><span class="logo-tld">${tldPart}</span>`;
