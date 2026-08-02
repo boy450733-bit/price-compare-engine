@@ -283,7 +283,7 @@
 
 <!-- Include the NLP parser script -->
 <script src="/js/nlpParser.js"></script>
-<<script>
+<script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "" };
 
@@ -466,17 +466,17 @@
     trendSelectEl.value = curTrend;
   }
 
-function applySettings() {
+  function applySettings() {
     if (!settings) return;
 
-    // 1. Extract theme colors first so they are available immediately
+    // 1. Extract theme colors first
     const theme = settings.theme || {};
     const brandColor = theme.brandColor || "#0B6E4F";
     const accentColor = theme.accentColor || "#E8A33D";
     const fontBody = theme.fontBody || "Inter";
     const fontDisplay = theme.fontDisplay || "Space Grotesk";
 
-    // 2. Logo processing logic
+    // 2. Logo processing logic with RegEx Domain Verification & Half-Length Fallback
     const rawLogoText = settings.logoText || "Sasta.pk";
     let namePart = rawLogoText;
     let tldPart = "";
@@ -502,7 +502,7 @@ function applySettings() {
     document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
     document.getElementById("footerSlot").innerHTML = '<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>' + (settings.footerText || "") + '</div></div>';
     
-    // 3. Columns configuration
+    // 3. Columns configuration on Home Page
     const homeCols = settings.homeColCount ? Number(settings.homeColCount) : 0;
     const resultsContainer = document.getElementById("results");
     if (resultsContainer) {
@@ -527,6 +527,16 @@ function applySettings() {
         document.head.appendChild(tempDiv.firstChild);
       }
     }
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
+      settings = await res.json();
+    } catch (err) {
+      settings = { theme: {}, cardFeatures: {} };
+    }
+    applySettings();
   }
 
   async function loadStores() {
@@ -592,7 +602,6 @@ function applySettings() {
     }
   }
 
-  // Optimized Non-Blocking Trend Batch Loader to prevent rendering lock
   async function loadCardPriceTrends() {
     const badges = document.querySelectorAll(".price-trend-badge");
     let droppedCount = 0;
@@ -838,7 +847,6 @@ function applySettings() {
       return;
     }
 
-    // Defer rendering load using requestAnimationFrame to eliminate main-thread jank and blocking
     window.requestAnimationFrame(() => {
       results.innerHTML = renderProductCardsMarkup(list);
       loadCardPriceTrends();
@@ -1104,6 +1112,7 @@ function applySettings() {
 
     const defaultLimit = settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12;
 
+    // RESTORED: Initial popular/random search query loader on startup
     await fetchNewSearch("", defaultLimit);
 
     setupInfiniteScroll({
