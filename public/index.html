@@ -285,7 +285,7 @@
 
 <!-- Include the NLP parser script -->
 <script src="/js/nlpParser.js"></script>
-<script>
+<<script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "" };
 
@@ -479,66 +479,62 @@
   }
 
   function applySettings() {
-      if (!settings) return;
-    // Split logo text from admin settings (e.g. "Sasta.pk" or just "Sasta")
-    const rawLogoText = settings.logoText || "";
-      let namePart = rawLogoText;
-      let tldPart = "";
+    if (!settings) return;
+    
+    const rawLogoText = settings.logoText || "Sasta.pk";
+    let namePart = rawLogoText;
+    let tldPart = "";
 
-      // Regular expression to test for a valid domain with a TLD (e.g., text.extension)
-      const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
 
-      if (domainRegex.test(rawLogoText)) {
-        // Valid domain logic: split by the first dot or handle subdomains
-        const firstDotIndex = rawLogoText.indexOf(".");
-        namePart = rawLogoText.substring(0, firstDotIndex);
-        tldPart = rawLogoText.substring(firstDotIndex);
+    if (domainRegex.test(rawLogoText)) {
+      const firstDotIndex = rawLogoText.indexOf(".");
+      namePart = rawLogoText.substring(0, firstDotIndex);
+      tldPart = rawLogoText.substring(firstDotIndex);
+    } else {
+      const mid = Math.floor(rawLogoText.length / 2);
+      namePart = rawLogoText.substring(0, mid);
+      tldPart = rawLogoText.substring(mid);
+    }
+
+    const logoSlot = document.getElementById("logoSlot");
+    if (logoSlot) {
+      logoSlot.innerHTML = `<span class="logo-name">${namePart}</span><span class="logo-tld">${tldPart}</span>`;
+    }
+
+    document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
+    document.getElementById("footerSlot").innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${settings.footerText || ""}</div></div>`;
+    
+    const homeCols = settings.homeColCount ? Number(settings.homeColCount) : 0;
+    const resultsContainer = document.getElementById("results");
+    if (resultsContainer) {
+      if (homeCols > 0) {
+        resultsContainer.style.setProperty("grid-template-columns", `repeat(${homeCols}, minmax(0, 1fr))`, "important");
       } else {
-        // Non-domain fallback logic: split length into two halves
-        const mid = Math.floor(rawLogoText.length / 2);
-        namePart = rawLogoText.substring(0, mid);
-        tldPart = rawLogoText.substring(mid);
-      }
-      const logoSlot = document.getElementById("logoSlot");
-      if (logoSlot) {
-        logoSlot.innerHTML = `<span class="logo-name">${namePart}</span><span class="logo-tld">${tldPart}</span>`;
-      }
-
-      document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
-      document.getElementById("footerSlot").innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${settings.footerText || ""}</div></div>`;
-      
-      // Dynamically apply home column count
-      const homeCols = settings.homeColCount ? Number(settings.homeColCount) : 0;
-      const resultsContainer = document.getElementById("results");
-      if (resultsContainer) {
-        if (homeCols > 0) {
-          resultsContainer.style.setProperty("grid-template-columns", `repeat(${homeCols}, minmax(0, 1fr))`, "important");
-        } else {
-          resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(310px, 1fr))", "important");
-        }
-      }
-
-      // Apply Admin Theme Colors & Fonts dynamically to :root root variables
-      const theme = settings.theme || {};
-      const brandColor = theme.brandColor || "#0B6E4F";
-      const accentColor = theme.accentColor || "#E8A33D";
-      const fontBody = theme.fontBody || "Inter";
-      const fontDisplay = theme.fontDisplay || "Space Grotesk";
-
-      const rootStyle = document.documentElement.style;
-      rootStyle.setProperty("--color-brand", brandColor);
-      rootStyle.setProperty("--color-accent", accentColor);
-      rootStyle.setProperty("--font-body", `"${fontBody}", sans-serif`);
-      rootStyle.setProperty("--font-display", `"${fontDisplay}", sans-serif`);
-
-      if (settings.customHead) {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = settings.customHead;
-        while (tempDiv.firstChild) {
-          document.head.appendChild(tempDiv.firstChild);
-        }
+        resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(310px, 1fr))", "important");
       }
     }
+
+    const theme = settings.theme || {};
+    const brandColor = theme.brandColor || "#0B6E4F";
+    const accentColor = theme.accentColor || "#E8A33D";
+    const fontBody = theme.fontBody || "Inter";
+    const fontDisplay = theme.fontDisplay || "Space Grotesk";
+
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty("--color-brand", brandColor);
+    rootStyle.setProperty("--color-accent", accentColor);
+    rootStyle.setProperty("--font-body", `"${fontBody}", sans-serif`);
+    rootStyle.setProperty("--font-display", `"${fontDisplay}", sans-serif`);
+
+    if (settings.customHead) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = settings.customHead;
+      while (tempDiv.firstChild) {
+        document.head.appendChild(tempDiv.firstChild);
+      }
+    }
+  }
 
   async function loadStores() {
     try {
@@ -603,6 +599,7 @@
     }
   }
 
+  // Optimized Non-Blocking Trend Batch Loader to prevent rendering lock
   async function loadCardPriceTrends() {
     const badges = document.querySelectorAll(".price-trend-badge");
     let droppedCount = 0;
@@ -848,9 +845,11 @@
       return;
     }
 
-    results.innerHTML = renderProductCardsMarkup(list);
-
-    loadCardPriceTrends();
+    // Defer rendering load using requestAnimationFrame to eliminate main-thread jank and blocking
+    window.requestAnimationFrame(() => {
+      results.innerHTML = renderProductCardsMarkup(list);
+      loadCardPriceTrends();
+    });
 
     const activeDistinctStores = new Set();
     list.forEach(p => {
@@ -920,7 +919,7 @@
     }
   }
 
-input.addEventListener("input", (e) => {
+  input.addEventListener("input", (e) => {
     const rawInput = e.target.value.trim();
     clearTimeout(debounceTimer);
     
@@ -938,15 +937,12 @@ input.addEventListener("input", (e) => {
     statusLine.innerHTML = "";
 
     debounceTimer = setTimeout(async () => {
-      // 1. Check if parseNaturalQuery exists globally from nlpParser.js
       const parsed = typeof parseNaturalQuery === "function" 
         ? parseNaturalQuery(rawInput) 
         : { keyword: rawInput, brand: null, maxPrice: null };
 
-      // 2. Fetch products using the cleaned keyword
       await fetchNewSearch(parsed.keyword);
 
-      // 3. Automatically manipulate UI filter controls if parameters were detected
       if (parsed.brand) {
         if (brandSelectEl) { 
           brandSelectEl.value = parsed.brand; 
@@ -959,7 +955,6 @@ input.addEventListener("input", (e) => {
         }
       }
 
-      // 4. Refresh client-side layout filters to instantly reflect changes
       applyClientFiltersAndRender();
     }, 500);
   });
@@ -1094,12 +1089,8 @@ input.addEventListener("input", (e) => {
             const processedItems = items.map(extractSpecsAndMetadata);
             cachedProducts.push(...processedItems);
             
-            // Re-populate dropdowns dynamically to include newly discovered brands/categories/RAM/ROM from pagination chunks
             populateFilterDropdowns();
-
-            // Re-apply client filters & rendering so new items respect active filters and update store counts correctly
             applyClientFiltersAndRender();
-
             loadCardPriceTrends();
           }
         } catch (err) {
@@ -1133,5 +1124,6 @@ input.addEventListener("input", (e) => {
 
 })();
 </script>
+
 </body>
 </html>
