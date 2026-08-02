@@ -269,7 +269,6 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
-
 <!-- Include the NLP parser script -->
 <script src="/js/nlpParser.js"></script>
 
@@ -1025,7 +1024,13 @@
           if (items.length > 0) {
             const processedItems = items.map(extractSpecsAndMetadata);
             cachedProducts.push(...processedItems);
-            container.insertAdjacentHTML("beforeend", renderProductCardsMarkup(processedItems));
+            
+            // Re-populate dropdowns dynamically to include newly discovered brands/categories/RAM/ROM from pagination chunks
+            populateFilterDropdowns();
+
+            // Re-apply client filters & rendering so new items respect active filters and update store counts correctly
+            applyClientFiltersAndRender();
+
             loadCardPriceTrends();
           }
         } catch (err) {
@@ -1059,6 +1064,5 @@
 
 })();
 </script>
-
 </body>
 </html>

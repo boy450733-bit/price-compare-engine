@@ -37,6 +37,7 @@ router.get("/settings", async (_req, res) => {
     heroQuotes: settings.heroQuotes,
     footerText: settings.footerText,
     theme: settings.theme,
+    productsPerPage: settings.productsPerPage,
     cardFeatures: settings.cardFeatures,
     customHead: settings.customHead || "" // Added for your head/revenue tags
   };
