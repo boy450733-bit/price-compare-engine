@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Top Price Drops &amp; Deals — Sasta.pk</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%230B6E4F'/%3E%3Crect x='12' y='11' width='20' height='38' rx='2' fill='%23ffffff'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23ffffff'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%23E8A33D' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%23E8A33D'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
+<style id="dynamicThemeStyles">
   :root {
     --color-bg: #F7F5EF;
     --color-surface: #FFFFFF;
@@ -18,24 +19,38 @@
     --color-danger: #C24B3F;
     --radius-lg: 14px;
     --radius-sm: 8px;
+    --font-body: "Inter", sans-serif;
+    --font-display: "Space Grotesk", sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: "Inter", sans-serif; font-size: 14px; }
-  h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); font-size: 14px; }
+  h1, h2, h3 { font-family: var(--font-display); margin: 0; }
   a { text-decoration: none; color: inherit; }
 
   header { background: var(--color-surface); border-bottom: 1px solid var(--color-line); padding: 16px 24px; position: sticky; top: 0; z-index: 100; }
   .header-container { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-  .logo { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 20px; color: var(--color-ink); }
+  .logo { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--color-ink); }
   .logo .dot { color: var(--color-brand); }
   .nav-links { display: flex; gap: 16px; font-weight: 500; font-size: 13.5px; }
   .nav-links a { color: var(--color-ink-soft); }
   .nav-links a.active, .nav-links a:hover { color: var(--color-brand); }
 
   .main-container { max-width: 1200px; margin: 32px auto; padding: 0 20px; }
-  .page-header { margin-bottom: 24px; }
-  .page-header h1 { font-size: 24px; margin-bottom: 6px; }
-  .page-header p { color: var(--color-ink-soft); font-size: 14px; }
+
+  /* Attractive Header Banner */
+  .deals-hero { background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand)); color: #fff; border-radius: var(--radius-lg); padding: 36px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(11, 110, 79, 0.15); }
+  .deals-hero h1 { font-size: 26px; margin-bottom: 8px; }
+  .deals-hero p { color: rgba(255,255,255,0.85); font-size: 14px; max-width: 600px; line-height: 1.5; margin: 0; }
+  .hero-badge-box { background: rgba(255,255,255,0.12); backdrop-filter: blur(4px); padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); text-align: center; }
+  .hero-badge-box .num { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--color-accent); }
+  .hero-badge-box .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.8); }
+
+  /* Filter Bar */
+  .filter-bar { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-lg); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 14px; font-size: 12.5px; font-weight: 500; border-radius: 999px; background: var(--color-bg); color: var(--color-ink-soft); border: 1px solid var(--color-line); cursor: pointer; transition: all 0.2s ease; }
+  .filter-btn.active, .filter-btn:hover { background: var(--color-brand); color: #fff; border-color: var(--color-brand); }
+  .sort-select { padding: 6px 12px; border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); font-family: inherit; font-size: 12.5px; outline: none; cursor: pointer; }
 
   /* Product Grid and Card Shared Styles */
   .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
@@ -61,18 +76,29 @@
   .offer-row-link { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid transparent; transition: border-color 0.15s ease; }
   .offer-row-link:hover { border-color: var(--color-brand); }
   .store-badge { font-size: 11px; font-weight: 700; color: #fff; padding: 2px 6px; border-radius: 4px; }
-  .offer-price { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 13.5px; color: var(--color-ink); }
+  .offer-price { font-family: var(--font-display); font-weight: 700; font-size: 13.5px; color: var(--color-ink); }
 
   .state-panel { grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-lg); }
   .state-panel h3 { font-size: 18px; margin-bottom: 6px; }
   .state-panel p { color: var(--color-ink-soft); font-size: 13.5px; }
+
+  footer { margin-top: 60px; background: var(--color-surface); border-top: 1px solid var(--color-line); padding: 24px 20px; }
+  .footer-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; color: var(--color-ink-soft); font-size: 13px; }
+  .footer-links { display: flex; gap: 16px; }
+  .footer-links a:hover { color: var(--color-brand); }
+
+  @media(max-width: 768px) {
+    .deals-hero { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px 20px; }
+    .hero-badge-box { width: 100%; display: flex; justify-content: space-around; align-items: center; }
+    .footer-container { flex-direction: column; gap: 12px; text-align: center; }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="header-container">
-    <a href="/" class="logo">Sasta<span class="dot">.pk</span></a>
+    <a href="/" class="logo" id="logoSlot">Sasta<span class="dot">.pk</span></a>
     <nav class="nav-links">
       <a href="/">Home</a>
       <a href="/deals.html" class="active">🔥 Top Deals</a>
@@ -81,9 +107,33 @@
 </header>
 
 <main class="main-container">
-  <div class="page-header">
-    <h1>Top Price Drops &amp; Deals</h1>
-    <p>Discover items that experienced the biggest absolute price cuts across all monitored stores.</p>
+  <!-- Attractive Header Banner -->
+  <div class="deals-hero">
+    <div>
+      <h1>🔥 Verified Price Drops &amp; Deals</h1>
+      <p id="heroSubtitle">We automatically track price changes around the clock. Grab these products now while stores offer their lowest historical rates.</p>
+    </div>
+    <div class="hero-badge-box">
+      <div class="num" id="heroTotalDeals">0</div>
+      <div class="lbl">Active Deals Found</div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span style="font-size: 12px; font-weight: 600; color: var(--color-ink-soft); text-transform: uppercase;">Filter:</span>
+      <button class="filter-btn active" data-filter="all">All Deals</button>
+      <button class="filter-btn" data-filter="huge">Big Drops (&gt;10% Off)</button>
+    </div>
+    <div class="filter-group">
+      <span style="font-size: 12px; font-weight: 600; color: var(--color-ink-soft); text-transform: uppercase;">Sort By:</span>
+      <select class="sort-select" id="sortDealsSelect">
+        <option value="drop_desc">Biggest Price Cut (Rs)</option>
+        <option value="pct_desc">Highest Discount (%)</option>
+        <option value="price_asc">Lowest Current Price</option>
+      </select>
+    </div>
   </div>
 
   <div class="results" id="results">
@@ -95,11 +145,80 @@
   </div>
 </main>
 
+<footer id="footerSlot">
+  <div class="footer-container">
+    <div class="footer-links">
+      <a href="#">About Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+    <div>Powered by Sasta.pk Engine</div>
+  </div>
+</footer>
+
 <script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "" };
   const results = document.getElementById("results");
   let cachedDeals = [];
+  let currentFilter = "all";
+  let currentSort = "drop_desc";
+  let settings = null;
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
+      settings = await res.json();
+      applySettings(settings);
+    } catch (err) {
+      settings = { theme: {}, cardFeatures: {} };
+    }
+  }
+
+  function applySettings(data) {
+    if (!data) return;
+    
+    // Header & Footer content slots
+    const logoSlot = document.getElementById("logoSlot");
+    if (logoSlot) logoSlot.innerHTML = `${data.logoText || "Sasta"}<span class="dot">.pk</span>`;
+    
+    const heroSubtitle = document.getElementById("heroSubtitle");
+    if (heroSubtitle && data.heroSubtitle) heroSubtitle.textContent = data.heroSubtitle;
+
+    const footerSlot = document.getElementById("footerSlot");
+    if (footerSlot && data.footerText) {
+      footerSlot.innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${data.footerText}</div></div>`;
+    }
+
+    // Custom Head Injection (Analytics, Custom Scripts)
+    if (data.customHead) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = data.customHead;
+      while (tempDiv.firstChild) {
+        document.head.appendChild(tempDiv.firstChild);
+      }
+    }
+
+    // Theme Customization (Colors & Fonts)
+    const theme = data.theme || {};
+    const brandColor = theme.brandColor || "#0B6E4F";
+    const accentColor = theme.accentColor || "#E8A33D";
+    const fontBody = theme.fontBody || "Inter";
+    const fontDisplay = theme.fontDisplay || "Space Grotesk";
+
+    // Dynamic columns configuration (e.g., settings.columns or fallback to responsive auto-fill)
+    const columns = data.columns || 0;
+    if (columns > 0) {
+      results.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+    }
+
+    // Update CSS variables dynamically
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty("--color-brand", brandColor);
+    rootStyle.setProperty("--color-accent", accentColor);
+    rootStyle.setProperty("--font-body", `"${fontBody}", sans-serif`);
+    rootStyle.setProperty("--font-display", `"${fontDisplay}", sans-serif`);
+  }
 
   function formatPKR(n) {
     if (n === null || n === undefined) return "N/A";
@@ -107,6 +226,10 @@
   }
 
   function renderDealCardsMarkup(items) {
+    const cf = settings && settings.cardFeatures ? settings.cardFeatures : {};
+    const showImage = cf.showImage !== false;
+    const showTitle = cf.showTitle !== false;
+
     return items.map((p) => {
       const offer = p.offers[0] || {};
       const titleText = p.title || "Product Deal";
@@ -117,9 +240,11 @@
             <div class="best-ribbon">Deal: ${formatPKR(p.min_price)}</div>
             ${p.discount_pct ? `<div class="match-badge" style="background:var(--color-brand);">${p.discount_pct}% OFF</div>` : ""}
           </div>
-          <div class="card-image">
-            ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">🔥</span>`}
-          </div>
+          ${showImage ? `
+            <div class="card-image">
+              ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">🔥</span>`}
+            </div>
+          ` : ``}
           <div class="card-body">
             <div class="meta-container">
               <span class="category-pill">${p.category}</span>
@@ -127,7 +252,7 @@
                 ↓ Save ${formatPKR(p.price_drop)}
               </span>
             </div>
-            <div class="card-title" title="${titleText}">${titleText}</div>
+            ${showTitle ? `<div class="card-title" title="${titleText}">${titleText}</div>` : ``}
             
             <div style="margin: 8px 0; font-size: 12px; color: var(--color-ink-soft);">
               Original: <span style="text-decoration: line-through;">${formatPKR(p.old_price)}</span>
@@ -150,26 +275,69 @@
     }).join("");
   }
 
-  function setupInfiniteScroll({ containerSelector, sentinelId, pageSize = 12 }) {
+  function applyFiltersAndSort() {
+    let list = [...cachedDeals];
+
+    if (currentFilter === "huge") {
+      list = list.filter(p => Number(p.discount_pct) >= 10);
+    }
+
+    list.sort((a, b) => {
+      if (currentSort === "pct_desc") {
+        return (Number(b.discount_pct) || 0) - (Number(a.discount_pct) || 0);
+      } else if (currentSort === "price_asc") {
+        return (Number(a.min_price) || 0) - (Number(b.min_price) || 0);
+      } else {
+        return (Number(b.price_drop) || 0) - (Number(a.price_drop) || 0);
+      }
+    });
+
+    if (list.length === 0) {
+      results.innerHTML = `<div class="state-panel"><h3>No Deals Match Filter</h3><p>Try switching back to all deals.</p></div>`;
+      return;
+    }
+
+    results.innerHTML = renderDealCardsMarkup(list);
+  }
+
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      currentFilter = e.target.dataset.filter;
+      applyFiltersAndSort();
+    });
+  });
+
+  document.getElementById("sortDealsSelect")?.addEventListener("change", (e) => {
+    currentSort = e.target.value;
+    applyFiltersAndSort();
+  });
+
+  function setupInfiniteScroll({ containerSelector, sentinelId }) {
     let offset = 0;
     let isLoading = false;
     let hasMore = true;
 
-    const container = document.querySelector(containerSelector);
     const sentinel = document.getElementById(sentinelId);
-    if (!container || !sentinel) return;
+    if (!sentinel) return;
 
     const observer = new IntersectionObserver(async (entries) => {
       if (entries[0].isIntersecting && !isLoading && hasMore) {
         isLoading = true;
         
         try {
+          const pageSize = settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12;
           const res = await fetch(`${CFG.API_BASE_URL}/api/deals?limit=${pageSize}&offset=${offset}`);
           const data = await res.json();
           const items = data.products || [];
 
+          if (data.total !== undefined) {
+            document.getElementById("heroTotalDeals").textContent = data.total;
+          }
+
           if (offset === 0 && items.length === 0) {
-            container.innerHTML = `<div class="state-panel"><h3>No Deals Found</h3><p>Check back later for price drops.</p></div>`;
+            results.innerHTML = `<div class="state-panel"><h3>No Deals Found</h3><p>Check back later for price drops.</p></div>`;
             sentinel.style.display = "none";
             return;
           }
@@ -181,7 +349,7 @@
 
           if (items.length > 0) {
             cachedDeals.push(...items);
-            container.insertAdjacentHTML("beforeend", renderDealCardsMarkup(items));
+            applyFiltersAndSort();
             offset += pageSize;
           }
         } catch (err) {
@@ -196,23 +364,11 @@
   }
 
   async function initDealsPage() {
-    try {
-      const setRes = await fetch(`${CFG.API_BASE_URL}/api/settings`);
-      const settings = await setRes.json();
-      const pageSize = settings.productsPerPage ? Number(settings.productsPerPage) : 12;
-
-      setupInfiniteScroll({
-        containerSelector: "#results",
-        sentinelId: "productsSentinel",
-        pageSize
-      });
-    } catch (e) {
-      setupInfiniteScroll({
-        containerSelector: "#results",
-        sentinelId: "productsSentinel",
-        pageSize: 12
-      });
-    }
+    await loadSettings();
+    setupInfiniteScroll({
+      containerSelector: "#results",
+      sentinelId: "productsSentinel"
+    });
   }
 
   initDealsPage();
