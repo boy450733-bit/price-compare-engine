@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sasta.pk Admin</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%23DC2626' stroke='%23FFFFFF' stroke-width='2'/%3E%3Crect x='13' y='12' width='18' height='35' rx='2' fill='none' stroke='%23FFFFFF' stroke-width='2'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23FFFFFF'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%232563EB' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%232563EB'/%3E%3C/svg%3E"><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%23DC2626' stroke='%23FFFFFF' stroke-width='2'/%3E%3Crect x='13' y='12' width='18' height='35' rx='2' fill='none' stroke='%23FFFFFF' stroke-width='2'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23FFFFFF'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%232563EB' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%232563EB'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #F7F5EF; --surface: #fff; --ink: #17231D; --ink-soft: #6B7A70;
@@ -92,7 +92,7 @@
   tr:last-child td { border-bottom: none; }
   th { background: #F1ECDE; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); font-weight: 600; }
   tbody tr:hover { background: #FBFAF6; }
-  input[type="text"].cell-input, textarea.cell-input { width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: inherit; }
+  input[type="text"].cell-input, textarea.cell-input, select.cell-input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--ink); }
   input[type="color"] { width: 40px; height: 26px; border: 1px solid var(--line); border-radius: 6px; padding: 0; }
   .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .status-dot.on { background: var(--ok); }
@@ -199,10 +199,10 @@
               <input type="text" class="cell-input" id="testQueryInput" value="phone">
             </div>
             <div>
-              <button class="btn-sm" id="runTestHtmlBtn" style="height: 30px; background: var(--brand);">1. Check HTML</button>
+              <button class="btn-sm" id="runTestHtmlBtn" style="height: 38px; background: var(--brand);">1. Check HTML</button>
             </div>
             <div>
-              <button class="btn-sm" id="runTestScraperBtn" style="height: 30px; background: var(--accent); color: #2A1B04; font-weight: 700;">2. Run Scraper</button>
+              <button class="btn-sm" id="runTestScraperBtn" style="height: 38px; background: var(--accent); color: #2A1B04; font-weight: 700;">2. Run Scraper</button>
             </div>
           </div>
           
@@ -281,7 +281,6 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
               <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
-              <!-- NEW: Tiny Status Filter Dropdown -->
               <select id="statusFilter" class="cell-input" style="width: auto;">
                 <option value="all">All Status</option>
                 <option value="notified">Notified</option>
@@ -350,6 +349,7 @@
                       <strong>Available Dynamic Fields:</strong> 
                       <code>{product_title}</code>, <code>{target_price}</code>, <code>{current_price}</code>, <code>{store_name}</code>, <code>{product_url}</code> <span style="color: var(--brand);">(Automatically routes clicks through your affiliate tracker)</span>
                     </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -403,14 +403,13 @@
             <tr>
               <td>Site Domain URL</td>
               <td>
-                <input type="text" class="cell-input" id="s-siteUrl" placeholder="https://sasta.pk" value="${settings.siteUrl || ''}">
+                <input type="text" class="cell-input" id="s-siteUrl" placeholder="https://sasta.pk">
               </td>
             </tr>
             <tr>
               <td>Code (Analytics / Monetization):</td>
               <td>
-                <!-- Changed id to "s-customHead" to match your "s-" prefix convention -->
-                <textarea class="cell-input" id="s-customHead" rows="3" style="width:100%; font-family:monospace;" placeholder="<script>...</script>">${settings.customHead || ''}</textarea>
+                <textarea class="cell-input" id="s-customHead" rows="3" style="width:100%; font-family:monospace;" placeholder="<script>...</script>"></textarea>
               </td>
             </tr>
           </tbody>
@@ -422,7 +421,7 @@
             <tr><td style="width:160px">Logo text</td><td><input type="text" class="cell-input" id="s-logoText"></td></tr>
             <tr><td>Hero Subtitle</td><td><input type="text" class="cell-input" id="s-heroSubtitle"></td></tr>
             <tr><td>Footer text</td><td><input type="text" class="cell-input" id="s-footerText"></td></tr>
-            <tr><td>Hero Quotes (one per line)</td><td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px"></textarea></td></tr>
+            <tr><td>Hero Quotes (one per line)</td><td><textarea id="s-heroQuotes" rows="4" style="width:100%;padding:8px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px"></textarea></td></tr>
           </tbody>
         </table>
 
@@ -480,6 +479,7 @@
     </div>
   </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
@@ -667,16 +667,17 @@
     storesData = storesRes.stores || [];
     renderStores(storesData);
 
-    const worklistRes = await api("/affiliate-worklist");
+    const worklistRes = await api("/affiliate-worklist?limit=10&offset=0");
     worklistData = worklistRes.worklist || [];
     renderWorklist(worklistData);
 
-    const linkedRes = await api("/affiliate-links");
+    const linkedRes = await api("/affiliate-links?limit=10&offset=0");
     linkedData = linkedRes.links || [];
     renderLinked(linkedData);
 
-    const alertsRes = await api("/alerts");
+    const alertsRes = await api("/alerts?limit=10&offset=0");
     alertsData = alertsRes.alerts || [];
+    allAlertsData = alertsData;
     renderAlerts(alertsData);
 
     loadSettings();
@@ -782,13 +783,11 @@
             <button type="button" class="btn-sm remove-mailer-btn" style="background: var(--danger, #dc2626); color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 12px;">Delete Profile</button>
           </div>
 
-          <!-- API Conditional Endpoint URL Field Block -->
           <div class="api-fields" style="display: ${mailerType === "api" ? "block" : "none"}; margin-bottom: 8px;">
             <label for="apiUrl-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">API Endpoint URL</label>
             <input type="text" id="apiUrl-${uniqueId}" class="cell-input mailer-api-url" value="${m.apiUrl || ""}" placeholder="https://send.api.mailtrap.io/api/send or https://api.resend.com/emails">
           </div>
 
-          <!-- SMTP Conditional Fields Block -->
           <div class="smtp-fields" style="display: ${mailerType === "api" ? "none" : "grid"}; grid-template-columns: 2fr 1fr 1.5fr; gap: 8px; margin-bottom: 8px;">
             <div>
               <label for="host-${uniqueId}" style="font-size: 11px; display: block; margin-bottom: 3px;" class="muted">SMTP Host</label>
@@ -972,7 +971,7 @@
 
     setVal("s-logoText", data.logoText || "");
     setVal("s-siteUrl", data.siteUrl || "");
-    setVal("s-customHead", data.customHead || ""); // Populates custom head code
+    setVal("s-customHead", data.customHead || "");
     setVal("s-heroSubtitle", data.heroSubtitle || "");
     setVal("s-footerText", data.footerText || "");
     setVal("s-heroQuotes", (data.heroQuotes || []).join("\n"));
@@ -1030,7 +1029,7 @@
       ...existing,
       logoText: getVal("s-logoText"),
       siteUrl: getVal("s-siteUrl"),
-      customHead: getVal("s-customHead"), // Saves custom head code
+      customHead: getVal("s-customHead"),
       heroSubtitle: getVal("s-heroSubtitle"),
       footerText: getVal("s-footerText"),
       heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
@@ -1411,7 +1410,44 @@
     });
   }
 
-function renderWorklist(list) {
+  function bindWorklistListeners(tbody) {
+    tbody.querySelectorAll(".save-link:not([data-bound])").forEach((btn) => {
+      btn.setAttribute("data-bound", "true");
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const productId = row?.dataset?.productId;
+        const affiliateUrl = row?.querySelector(".f-affiliate-url")?.value.trim();
+        if (!productId || !affiliateUrl) return;
+        try {
+          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
+          showToast("Affiliate link saved!", "success");
+          row.style.opacity = "0.5";
+        } catch (err) {
+          showToast("Error saving link: " + err.message, "error");
+        }
+      });
+    });
+
+    tbody.querySelectorAll(".delete-link:not([data-bound])").forEach((btn) => {
+      btn.setAttribute("data-bound", "true");
+      btn.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        const productId = row?.dataset?.productId;
+        if (!productId) return;
+        showConfirmModal("Remove this affiliate link entry?", async () => {
+          try {
+            await api(`/affiliate-links/${productId}`, { method: "DELETE" });
+            showToast("Affiliate link removed", "success");
+            row.remove();
+          } catch (err) {
+            showToast("Error deleting link: " + err.message, "error");
+          }
+        });
+      });
+    });
+  }
+
+  function renderWorklist(list) {
     const countEl = document.getElementById("worklistCount");
     if (countEl) countEl.textContent = `${list.length} of ${worklistData.length}`;
     const tbody = document.querySelector("#worklistTable tbody");
@@ -1435,8 +1471,12 @@ function renderWorklist(list) {
         </td>
       </tr>`).join("");
 
-    // Handle Save clicks
-    tbody.querySelectorAll(".save-link").forEach((btn) => {
+    bindWorklistListeners(tbody);
+  }
+
+  function bindLinkedListeners(tbody) {
+    tbody.querySelectorAll(".save-link:not([data-bound])").forEach((btn) => {
+      btn.setAttribute("data-bound", "true");
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         const productId = row?.dataset?.productId;
@@ -1444,28 +1484,28 @@ function renderWorklist(list) {
         if (!productId || !affiliateUrl) return;
         try {
           await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
-          showToast("Affiliate link saved!", "success");
-          row.style.opacity = "0.5";
+          showToast("Affiliate link updated!", "success");
         } catch (err) {
-          showToast("Error saving link: " + err.message, "error");
+          showToast("Error updating link: " + err.message, "error");
         }
       });
     });
 
-    // Handle Delete clicks
-    tbody.querySelectorAll(".delete-link").forEach((btn) => {
+    tbody.querySelectorAll(".delete-link:not([data-bound])").forEach((btn) => {
+      btn.setAttribute("data-bound", "true");
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         const productId = row?.dataset?.productId;
         if (!productId) return;
-        if (!confirm("Remove this affiliate link entry?")) return;
-        try {
-          await api(`/affiliate-links/${productId}`, { method: "DELETE" });
-          showToast("Affiliate link removed", "success");
-          row.remove();
-        } catch (err) {
-          showToast("Error deleting link: " + err.message, "error");
-        }
+        showConfirmModal("Are you sure you want to delete this affiliate link?", async () => {
+          try {
+            await api(`/affiliate-links/${productId}`, { method: "DELETE" });
+            showToast("Affiliate link deleted", "success");
+            row.remove();
+          } catch (err) {
+            showToast("Error deleting link: " + err.message, "error");
+          }
+        });
       });
     });
   }
@@ -1493,65 +1533,12 @@ function renderWorklist(list) {
         </td>
       </tr>`).join("");
 
-    // Handle Save / Update clicks for already linked rows
-    tbody.querySelectorAll(".save-link").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const row = e.target.closest("tr");
-        const productId = row?.dataset?.productId;
-        const affiliateUrl = row?.querySelector(".f-affiliate-url")?.value.trim();
-        if (!productId || !affiliateUrl) return;
-        try {
-          await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
-          showToast("Affiliate link updated!", "success");
-        } catch (err) {
-          showToast("Error updating link: " + err.message, "error");
-        }
-      });
-    });
-
-    // Handle Delete clicks for already linked rows
-    tbody.querySelectorAll(".delete-link").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const row = e.target.closest("tr");
-        const productId = row?.dataset?.productId;
-        if (!productId) return;
-        if (!confirm("Are you sure you want to delete this affiliate link?")) return;
-        try {
-          await api(`/affiliate-links/${productId}`, { method: "DELETE" });
-          showToast("Affiliate link deleted", "success");
-          row.remove();
-        } catch (err) {
-          showToast("Error deleting link: " + err.message, "error");
-        }
-      });
-    });
+    bindLinkedListeners(tbody);
   }
 
-  function renderAlerts(list) {
-    const countEl = document.getElementById("alertsCount");
-    if (countEl) countEl.textContent = `${list.length} of ${alertsData.length}`;
-    const tbody = document.querySelector("#alertsTable tbody");
-    if (!tbody) return;
-
-    if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align: center; padding: 20px;">No price alert subscriptions found.</td></tr>`;
-      return;
-    }
-    
-    tbody.innerHTML = list.map((a) => `
-      <tr data-alert-id="${a.id}">
-        <td><strong>${a.email}</strong></td>
-        <td>${a.product_title || 'Unknown Product'}</td>
-        <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
-        <td>${a.notified ? '<span style="color:var(--ok)">Notified</span>' : '<span style="color:var(--accent)">Pending</span>'}</td>
-        <td class="muted">${a.created_at ? new Date(a.created_at).toLocaleDateString() : '-'}</td>
-        <td style="text-align: right; white-space: nowrap;">
-          <button type="button" class="btn-sm edit-alert-btn" title="Edit Target Price" style="background: var(--ink-soft); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 5px;">✏️</button>
-          <button type="button" class="btn-sm delete-alert-btn" title="Delete Subscription" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
-        </td>
-      </tr>`).join("");
-
-    tbody.querySelectorAll(".delete-alert-btn").forEach((btn) => {
+  function bindAlertsListeners(tbody) {
+    tbody.querySelectorAll(".delete-alert-btn:not([data-bound])").forEach((btn) => {
+      btn.setAttribute("data-bound", "true");
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         const alertId = row?.dataset?.alertId;
@@ -1560,8 +1547,9 @@ function renderWorklist(list) {
           try {
             await api(`/alerts/${alertId}`, { method: "DELETE" });
             showToast("Alert subscription deleted.", "success");
-            const alertsRes = await api("/alerts");
+            const alertsRes = await api("/alerts?limit=10&offset=0");
             alertsData = alertsRes.alerts || [];
+            allAlertsData = alertsData;
             applyAlertsFilter();
           } catch (err) {
             showToast("Failed to delete alert: " + err.message, "error");
@@ -1570,7 +1558,8 @@ function renderWorklist(list) {
       });
     });
 
-    tbody.querySelectorAll(".edit-alert-btn").forEach((btn) => {
+    tbody.querySelectorAll(".edit-alert-btn:not([data-bound])").forEach((btn) => {
+      btn.setAttribute("data-bound", "true");
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         const alertId = row?.dataset?.alertId;
@@ -1606,8 +1595,9 @@ function renderWorklist(list) {
               })
             });
             showToast("Alert subscription updated successfully!", "success");
-            const alertsRes = await api("/alerts");
+            const alertsRes = await api("/alerts?limit=10&offset=0");
             alertsData = alertsRes.alerts || [];
+            allAlertsData = alertsData;
             applyAlertsFilter();
           } catch (err) {
             showToast("Failed to update alert: " + err.message, "error");
@@ -1615,6 +1605,33 @@ function renderWorklist(list) {
         }, editFormHtml, "Save Changes", "var(--brand)");
       });
     });
+  }
+
+  function renderAlerts(list) {
+    const countEl = document.getElementById("alertsCount");
+    if (countEl) countEl.textContent = `${list.length} of ${allAlertsData.length}`;
+    const tbody = document.querySelector("#alertsTable tbody");
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align: center; padding: 20px;">No price alert subscriptions found.</td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = list.map((a) => `
+      <tr data-alert-id="${a.id}">
+        <td><strong>${a.email}</strong></td>
+        <td>${a.product_title || 'Unknown Product'}</td>
+        <td>${a.target_price ? 'Rs ' + Number(a.target_price).toLocaleString('en-PK') : '<span class="muted">Any Drop</span>'}</td>
+        <td>${a.notified ? '<span style="color:var(--ok)">Notified</span>' : '<span style="color:var(--accent)">Pending</span>'}</td>
+        <td class="muted">${a.created_at ? new Date(a.created_at).toLocaleDateString() : '-'}</td>
+        <td style="text-align: right; white-space: nowrap;">
+          <button type="button" class="btn-sm edit-alert-btn" title="Edit Target Price" style="background: var(--ink-soft); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 5px;">✏️</button>
+          <button type="button" class="btn-sm delete-alert-btn" title="Delete Subscription" style="background: #fee2e2; color: #991b1b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
+        </td>
+      </tr>`).join("");
+
+    bindAlertsListeners(tbody);
   }
 
   // Filter helper implementation for text and status dropdown
@@ -1632,7 +1649,7 @@ function renderWorklist(list) {
   });
 
   function applyAlertsFilter() {
-    const filtered = alertsData.filter(a => {
+    const filtered = allAlertsData.filter(a => {
       const email = (a.email || "").toLowerCase();
       const title = (a.product_title || "").toLowerCase();
       const matchesSearch = email.includes(currentAlertsSearch) || title.includes(currentAlertsSearch);
@@ -1653,6 +1670,7 @@ function renderWorklist(list) {
         await api("/alerts", { method: "DELETE" });
         showToast("All alert subscriptions purged successfully.", "success");
         alertsData = [];
+        allAlertsData = [];
         renderAlerts([]);
       } catch (err) {
         showToast("Failed to purge alerts: " + err.message, "error");
@@ -1664,28 +1682,27 @@ function renderWorklist(list) {
     const q = e.target.value.toLowerCase();
     renderStores(storesData.filter((s) => s.name.toLowerCase().includes(q)));
   });
+  
   document.getElementById("worklistFilter")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
-    renderWorklist(worklistData.filter((w) => w.title.toLowerCase().includes(q) || w.store.toLowerCase().includes(q)));
-  });
-
-  // Subscription buttons
-  let currentStatusFilter = "all";
-  let currentSearchText = "";
-  let allAlertsData = []; // Store your master list here when fetched
-
-  // 1. Hook up the event listeners matching your input and dropdown IDs
-  const alertsFilterInput = document.getElementById("alertsFilter");
-  const statusFilterSelect = document.getElementById("statusFilter");
-
-  alertsFilterInput?.addEventListener("input", (e) => {
-    currentSearchText = e.target.value.toLowerCase().trim();
-    applyAlertsFilter();
-  });
-
-  statusFilterSelect?.addEventListener("change", (e) => {
-    currentStatusFilter = e.target.value.toLowerCase();
-    applyAlertsFilter();
+    const filtered = worklistData.filter((w) => w.title.toLowerCase().includes(q) || w.store.toLowerCase().includes(q));
+    const tbody = document.querySelector("#worklistTable tbody");
+    if (tbody) {
+      tbody.innerHTML = filtered.map((w) => `
+        <tr data-product-id="${w.id}">
+          <td><span class="clicks-badge">${w.clicks}</span></td>
+          <td>${w.store}</td>
+          <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 55)}</a></td>
+          <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+              <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
+            </div>
+          </td>
+        </tr>`).join("");
+      bindWorklistListeners(tbody);
+    }
   });
 
   document.getElementById("triggerAlertsBtn")?.addEventListener("click", async (e) => {
@@ -1729,13 +1746,15 @@ function renderWorklist(list) {
       }, 3000);
     }
   });
-  // initialize loadmore
+
+  // Initialize loadmore infinite scrolls
   setupInfiniteScroll({
     containerSelector: "#worklistTable tbody",
     sentinelId: "worklistSentinel",
     fetchUrl: "/affiliate-worklist",
-    pageSize: 10, // <--- Explicitly set to match your backend limit
+    pageSize: 10,
     renderCallback: (items, tbody) => {
+      worklistData.push(...items);
       const html = items.map(w => `
         <tr data-product-id="${w.id}">
           <td><span class="clicks-badge">${w.clicks}</span></td>
@@ -1751,16 +1770,18 @@ function renderWorklist(list) {
         </tr>`).join("");
       tbody.insertAdjacentHTML("beforeend", html);
       bindWorklistListeners(tbody);
+      const countEl = document.getElementById("worklistCount");
+      if (countEl) countEl.textContent = `${tbody.querySelectorAll("tr").length} of ${worklistData.length}`;
     }
   });
 
-  // Initialize on Already Linked Tab
   setupInfiniteScroll({
     containerSelector: "#linkedTable tbody",
     sentinelId: "linkedSentinel",
     fetchUrl: "/affiliate-links",
-    pageSize: 10, // <--- Explicitly set to match your backend limit
+    pageSize: 10,
     renderCallback: (items, tbody) => {
+      linkedData.push(...items);
       const html = items.map(l => `
       <tr data-product-id="${l.product_id}">
         <td>${l.store}</td>
@@ -1775,16 +1796,19 @@ function renderWorklist(list) {
       </tr>`).join("");
       tbody.insertAdjacentHTML("beforeend", html);
       bindLinkedListeners(tbody);
+      const countEl = document.getElementById("linkedCount");
+      if (countEl) countEl.textContent = `${tbody.querySelectorAll("tr").length} of ${linkedData.length}`;
     }
   });
 
-  // Initialize on Subscriptions/Alerts Tab
   setupInfiniteScroll({
     containerSelector: "#alertsTable tbody",
     sentinelId: "alertsSentinel",
     fetchUrl: "/alerts",
-    pageSize: 10, // <--- Explicitly set to match your backend limit
+    pageSize: 10,
     renderCallback: (items, tbody) => {
+      alertsData.push(...items);
+      allAlertsData = alertsData;
       const html = items.map(a => `
       <tr data-alert-id="${a.id}">
         <td><strong>${a.email}</strong></td>
@@ -1799,10 +1823,12 @@ function renderWorklist(list) {
       </tr>`).join("");
       tbody.insertAdjacentHTML("beforeend", html);
       bindAlertsListeners(tbody);
+      const countEl = document.getElementById("alertsCount");
+      if (countEl) countEl.textContent = `${tbody.querySelectorAll("tr").length} of ${allAlertsData.length}`;
     }
   });
 
-  function setupInfiniteScroll({ containerSelector, sentinelId, fetchUrl, renderCallback, pageSize = 50 }) {
+  function setupInfiniteScroll({ containerSelector, sentinelId, fetchUrl, renderCallback, pageSize = 10 }) {
     let offset = 0;
     let isLoading = false;
     let hasMore = true;
@@ -1817,7 +1843,6 @@ function renderWorklist(list) {
         offset += pageSize;
 
         try {
-          // Fetch next chunk using your api wrapper or fetch
           const separator = fetchUrl.includes("?") ? "&" : "?";
           const res = await api(`${fetchUrl}${separator}limit=${pageSize}&offset=${offset}`);
           const items = res.worklist || res.links || res.alerts || res.products || [];
@@ -1828,7 +1853,7 @@ function renderWorklist(list) {
           }
 
           if (items.length > 0) {
-            renderCallback(items, tbody, true); // true = append mode
+            renderCallback(items, tbody, true);
           }
         } catch (err) {
           console.error("Failed to load next chunk:", err);
@@ -1840,9 +1865,8 @@ function renderWorklist(list) {
 
     observer.observe(sentinel);
   }
-
-
 })();
 </script>
+
 </body>
 </html>
