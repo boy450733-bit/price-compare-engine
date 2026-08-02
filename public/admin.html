@@ -433,7 +433,7 @@
             <td>Display Font</td><td><input type="text" class="cell-input" id="s-fontDisplay" value="Space Grotesk"></td></tr>
           </tbody>
         </table>
-        <h3 style="font-size:14px;margin-bottom:10px">Pagination &amp; Display</h3>
+        <h3 style="font-size:14px;margin-bottom:10px">Pagination &amp; Columns &amp;Display</h3>
         <table style="margin-bottom:24px">
           <tbody>
             <tr>
@@ -441,11 +441,11 @@
               <td>
                 <input type="number" class="cell-input" id="s-productsPerPage" value="12" min="1" max="100">
               </td>
-              <td style="width:200px">Columns on Home Page</td>
+              <td style="width:150px">Columns on Home Page</td>
               <td>
                 <input type="number" class="cell-input" id="s-homeColCount" value="3" min="1" max="8">
               </td>
-              <td style="width:200px">Columns on Deals Page</td>
+              <td style="width:150px">Columns on Deals Page</td>
               <td>
                 <input type="number" class="cell-input" id="s-dealsColCount" value="4" min="1" max="10">
               </td>
@@ -1052,8 +1052,8 @@
       customHead: getVal("s-customHead"),
       heroSubtitle: getVal("s-heroSubtitle"),
       footerText: getVal("s-footerText"),
-      dealsColCount: getVal("s-dealsColCount"),
-      homeColCount: getVal("s-homeColCount"),
+      homeColCount: Number(getVal("s-homeColCount")) || 3,       // <--- Converted to Number
+      dealsColCount: Number(getVal("s-dealsColCount")) || 4,
       productsPerPage: Number(getVal("s-productsPerPage")) || 12, // <--- Added here
       heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
       theme: {
