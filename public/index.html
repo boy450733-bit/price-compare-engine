@@ -161,8 +161,8 @@
 
 <header>
     <div class="header-container">
-      <div class="logo" id="logoSlot">
-      <span class="logo-name"></span> <span class="logo-tld"></span>
+    <div class="logo" id="logoSlot" style="min-width: 110px; min-height: 29px;">
+      <span class="logo-name"></span><span class="logo-tld"></span>
     </div>
     <nav class="header-nav" aria-label="Main Navigation">
       <a href="#">Home</a>
@@ -187,7 +187,7 @@
     <div class="filter-row">
       <div class="filter-group" style="width: 100%;">
         <span class="filter-label">Stores</span>
-        <div id="storeChips" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+        <div id="storeChips" style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 36px;"></div>
       </div>
     </div>
     
@@ -1107,18 +1107,24 @@
 
   // Initialize lifecycle
   async function initApp() {
-    await loadSettings();
-    await loadStores();
+    // Render skeleton/search placeholder immediately
+    const inputEl = document.getElementById("searchInput");
+    if (inputEl && !inputEl.value) {
+      document.getElementById("filterBar").classList.add("visible");
+      document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+    }
 
-    const defaultLimit = settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12;
-
-    // RESTORED: Initial popular/random search query loader on startup
-    await fetchNewSearch("", defaultLimit);
+    // Load settings, stores, and initial search concurrently
+    await Promise.all([
+      loadSettings(),
+      loadStores(),
+      fetchNewSearch("", settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12)
+    ]);
 
     setupInfiniteScroll({
       containerSelector: "#results",
       sentinelId: "productsSentinel",
-      pageSize: defaultLimit
+      pageSize: settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12
     });
   }
 
