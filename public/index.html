@@ -466,19 +466,30 @@
   }
 
   function applySettings() {
-    if (!settings) return;
-    document.getElementById("logoSlot").innerHTML = `${settings.logoText || "Sasta"}<span class="dot">.pk</span>`;
-    document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
-    document.getElementById("footerSlot").innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${settings.footerText || ""}</div></div>`;
-    
-    if (settings.customHead) {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = settings.customHead;
-      while (tempDiv.firstChild) {
-        document.head.appendChild(tempDiv.firstChild);
+      if (!settings) return;
+      document.getElementById("logoSlot").innerHTML = `${settings.logoText || "Sasta"}<span class="dot">.pk</span>`;
+      document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
+      document.getElementById("footerSlot").innerHTML = `<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>${settings.footerText || ""}</div></div>`;
+      
+      // Dynamically apply home column count
+      const homeCols = settings.homeColCount ? Number(settings.homeColCount) : 0;
+      const resultsContainer = document.getElementById("results");
+      if (resultsContainer) {
+        if (homeCols > 0) {
+          resultsContainer.style.setProperty("grid-template-columns", `repeat(${homeCols}, minmax(0, 1fr))`, "important");
+        } else {
+          resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))", "important");
+        }
+      }
+
+      if (settings.customHead) {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = settings.customHead;
+        while (tempDiv.firstChild) {
+          document.head.appendChild(tempDiv.firstChild);
+        }
       }
     }
-  }
 
   async function loadStores() {
     try {
