@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Compare real-time prices, RAM, ROM, and specifications across Pakistan's top online shopping stores like PriceOye, Daraz, and more.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link id="googleFontsLink" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link id="googleFontsLink" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</noscript>
 <style>
   :root {
     --color-bg: #FAF7F0; --color-surface: #FFFFFF; --color-ink: #17231D;
@@ -41,7 +45,7 @@
 
   main { flex: 1; }
 
-  .hero { max-width: 720px; margin: 36px auto 16px; padding: 0 24px; text-align: center; }
+  .hero { max-width: 720px; margin: 36px auto 16px; padding: 0 24px; text-align: center; min-height: 160px;}
   .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 5vw, 38px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
   .hero p { color: var(--color-ink-soft); margin: 0 0 24px; font-size: 15px; }
   .search-box { position: relative; max-width: 580px; margin: 0 auto; }
@@ -174,7 +178,7 @@
 </header>
 
 <main>
-  <section class="hero">
+  <section class="hero" style="min-height: 100px;>
     <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
     <p id="heroSubtitle">Search once, compare instantly across Pakistan's top online stores.</p>
     <div class="search-box">
@@ -229,7 +233,7 @@
       </div>
       <div class="filter-group">
         <span class="filter-label" style="min-width: unset;">Trend</span>
-        <select id="trendSelect" class="filter-select">
+        <select id="trendSelect" class="filter-select" aria-label="Trend">
           <option value="">All Trends</option>
           <option value="dropped">Price Dropped</option>
           <option value="increased">Price Increased</option>
