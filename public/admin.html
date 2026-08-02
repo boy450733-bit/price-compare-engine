@@ -214,11 +214,15 @@
           <div>
             <span class="muted" style="font-size:11px">Selectors (JSON format)</span>
             <textarea class="cell-input" id="testSelectorsJson" rows="3" style="font-family: monospace; font-size: 11px;">{
-  "container": ".box--ujhwb",
-  "title": ".title--wFjAI",
-  "image": "img",
-  "price": ".price--NVaji"
-}</textarea>
+              "link": "a.product-card",
+              "image": ".product-thumbnail",
+              "price": ".price-box",
+              "title": ".p-title",
+              "linkAttr": "href",
+              "container": ".productBox",
+              "imageAttr": "src",
+              "originalPrice": ".price-diff-retail"
+            }</textarea>
           </div>
 
           <div id="testResultsContainer" style="display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;">
@@ -248,10 +252,13 @@
         <div id="subpage-pending">
           <div class="toolbar"><input type="text" class="search-input" id="worklistFilter" placeholder="Filter by product or store..."><span class="result-count" id="worklistCount"></span></div>
           <table id="worklistTable"><thead><tr><th>Clicks</th><th>Store</th><th>Product</th><th>Affiliate URL</th><th></th></tr></thead><tbody></tbody></table>
+          <div id="worklistSentinel" style="height: 10px; text-align: center;" class="muted">Loading more...</div>
         </div>
+
         <div id="subpage-linked" style="display:none">
           <div class="toolbar"><input type="text" class="search-input" id="linkedFilter" placeholder="Filter by product or store..."><span class="result-count" id="linkedCount"></span></div>
           <table id="linkedTable"><thead><tr><th>Store</th><th>Product</th><th>Affiliate URL</th><th></th></tr></thead><tbody></tbody></table>
+          <div id="linkedSentinel" style="height: 10px; text-align: center;" class="muted">Loading more...</div>
         </div>
       </div>
 
@@ -275,7 +282,7 @@
             <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px;">
               <input type="text" id="alertsFilter" class="cell-input" placeholder="Filter by email or product..." style="width: 100%;">
               <!-- NEW: Tiny Status Filter Dropdown -->
-              <select id="statusFilter" class="cell-input" style="width: auto; padding: 6px 10px;">
+              <select id="statusFilter" class="cell-input" style="width: auto;">
                 <option value="all">All Status</option>
                 <option value="notified">Notified</option>
                 <option value="pending">Pending</option>
@@ -302,6 +309,7 @@
               </tbody>
             </table>
           </div>
+          <div id="worklistSentinel" style="height: 10px; text-align: center;" class="muted">Loading more...</div>
         </div>
 
         <div id="alertsub-settings" style="display:none">
@@ -1638,7 +1646,7 @@ function renderWorklist(list) {
     });
     renderAlerts(filtered);
   }
-  
+
   document.getElementById("purgeAllAlertsBtn")?.addEventListener("click", () => {
     showConfirmModal("Are you sure you want to purge ALL price alert subscriptions? This cannot be undone.", async () => {
       try {
@@ -1721,6 +1729,82 @@ function renderWorklist(list) {
       }, 3000);
     }
   });
+  // initialize loadmore
+  // Initialize on Worklist Tab
+  setupInfiniteScroll({
+    containerSelector: "#worklistTable tbody",
+    sentinelId: "worklistSentinel",
+    fetchUrl: "/affiliate-worklist",
+    renderCallback: (items, tbody) => {
+      const html = items.map(w => /* your row template string */).join("");
+      tbody.insertAdjacentHTML("beforeend", html);
+      bindWorklistListeners(tbody); // re-bind actions to new rows
+    }
+  });
+
+  // Initialize on Already Linked Tab
+  setupInfiniteScroll({
+    containerSelector: "#linkedTable tbody",
+    sentinelId: "linkedSentinel",
+    fetchUrl: "/affiliate-links",
+    renderCallback: (items, tbody) => {
+      const html = items.map(l => /* your row template string */).join("");
+      tbody.insertAdjacentHTML("beforeend", html);
+      bindLinkedListeners(tbody);
+    }
+  });
+
+  // Initialize on Subscriptions/Alerts Tab
+  setupInfiniteScroll({
+    containerSelector: "#alertsTable tbody",
+    sentinelId: "alertsSentinel",
+    fetchUrl: "/alerts",
+    renderCallback: (items, tbody) => {
+      const html = items.map(a => /* your row template string */).join("");
+      tbody.insertAdjacentHTML("beforeend", html);
+      bindAlertsListeners(tbody);
+    }
+  });
+
+  function setupInfiniteScroll({ containerSelector, sentinelId, fetchUrl, renderCallback, pageSize = 50 }) {
+    let offset = 0;
+    let isLoading = false;
+    let hasMore = true;
+
+    const tbody = document.querySelector(containerSelector);
+    const sentinel = document.getElementById(sentinelId);
+    if (!tbody || !sentinel) return;
+
+    const observer = new IntersectionObserver(async (entries) => {
+      if (entries[0].isIntersecting && !isLoading && hasMore) {
+        isLoading = true;
+        offset += pageSize;
+
+        try {
+          // Fetch next chunk using your api wrapper or fetch
+          const separator = fetchUrl.includes("?") ? "&" : "?";
+          const res = await api(`${fetchUrl}${separator}limit=${pageSize}&offset=${offset}`);
+          const items = res.worklist || res.links || res.alerts || res.products || [];
+
+          if (items.length < pageSize) {
+            hasMore = false;
+            sentinel.style.display = "none";
+          }
+
+          if (items.length > 0) {
+            renderCallback(items, tbody, true); // true = append mode
+          }
+        } catch (err) {
+          console.error("Failed to load next chunk:", err);
+        } finally {
+          isLoading = false;
+        }
+      }
+    }, { rootMargin: "300px" });
+
+    observer.observe(sentinel);
+  }
+
 
 })();
 </script>
