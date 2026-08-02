@@ -269,6 +269,7 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
 <!-- Include the NLP parser script -->
 <script src="/js/nlpParser.js"></script>
 
@@ -804,7 +805,7 @@
 
   let currentController = null;
 
-  async function fetchNewSearch(query) {
+  async function fetchNewSearch(query, limitOverride) {
     if (!query) {
       try {
         const topRes = await fetch(`${CFG.API_BASE_URL}/api/top-searches`);
@@ -832,7 +833,8 @@
     currentController = new AbortController();
 
     try {
-      const params = new URLSearchParams({ q: query, limit: "50", offset: "0" });
+      const pageLimit = limitOverride || (settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12);
+      const params = new URLSearchParams({ q: query, limit: String(pageLimit), offset: "0" });
       const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`, {
         signal: currentController.signal
       });
@@ -1037,17 +1039,23 @@
     observer.observe(sentinel);
   }
 
-  loadSettings();
-  loadStores();
+  // Initialize lifecycle
+  async function initApp() {
+    await loadSettings();
+    await loadStores();
 
-  // Initial load trigger with dynamic query fallback
-  fetchNewSearch().then(() => {
+    const defaultLimit = settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12;
+
+    await fetchNewSearch("", defaultLimit);
+
     setupInfiniteScroll({
       containerSelector: "#results",
       sentinelId: "productsSentinel",
-      pageSize: 12
+      pageSize: defaultLimit
     });
-  });
+  }
+
+  initApp();
 
 })();
 </script>
