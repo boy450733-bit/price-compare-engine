@@ -180,7 +180,7 @@ router.delete("/affiliate-links/:productId", async (req, res) => {
 
 // Price Alert Subscriptions list
 router.get("/alerts", async (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 100, 500);
+  const limit = Math.min(Number(req.query.limit) || 20, 50);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
 
   const { rows } = await db(`

@@ -240,6 +240,10 @@
 
   <div class="status-line" id="statusLine"></div>
   <div class="results" id="results"></div>
+  <!-- Infinite Scroll Sentinel Anchor -->
+  <div id="productsSentinel" style="height: 20px; text-align: center; margin: 20px 0;" class="muted">
+    Loading more products...
+  </div>
 </main>
 
 <footer id="footerSlot">
@@ -1004,6 +1008,107 @@ function findClosestWrapper(el) {
   }
   return null;
 }
+
+// loading pagination data
+document.addEventListener("DOMContentLoaded", () => {
+  let allProductsData = [];
+
+  // Initial load of the first batch (e.g., 12 products)
+  loadInitialProducts();
+
+  // Setup infinite scroll for subsequent chunks
+  setupInfiniteScroll({
+    containerSelector: "#results",
+    sentinelId: "productsSentinel",
+    fetchUrl: "/api/products",
+    pageSize: 12,
+    renderCallback: (items, container) => {
+      allProductsData.push(...items);
+      const html = items.map(p => `
+        <div class="product-card" data-product-id="${p.id}">
+          ${p.image ? `<img src="${p.image}" alt="${p.title}" class="product-img">` : ''}
+          <div class="product-info">
+            <h4 class="product-title"><a href="${p.url}" target="_blank" rel="noopener">${p.title}</a></h4>
+            <div class="product-price">Rs ${Number(p.current_price || p.price || 0).toLocaleString()}</div>
+            <span class="store-badge">${p.store}</span>
+          </div>
+        </div>
+      `).join("");
+      
+      container.insertAdjacentHTML("beforeend", html);
+    }
+  });
+
+  async function loadInitialProducts() {
+    const container = document.getElementById("results");
+    if (!container) return;
+
+    try {
+      const res = await fetch("/api/products?limit=12&offset=0");
+      const data = await res.json();
+      const items = data.products || data.rows || data.items || [];
+      allProductsData = items;
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="muted" style="text-align: center; padding: 30px;">No products found.</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(p => `
+        <div class="product-card" data-product-id="${p.id}">
+          ${p.image ? `<img src="${p.image}" alt="${p.title}" class="product-img">` : ''}
+          <div class="product-info">
+            <h4 class="product-title"><a href="${p.url}" target="_blank" rel="noopener">${p.title}</a></h4>
+            <div class="product-price">Rs ${Number(p.current_price || p.price || 0).toLocaleString()}</div>
+            <span class="store-badge">${p.store}</span>
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      console.error("Failed to load initial products:", err);
+    }
+  }
+
+  function setupInfiniteScroll({ containerSelector, sentinelId, fetchUrl, renderCallback, pageSize = 12 }) {
+    let offset = 0;
+    let isLoading = false;
+    let hasMore = true;
+
+    const container = document.querySelector(containerSelector);
+    const sentinel = document.getElementById(sentinelId);
+    if (!container || !sentinel) return;
+
+    const observer = new IntersectionObserver(async (entries) => {
+      if (entries[0].isIntersecting && !isLoading && hasMore) {
+        isLoading = true;
+        offset += pageSize;
+
+        try {
+          const separator = fetchUrl.includes("?") ? "&" : "?";
+          const res = await fetch(`${fetchUrl}${separator}limit=${pageSize}&offset=${offset}`);
+          const data = await res.json();
+          const items = data.products || data.rows || data.items || [];
+
+          if (items.length < pageSize) {
+            hasMore = false;
+            sentinel.style.display = "none";
+          }
+
+          if (items.length > 0) {
+            renderCallback(items, container);
+          }
+        } catch (err) {
+          console.error("Failed to load more products:", err);
+        } finally {
+          isLoading = false;
+        }
+      }
+    }, { rootMargin: "300px" });
+
+    observer.observe(sentinel);
+  }
+});
+
 
 loadSettings();
 loadStores();

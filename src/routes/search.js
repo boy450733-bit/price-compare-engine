@@ -18,8 +18,8 @@ const SORT_EXPR = {
 
 router.get("/products", async (req, res) => {
   const q = (req.query.q || "").trim();
-  const limit = Math.min(Number(req.query.limit) || 100, 1000);
-  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = Math.min(Number(req.query.limit) || 12, 1000);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
   const sort = SORT_EXPR[req.query.sort] ? req.query.sort : "relevance";
   const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
   const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
@@ -49,7 +49,7 @@ router.get("/products", async (req, res) => {
 
   const whereClause = conditions.join(" AND ");
 
-  params.push(limit, (page - 1) * limit);
+  params.push(limit, offset);
   const limitParam = params.length - 1;
   const offsetParam = params.length;
 
@@ -141,7 +141,7 @@ router.get("/products", async (req, res) => {
 
   res.json({
     total,
-    page,
+    offset,
     limit,
     products: rows,
     filteredCount: rows.length,

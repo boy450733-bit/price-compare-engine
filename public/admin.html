@@ -1570,7 +1570,7 @@ function bindLinkedListeners(tbody) {
           try {
             await api(`/alerts/${alertId}`, { method: "DELETE" });
             showToast("Alert subscription deleted.", "success");
-            const alertsRes = await api("/alerts?limit=10&offset=0");
+            const alertsRes = await api("/alerts?limit=20&offset=0");
             alertsData = alertsRes.alerts || [];
             allAlertsData = alertsData;
             applyAlertsFilter();
@@ -1618,7 +1618,7 @@ function bindLinkedListeners(tbody) {
               })
             });
             showToast("Alert subscription updated successfully!", "success");
-            const alertsRes = await api("/alerts?limit=10&offset=0");
+            const alertsRes = await api("/alerts?limit=20&offset=0");
             alertsData = alertsRes.alerts || [];
             allAlertsData = alertsData;
             applyAlertsFilter();
