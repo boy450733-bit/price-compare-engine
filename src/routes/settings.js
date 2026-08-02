@@ -36,6 +36,8 @@ router.get("/settings", async (_req, res) => {
     heroSubtitle: settings.heroSubtitle,
     heroQuotes: settings.heroQuotes,
     footerText: settings.footerText,
+    homeColCount: settings.homeColCount,
+    dealsColCount: settings.dealsColCount,
     theme: settings.theme,
     productsPerPage: settings.productsPerPage,
     cardFeatures: settings.cardFeatures,
