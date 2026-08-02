@@ -434,8 +434,18 @@
             <td>Display Font</td><td><input type="text" class="cell-input" id="s-fontDisplay" value="Space Grotesk"></td></tr>
           </tbody>
         </table>
-
-        <h3 style="font-size:14px;margin-bottom:10px">Product Card Feature Toggles (index.html)</h3>
+        <h3 style="font-size:14px;margin-bottom:10px">Pagination &amp; Display</h3>
+        <table style="margin-bottom:24px">
+          <tbody>
+            <tr>
+              <td style="width:200px">Products Per Page (Initial &amp; Chunk Limit)</td>
+              <td>
+                <input type="number" class="cell-input" id="s-productsPerPage" value="12" min="1" max="100">
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <h3 style="font-size:14px;margin-bottom:10px">Product Card Feature Toggles</h3>
         <table style="margin-bottom:24px">
           <tbody>
             <tr>
@@ -975,6 +985,9 @@
     setVal("s-heroSubtitle", data.heroSubtitle || "");
     setVal("s-footerText", data.footerText || "");
     setVal("s-heroQuotes", (data.heroQuotes || []).join("\n"));
+
+    // Load products per page setting (defaults to 12 if not set)
+    setVal("s-productsPerPage", data.productsPerPage || 12);
     
     const theme = data.theme || {};
     setVal("s-brandColor", theme.brandColor || "#f07605");
@@ -1032,6 +1045,7 @@
       customHead: getVal("s-customHead"),
       heroSubtitle: getVal("s-heroSubtitle"),
       footerText: getVal("s-footerText"),
+      productsPerPage: Number(getVal("s-productsPerPage")) || 12, // <--- Added here
       heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
       theme: {
         brandColor: getVal("s-brandColor"),
