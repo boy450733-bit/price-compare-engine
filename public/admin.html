@@ -309,7 +309,7 @@
               </tbody>
             </table>
           </div>
-          <div id="worklistSentinel" style="height: 10px; text-align: center;" class="muted">Loading more...</div>
+          <div id="alertsSentinel" style="height: 10px; text-align: center;" class="muted">Loading more...</div>
         </div>
 
         <div id="alertsub-settings" style="display:none">
@@ -1730,27 +1730,27 @@ function renderWorklist(list) {
     }
   });
   // initialize loadmore
-  // Initialize on Worklist Tab
   setupInfiniteScroll({
     containerSelector: "#worklistTable tbody",
     sentinelId: "worklistSentinel",
     fetchUrl: "/affiliate-worklist",
+    pageSize: 10, // <--- Explicitly set to match your backend limit
     renderCallback: (items, tbody) => {
       const html = items.map(w => `
-      <tr data-product-id="${w.id}">
-        <td><span class="clicks-badge">${w.clicks}</span></td>
-        <td>${w.store}</td>
-        <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 55)}</a></td>
-        <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
-        <td>
-          <div style="display: flex; gap: 4px;">
-            <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
-            <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
-          </div>
-        </td>
-      </tr>`).join("");
+        <tr data-product-id="${w.id}">
+          <td><span class="clicks-badge">${w.clicks}</span></td>
+          <td>${w.store}</td>
+          <td><a class="link" href="${w.url}" target="_blank" rel="noopener">${w.title.slice(0, 55)}</a></td>
+          <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+              <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
+            </div>
+          </td>
+        </tr>`).join("");
       tbody.insertAdjacentHTML("beforeend", html);
-      bindWorklistListeners(tbody); // re-bind actions to new rows
+      bindWorklistListeners(tbody);
     }
   });
 
@@ -1759,6 +1759,7 @@ function renderWorklist(list) {
     containerSelector: "#linkedTable tbody",
     sentinelId: "linkedSentinel",
     fetchUrl: "/affiliate-links",
+    pageSize: 10, // <--- Explicitly set to match your backend limit
     renderCallback: (items, tbody) => {
       const html = items.map(l => `
       <tr data-product-id="${l.product_id}">
@@ -1782,6 +1783,7 @@ function renderWorklist(list) {
     containerSelector: "#alertsTable tbody",
     sentinelId: "alertsSentinel",
     fetchUrl: "/alerts",
+    pageSize: 10, // <--- Explicitly set to match your backend limit
     renderCallback: (items, tbody) => {
       const html = items.map(a => `
       <tr data-alert-id="${a.id}">

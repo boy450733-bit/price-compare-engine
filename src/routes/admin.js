@@ -116,7 +116,7 @@ router.patch("/stores/:name", async (req, res) => {
 
 // Affiliate worklist
 router.get("/affiliate-worklist", async (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 10, 20);
+  const limit = Math.min(Number(req.query.limit) || 20, 50);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
 
   const { rows } = await db(`
@@ -135,7 +135,7 @@ router.get("/affiliate-worklist", async (req, res) => {
 
 // Existing affiliate links
 router.get("/affiliate-links", async (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 10, 20);
+  const limit = Math.min(Number(req.query.limit) || 20, 50);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
 
   const { rows } = await db(`
