@@ -1474,17 +1474,35 @@
     bindWorklistListeners(tbody);
   }
 
-  function bindLinkedListeners(tbody) {
+function bindLinkedListeners(tbody) {
     tbody.querySelectorAll(".save-link:not([data-bound])").forEach((btn) => {
       btn.setAttribute("data-bound", "true");
       btn.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         const productId = row?.dataset?.productId;
         const affiliateUrl = row?.querySelector(".f-affiliate-url")?.value.trim();
-        if (!productId || !affiliateUrl) return;
+        if (!productId) return;
+
         try {
+          // If affiliateUrl is empty, backend handles it as a delete/clear action
           await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
-          showToast("Affiliate link updated!", "success");
+          
+          if (!affiliateUrl) {
+            showToast("Affiliate link cleared and moved back to pending!", "success");
+          } else {
+            showToast("Affiliate link updated!", "success");
+          }
+
+          // Refresh data arrays to sync pending worklist and linked list state
+          const [workRes, linkRes] = await Promise.all([
+            api("/affiliate-worklist?limit=50&offset=0"),
+            api("/affiliate-links?limit=50&offset=0")
+          ]);
+          worklistData = workRes.worklist || [];
+          linkedData = linkRes.links || [];
+          
+          renderWorklist(worklistData);
+          renderLinked(linkedData);
         } catch (err) {
           showToast("Error updating link: " + err.message, "error");
         }
@@ -1502,6 +1520,11 @@
             await api(`/affiliate-links/${productId}`, { method: "DELETE" });
             showToast("Affiliate link deleted", "success");
             row.remove();
+
+            // Refresh linkedData count & state
+            const linkRes = await api("/affiliate-links?limit=50&offset=0");
+            linkedData = linkRes.links || [];
+            renderLinked(linkedData);
           } catch (err) {
             showToast("Error deleting link: " + err.message, "error");
           }
@@ -1702,6 +1725,10 @@
           </td>
         </tr>`).join("");
       bindWorklistListeners(tbody);
+
+      // FIX: Update the count display utility properly on search filter change
+      const countEl = document.getElementById("worklistCount");
+      if (countEl) countEl.textContent = `${filtered.length} of ${worklistData.length}`;
     }
   });
 
