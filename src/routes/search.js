@@ -172,4 +172,96 @@ router.get("/top-searches", async (req, res) => {
   }
 });
 
+// Route for top deals
+router.get("/deals", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 12, 100);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+  try {
+    const { rows: rawRows } = await db(
+      `WITH ranked_prices AS (
+          SELECT
+              ph.product_id,
+              ph.price,
+              ph.recorded_at,
+              ROW_NUMBER() OVER (
+                  PARTITION BY ph.product_id
+                  ORDER BY ph.recorded_at DESC
+              ) AS rn
+          FROM price_history ph
+       ),
+       latest_two AS (
+          SELECT
+              product_id,
+              MAX(CASE WHEN rn = 1 THEN price END) AS new_price,
+              MAX(CASE WHEN rn = 2 THEN price END) AS old_price
+          FROM ranked_prices
+          WHERE rn <= 2
+          GROUP BY product_id
+          HAVING COUNT(*) = 2
+       )
+       SELECT
+          lt.product_id AS id,
+          p.title,
+          p.image,
+          p.category,
+          p.brand,
+          p.store,
+          p.url,
+          p.rating,
+          p.scraped_at,
+          lt.old_price,
+          lt.new_price AS min_price,
+          (lt.old_price - lt.new_price) AS price_drop,
+          ROUND(((lt.old_price - lt.new_price) / NULLIF(lt.old_price, 0)) * 100, 1) AS discount_pct,
+          s.color AS store_color,
+          COUNT(*) OVER() AS "totalCount"
+       FROM latest_two lt
+       JOIN products p ON p.id = lt.product_id
+       JOIN stores s ON s.name = p.store
+       WHERE lt.new_price < lt.old_price AND s.enabled = true
+       ORDER BY (lt.old_price - lt.new_price) DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
+
+    // Transform products into card-compatible layout objects
+    const products = rawRows.map((p) => ({
+      id: p.id,
+      title: p.title,
+      image: p.image,
+      category: p.category || "Mobile",
+      brand: p.brand || "General",
+      min_price: p.min_price,
+      old_price: p.old_price,
+      price_drop: p.price_drop,
+      discount_pct: p.discount_pct,
+      max_rating: p.rating,
+      scraped_at: p.scraped_at,
+      offers: [
+        {
+          id: p.id,
+          store: p.store,
+          price: p.min_price,
+          url: p.url,
+          in_stock: true,
+          storeColor: p.store_color
+        }
+      ]
+    }));
+
+    res.json({
+      total,
+      limit,
+      offset,
+      products
+    });
+  } catch (err) {
+    console.error("Failed to fetch top deals:", err.message);
+    res.status(500).json({ error: "Failed to fetch top deals" });
+  }
+});
+
 export default router;
