@@ -498,7 +498,8 @@
 
     const logoSlot = document.getElementById("logoSlot");
     if (logoSlot) {
-      logoSlot.innerHTML = `<span class="logo-name">${namePart}</span><span class="logo-tld">${tldPart}</span>`;
+      logoSlot.innerHTML = '<span class="logo-name" style="color: ' + brandColor + ';">' + namePart + '</span>' +
+                           '<span class="logo-tld" style="color: ' + accentColor + ';">' + tldPart + '</span>';
     }
 
     document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
