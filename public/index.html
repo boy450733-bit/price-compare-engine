@@ -86,7 +86,7 @@
   select#sortSelect, select#trendSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); cursor: pointer; }
 
   /* Clear All Filters Button Style */
-  .clear-filters-btn { background: #FDEDEA; color: var(--color-danger); border: 1px solid rgba(194,75,63,0.3); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-left: auto; }
+  .clear-filters-btn { background: #fdfdfd; color: var(--color-danger); border: 1px solid rgba(194,75,63,0.3); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-left: auto; }
   .clear-filters-btn:hover { background: var(--color-danger); color: #fff; }
 
 /* 4. Pre-allocate min-height for status line text */
@@ -1146,29 +1146,34 @@
     observer.observe(sentinel);
   }
 
-  // Initialize lifecycle
+// Initialize lifecycle
   async function initApp() {
-    // Render skeleton/search placeholder immediately
+    // 1. Render skeleton/search placeholder immediately
     const inputEl = document.getElementById("searchInput");
     if (inputEl && !inputEl.value) {
       document.getElementById("filterBar").classList.add("visible");
-      document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+      document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton">` + `</div>`).join("");
     }
 
-    // Load settings, stores, and initial search concurrently
+    // 2. Await settings and stores first so settings are fully loaded
     await Promise.all([
       loadSettings(),
-      loadStores(),
-      fetchNewSearch("", settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12)
+      loadStores()
     ]);
+
+    // 3. Compute the correct limit now that settings are guaranteed available
+    const defaultLimit = (settings && settings.productsPerPage) ? Number(settings.productsPerPage) : 12;
+
+    // 4. Run initial search and setup infinite scroll using the correct limit
+    await fetchNewSearch("", defaultLimit);
 
     setupInfiniteScroll({
       containerSelector: "#results",
       sentinelId: "productsSentinel",
-      pageSize: settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12
+      pageSize: defaultLimit
     });
   }
-
+  
   initApp();
 
 })();
