@@ -1149,42 +1149,23 @@
 /// Initialize lifecycle
 
   async function initApp() {
-
     // Render skeleton/search placeholder immediately
-
     const inputEl = document.getElementById("searchInput");
-
     if (inputEl && !inputEl.value) {
-
       document.getElementById("filterBar").classList.add("visible");
-
       document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
-
     }
-
-
-
     // Load settings, stores, and initial search concurrently
-
     await Promise.all([
-
       loadSettings(),
-
       loadStores(),
-
-      fetchNewSearch("", settings && settings.productsPerPage ? Number(settings.productsPerPage) : 10)
-
+      fetchNewSearch("", settings && settings.productsPerPage ? Number(settings.productsPerPage) : 8)
     ]);
 
-
-
     setupInfiniteScroll({
-
       containerSelector: "#results",
-
       sentinelId: "productsSentinel",
-
-      pageSize: settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12
+      pageSize: settings && settings.productsPerPage ? Number(settings.productsPerPage) : 10
 
     });
 

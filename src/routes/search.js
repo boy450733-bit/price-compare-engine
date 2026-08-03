@@ -49,66 +49,75 @@ router.get("/products", async (req, res) => {
 
   const whereClause = conditions.join(" AND ");
 
-  params.push(limit, offset);
-  const limitParam = params.length - 1;
-  const offsetParam = params.length;
+  // Push limit and offset indices for the final query
+  const limitIndex = params.length + 1;
+  const offsetIndex = params.length + 2;
+  const queryParams = [...params, limit, offset];
 
   const { rows: rawRows } = await db(
-    `WITH grouped AS (
-       SELECT
-         p.fingerprint,
-         MIN(p.id) AS id,
-         MIN(similarity(p.title, $1)) AS relevance,
-         MIN(p.price) AS min_price,
-         MAX(p.rating) AS max_rating,
-         MAX(p.title) AS title,
-         MAX(p.image) AS image,
-         MAX(p.brand) AS brand,
-         MAX(p.model) AS model,
-         MAX(p.category) AS category,
-         MAX(p.specs::text) AS specs_text,
-         MAX(p.scraped_at) AS scraped_at,
-         json_agg(
-           json_build_object(
-             'id', p.id,
-             'store', p.store,
-             'price', p.price,
-             'url', p.url,
-             'in_stock', p.in_stock,
-             'rating', p.rating,
-             'storeColor', s.color
-           )
-           ORDER BY p.price ASC
-         ) AS offers
-       FROM products p
-       JOIN stores s ON s.name = p.store
-       WHERE s.enabled = true AND ${whereClause}
-       GROUP BY p.fingerprint
-     )
-     SELECT 
-       id,
-       fingerprint,
-       relevance,
-       min_price,
-       max_rating,
-       title,
-       image,
-       brand,
-       model,
-       category,
-       specs_text::json AS specs,
-       scraped_at,
-       offers,
-       COUNT(*) OVER() AS "totalCount"
-     FROM grouped
-     ORDER BY ${SORT_EXPR[sort].outer}
-     LIMIT $${limitParam} OFFSET $${offsetParam}`,
-    params
+    `WITH filtered_products AS (
+        SELECT p.*, s.color AS store_color
+        FROM products p
+        JOIN stores s ON s.name = p.store
+        WHERE s.enabled = true AND ${whereClause}
+    ),
+    grouped AS (
+        SELECT
+            p.fingerprint,
+            MIN(p.id) AS id,
+            MIN(similarity(p.title, $1)) AS relevance,
+            MIN(p.price) AS min_price,
+            MAX(p.rating) AS max_rating,
+            MAX(p.title) AS title,
+            MAX(p.image) AS image,
+            MAX(p.brand) AS brand,
+            MAX(p.model) AS model,
+            MAX(p.category) AS category,
+            MAX(p.specs::text) AS specs_text,
+            MAX(p.scraped_at) AS scraped_at,
+            json_agg(
+                json_build_object(
+                    'id', p.id,
+                    'store', p.store,
+                    'price', p.price,
+                    'url', p.url,
+                    'in_stock', p.in_stock,
+                    'rating', p.rating,
+                    'storeColor', p.store_color
+                )
+                ORDER BY p.price ASC
+            ) AS offers
+        FROM filtered_products p
+        GROUP BY p.fingerprint
+    ),
+    paged AS (
+        SELECT 
+            id,
+            fingerprint,
+            relevance,
+            min_price,
+            max_rating,
+            title,
+            image,
+            brand,
+            model,
+            category,
+            specs_text,
+            scraped_at,
+            offers,
+            (SELECT COUNT(*) FROM grouped) AS "totalCount"
+        FROM grouped
+        ORDER BY ${SORT_EXPR[sort].outer}
+        LIMIT $${limitIndex} OFFSET $${offsetIndex}
+    )
+    SELECT * FROM paged`,
+    queryParams
   );
   
   const total = rawRows.length ? Number(rawRows[0].totalCount) : 0;
-  const rows = rawRows.map(({ totalCount, offers, ...r }) => ({
+  const rows = rawRows.map(({ totalCount, offers, specs_text, ...r }) => ({
     ...r,
+    specs: specs_text ? (typeof specs_text === 'string' ? JSON.parse(specs_text) : specs_text) : null,
     offers: Array.isArray(offers) ? offers : JSON.parse(offers),
   }));
 
