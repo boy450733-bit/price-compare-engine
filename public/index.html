@@ -54,7 +54,19 @@
   .search-box svg { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--color-ink-soft); pointer-events: none; }
 
   /* Structured Multi-line Filter Bar Layout */
-  .filter-bar { max-width: 1140px; margin: 24px auto 0; padding: 16px 24px; display: none; flex-direction: column; gap: 14px; background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); box-shadow: 0 4px 12px rgba(23,35,29,0.02); min-height: 190px;}
+.filter-bar { 
+    max-width: 1140px; 
+    margin: 24px auto 0; 
+    padding: 16px 24px; 
+    display: none; 
+    flex-direction: column; 
+    gap: 14px; 
+    background: var(--color-surface); 
+    border-radius: var(--radius); 
+    border: 1px solid var(--color-line); 
+    box-shadow: 0 4px 12px rgba(23,35,29,0.02); 
+    min-height: 210px; /* Locks vertical height for rows */
+  }
   .filter-bar.visible { display: flex; }
   
   .filter-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; width: 100%; }
@@ -77,12 +89,28 @@
   .clear-filters-btn { background: #FDEDEA; color: var(--color-danger); border: 1px solid rgba(194,75,63,0.3); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-left: auto; }
   .clear-filters-btn:hover { background: var(--color-danger); color: #fff; }
 
-  .status-line { max-width: 1140px; margin: 20px auto 6px; padding: 0 24px; font-size: 13.5px; color: var(--color-ink-soft); min-height: 18px; }
+/* 4. Pre-allocate min-height for status line text */
+  .status-line { 
+    max-width: 1140px; 
+    margin: 20px auto 6px; 
+    padding: 0 24px; 
+    font-size: 13.5px; 
+    color: var(--color-ink-soft); 
+    min-height: 22px; 
+  } 
   .status-line strong { color: var(--color-ink); }
 
   /* Results Grid */
-  .results { max-width: 1140px; margin: 0 auto; padding: 8px 24px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 24px; }
-
+  /* 5. Reserve grid container min-height to prevent cards from snapping layout */
+  .results { 
+    max-width: 1140px; 
+    margin: 0 auto; 
+    padding: 8px 24px 80px; 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
+    gap: 24px; 
+    min-height: 400px; 
+  }
   /* Product Card */
   .card { background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); position: relative; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 12px rgba(23, 35, 29, 0.03); }
   .card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(23, 35, 29, 0.08); }
@@ -136,7 +164,16 @@
   @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
   
   /* Professional Footer */
-  footer { background: var(--color-surface); border-top: 1px solid var(--color-line); padding: 36px 24px; font-size: 13px; color: var(--color-ink-soft); margin-top: 60px; min-height: 145px;}
+/* 6. Reserve footer block space */
+  footer { 
+    background: var(--color-surface); 
+    border-top: 1px solid var(--color-line); 
+    padding: 36px 24px; 
+    font-size: 13px; 
+    color: var(--color-ink-soft); 
+    margin-top: 60px; 
+    min-height: 145px; 
+  }
   .footer-container { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center; }
   .footer-links { display: flex; gap: 24px; font-weight: 500; font-size: 13.5px; }
   .footer-links a:hover { color: var(--color-brand); }
@@ -191,7 +228,7 @@
     <div class="filter-row">
       <div class="filter-group" style="width: 100%;">
         <span class="filter-label">Stores</span>
-        <div id="storeChips" style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 32px;"></div>
+        <div id="storeChips"></div>
       </div>
     </div>
     
