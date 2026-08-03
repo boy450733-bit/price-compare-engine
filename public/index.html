@@ -1152,28 +1152,34 @@
     const inputEl = document.getElementById("searchInput");
     if (inputEl && !inputEl.value) {
       document.getElementById("filterBar").classList.add("visible");
-      document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton">` + `</div>`).join("");
+      document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
     }
 
-    // 2. Await settings and stores first so settings are fully loaded
-    await Promise.all([
+    // 2. Fire the initial search instantly with a default limit (no waiting for settings/stores)
+    const initialLimit = 10;
+    const searchPromise = fetchNewSearch("", initialLimit);
+
+    // 3. Load settings and stores concurrently in the background
+    const backgroundConfig = Promise.all([
       loadSettings(),
       loadStores()
-    ]);
-
-    // 3. Compute the correct limit now that settings are guaranteed available
-    const defaultLimit = (settings && settings.productsPerPage) ? Number(settings.productsPerPage) : 12;
-
-    // 4. Run initial search and setup infinite scroll using the correct limit
-    await fetchNewSearch("", defaultLimit);
-
-    setupInfiniteScroll({
-      containerSelector: "#results",
-      sentinelId: "productsSentinel",
-      pageSize: defaultLimit
+    ]).then(() => {
+      // Once settings load, if a custom productsPerPage exists, update future page sizes
+      return (settings && settings.productsPerPage) ? Number(settings.productsPerPage) : initialLimit;
     });
+
+    // 4. Set up infinite scroll using either background setting or default limit
+    backgroundConfig.then((resolvedLimit) => {
+      setupInfiniteScroll({
+        containerSelector: "#results",
+        sentinelId: "productsSentinel",
+        pageSize: resolvedLimit
+      });
+    });
+
+    await searchPromise;
   }
-  
+
   initApp();
 
 })();
