@@ -14,7 +14,7 @@ import settingsRoutes from "./routes/settings.js";
 import historyRoutes from "./routes/history.js";
 import alertsRoutes from "./routes/alerts.js";
 import { checkAndSendPriceAlerts } from "./utils/notifier.js";
-
+/*
 // Import store configs individually for initial database seeding
 import { megaConfig } from "./adapters/stores/mega.config.js";
 import { priceOyeConfig } from "./adapters/stores/priceoye.config.js";
@@ -33,7 +33,7 @@ const initialStoreConfigs = [
   shophiveConfig,
   flashiConfig,
 ];
-
+*/
 async function autoSetup() {
   const schemaPath = path.resolve("src/db/schema.sql");
   const sql = fs.readFileSync(schemaPath, "utf8");
