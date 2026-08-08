@@ -163,31 +163,29 @@ router.get("/products", async (req, res) => {
 // Returns the product + all store offers belonging to the same fingerprint
 router.get("/products/:id", async (req, res) => {
   try {
-    const productId = Number(req.params.id);
+    const productId = String(req.params.id || "").trim();
 
-    if (!Number.isInteger(productId) || productId <= 0) {
+    if (!productId) {
       return res.status(400).json({
         error: "Invalid product ID"
       });
     }
 
-    // First find the requested product and its canonical fingerprint
+    // Find the requested product and its canonical fingerprint
     const { rows: baseRows } = await db(
-      `
-      SELECT
-        p.id,
-        p.fingerprint,
-        p.title,
-        p.image,
-        p.brand,
-        p.model,
-        p.category,
-        p.specs,
-        p.scraped_at
-      FROM products p
-      WHERE p.id = $1
-      LIMIT 1
-      `,
+      `SELECT
+         p.id,
+         p.fingerprint,
+         p.title,
+         p.image,
+         p.brand,
+         p.model,
+         p.category,
+         p.specs,
+         p.scraped_at
+       FROM products p
+       WHERE p.id = $1
+       LIMIT 1`,
       [productId]
     );
 
@@ -199,73 +197,70 @@ router.get("/products/:id", async (req, res) => {
 
     const baseProduct = baseRows[0];
 
-    // Get all offers for the same canonical product
+    // Get all active store offers belonging to this product fingerprint
     const { rows: offerRows } = await db(
-      `
-      SELECT
-        p.id,
-        p.store,
-        p.price,
-        p.url,
-        p.image,
-        p.in_stock,
-        p.rating,
-        p.scraped_at,
-        s.color AS "storeColor"
-      FROM products p
-      JOIN stores s
-        ON s.name = p.store
-      WHERE p.fingerprint = $1
-        AND s.enabled = true
-      ORDER BY p.price ASC NULLS LAST
-      `,
+      `SELECT
+         p.id,
+         p.store,
+         p.price,
+         p.url,
+         p.image,
+         p.in_stock,
+         p.rating,
+         p.scraped_at,
+         s.color AS "storeColor"
+       FROM products p
+       JOIN stores s ON s.name = p.store
+       WHERE p.fingerprint = $1
+         AND s.enabled = true
+       ORDER BY p.price ASC NULLS LAST`,
       [baseProduct.fingerprint]
     );
 
-    // Calculate values used by product.html
+    // Calculate minimum price
     const validPrices = offerRows
       .map(o => Number(o.price))
       .filter(price => Number.isFinite(price) && price > 0);
 
-    const minPrice = validPrices.length
+    const minPrice = validPrices.length > 0
       ? Math.min(...validPrices)
       : null;
 
-    const maxPrice = validPrices.length
+    // Calculate maximum price
+    const maxPrice = validPrices.length > 0
       ? Math.max(...validPrices)
       : null;
 
+    // Calculate maximum rating
     const ratings = offerRows
       .map(o => Number(o.rating))
       .filter(rating => Number.isFinite(rating));
 
-    const maxRating = ratings.length
+    const maxRating = ratings.length > 0
       ? Math.max(...ratings)
-      : null;
+      : 0;
 
+    // Keep the same structure as /api/products search results
     const product = {
       id: baseProduct.id,
       fingerprint: baseProduct.fingerprint,
+      relevance: null,
+      min_price: minPrice,
+      max_rating: maxRating,
       title: baseProduct.title,
       image: baseProduct.image,
       brand: baseProduct.brand,
       model: baseProduct.model,
       category: baseProduct.category || "Mobile",
-      specs: baseProduct.specs || null,
-      min_price: minPrice,
-      max_price: maxPrice,
-      max_rating: maxRating,
       scraped_at: baseProduct.scraped_at,
-
+      specs: baseProduct.specs || {},
       offers: offerRows.map(o => ({
         id: o.id,
         store: o.store,
         price: o.price,
         url: o.url,
-        image: o.image,
         in_stock: o.in_stock,
         rating: o.rating,
-        scraped_at: o.scraped_at,
         storeColor: o.storeColor
       }))
     };
@@ -273,19 +268,14 @@ router.get("/products/:id", async (req, res) => {
     res.json({
       product
     });
-
   } catch (err) {
-    console.error(
-      "Failed to fetch product:",
-      err.message
-    );
+    console.error("Failed to fetch product:", err.message);
 
     res.status(500).json({
       error: "Failed to fetch product"
     });
   }
 });
-
 // Inside your admin or public API routes
 // Inside your /top-searches route
 router.get("/top-searches", async (req, res) => {
