@@ -1,0 +1,92 @@
+{
+  "theme": {
+    "fontBody": "Inter",
+    "brandColor": "#050842",
+    "accentColor": "#0905f5",
+    "fontDisplay": "Space Grotesk"
+  },
+  "siteUrl": "https://pce.up.railway.app/",
+  "logoText": "Sasta Shop",
+  "adminToken": "0987654321",
+  "customHead": "<title>Sasta.pk — Compare prices across Pakistan's top online stores</title>\n\n<link rel=\"icon\" type=\"image/svg+xml\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='6' width='28' height='52' rx='6' fill='%230B6E4F'/%3E%3Crect x='12' y='11' width='20' height='38' rx='2' fill='%23ffffff'/%3E%3Ccircle cx='22' cy='53' r='2' fill='%23ffffff'/%3E%3Cpolyline points='38,44 46,36 54,40 60,24' fill='none' stroke='%23E8A33D' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M60 24 L56 25 L58 29 Z' fill='%23E8A33D'/%3E%3C/svg%3E\">\n\n\n<script> </script>\n\n<link rel=\"canonical\" href=\"https://pce.up.railway.app/\">\n\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"WebSite\",\n  \"name\": \"SastaShop\",\n  \"url\": \"https://pce.up.railway.app/\",\n  \"potentialAction\": {\n    \"@type\": \"SearchAction\",\n    \"target\": \"https://pce.up.railway.app/?q={search_term_string}\",\n    \"query-input\": \"required name=search_term_string\"\n  }\n}\n</script>\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"name\": \"SastaShop\",\n  \"url\": \"https://pce.up.railway.app/\",\n  \"logo\": \"https://pce.up.railway.app/favicon.ico\",\n  \"sameAs\": []\n}\n</script>",
+  "footerText": "Sasta.pk — prices are pulled directly from each store and may change without notice.",
+  "heroQuotes": [
+    "Same phone. Different price. Find out which store is lying.",
+    "Compare first. Regret nothing.",
+    "Why pay more for the exact same box?"
+  ],
+  "alertsConfig": {
+    "mailers": [
+      {
+        "id": "mailer_0.8889501719297221",
+        "host": "in-v3.mailjet.com",
+        "name": "mailjet.com",
+        "port": 465,
+        "type": "api",
+        "active": false,
+        "apiUrl": "",
+        "secure": true,
+        "sender": "Sasta.pk <noreply@yourdomain.com>",
+        "password": "cb701a4d27552f82ac0e825a8532f28c",
+        "username": "60c18659cfdc77ec7f7062b47136ac3b"
+      },
+      {
+        "id": "mailer_0.9200516212679631",
+        "host": "smtp.resend.com",
+        "name": "Resend Mailer",
+        "port": 465,
+        "type": "api",
+        "active": true,
+        "apiUrl": "",
+        "secure": true,
+        "sender": "Sasta.pk <onboarding@resend.dev>",
+        "password": "re_2wUGGTjp_6Pb4wjqHzk1ZhBwJLmxGrZ3L",
+        "username": "resend"
+      },
+      {
+        "id": "mailer_0.5383545371803351",
+        "host": "smtp.mailgun.org",
+        "name": "Mailgun",
+        "port": 465,
+        "type": "api",
+        "active": false,
+        "apiUrl": "",
+        "secure": true,
+        "sender": "Sasta.pk <sandboxffd8c859f4064c299a2556e85f519ec4.mailgun.org>",
+        "password": "6e5d377401c55453de194475378dcc67-2fd911e3-12df1296",
+        "username": "pubkey-138709ff06c1552bccbeb7e4e1fbe8b2"
+      },
+      {
+        "id": "mailer_1785568603184",
+        "host": "",
+        "name": "MailTrap",
+        "port": 465,
+        "type": "api",
+        "active": true,
+        "apiUrl": "https://send.api.mailtrap.io/api/send",
+        "secure": true,
+        "sender": "Sasta.pk <hello@demomailtrap.co>",
+        "password": "a75a134ce82f3103168b10a247c58c92",
+        "username": "Sasta.pk"
+      }
+    ],
+    "emailBody": "<div style=\"font-family: Arial, sans-serif; background-color: #F7F5EF; padding: 20px; color: #17231D;\">\n  <div style=\"max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 10px; border: 1px solid #E7E1D2; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);\">\n    \n    <!-- Header Logo / Brand -->\n    <h2 style=\"font-family: 'Space Grotesk', sans-serif; color: #0B6E4F; margin-top: 0; margin-bottom: 20px;\">\n      Sasta<span style=\"color: #E8A33D;\">.pk</span> Price Drop Alert\n    </h2>\n    \n    <p style=\"font-size: 15px; line-height: 1.5; color: #17231D;\">\n      Hello,\n    </p>\n    \n    <p style=\"font-size: 15px; line-height: 1.5; color: #17231D;\">\n      Great news! The price for <strong>{product_title}</strong> at <strong>{store_name}</strong> has dropped.\n    </p>\n\n    <!-- Price Box -->\n    <div style=\"background: #F1ECDE; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center;\">\n      <span style=\"font-size: 13px; color: #6B7A70; display: block; text-transform: uppercase;\">New Price</span>\n      <span style=\"font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #0B6E4F;\">{current_price}</span>\n      <div style=\"font-size: 12px; color: #6B7A70; margin-top: 4px;\">(Previous tracked current price: {target_price})</div>\n    </div>\n\n    <!-- Call to Action Button -->\n    <div style=\"text-align: center; margin: 30px 0;\">\n      <a href=\"{product_url}\" target=\"_blank\" style=\"background-color: #0B6E4F; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1);\">\n        View Deal on Store →\n      </a>\n    </div>\n\n    <p style=\"font-size: 12px; color: #6B7A70; margin-top: 30px; border-top: 1px solid #E7E1D2; padding-top: 15px; text-align: center;\">\n      You received this email because you subscribed to price drop alerts on Sasta.pk.\n    </p>\n  </div>\n</div>",
+    "cronSchedule": "0 */12 * * *",
+    "emailSubject": "🎉 Price Drop Alert for {product_title}!",
+    "mailerRotationMode": "round-robin"
+  },
+  "cardFeatures": {
+    "showImage": true,
+    "showSpecs": true,
+    "showTitle": true,
+    "showRating": true,
+    "showUpdatedAt": true,
+    "showOutOfStock": true,
+    "showDiscountBadge": true,
+    "showOriginalPrice": true
+  },
+  "heroSubtitle": "Search once, compare instantly across Pakistan's top stores.",
+  "homeColCount": 3,
+  "dealsColCount": 3,
+  "productsPerPage": 9
+}
