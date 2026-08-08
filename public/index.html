@@ -244,7 +244,7 @@
     <nav class="header-nav" aria-label="Main Navigation">
       <a href="#">Home</a>
       <a href="#">Compare Prices</a>
-      <a href="deals.html">Top Deals</a>
+      <a href="deals">Top Deals</a>
       <a href="#">Contact</a>
     </nav>
   </div>
@@ -826,7 +826,7 @@
       ${showImage ? `
         <a
           class="product-image-link"
-          href="product.html?id=${encodeURIComponent(p.id)}"
+          href="product?id=${encodeURIComponent(p.id)}"
           data-product-id="${p.id}"
           aria-label="View ${titleText}"
         >

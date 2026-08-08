@@ -100,7 +100,7 @@
     <a href="/" class="logo" id="logoSlot">Sasta<span class="dot">.pk</span></a>
     <nav class="nav-links">
       <a href="/">Home</a>
-      <a href="/deals.html" class="active">🔥 Top Deals</a>
+      <a href="/deals" class="active">🔥 Top Deals</a>
     </nav>
   </div>
 </header>
@@ -247,10 +247,24 @@
             ${p.discount_pct ? `<div class="match-badge" style="background:var(--color-brand);">${p.discount_pct}% OFF</div>` : ""}
           </div>
           ${showImage ? `
-            <div class="card-image">
-              ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">🔥</span>`}
-            </div>
-          ` : ``}
+            <a
+              class="product-image-link"
+              href="product?id=${encodeURIComponent(p.id)}"
+              data-product-id="${p.id}"
+              aria-label="View ${titleText}"
+            >
+              <div class="card-image">
+                ${p.image
+                  ? `<img src="${p.image}"
+                          alt="${titleText}"
+                          loading="lazy"
+                          onerror="this.style.display='none'">`
+                  : `<span style="font-size:36px">📱</span>`
+                }
+              </div>
+            </a>
+        ` : ``}
+
           <div class="card-body">
             <div class="meta-container">
               <span class="category-pill">${p.category}</span>
