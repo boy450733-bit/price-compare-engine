@@ -823,11 +823,24 @@
             <div class="best-ribbon">Best: ${formatPKR(p.min_price)}</div>
             ${relevanceScore ? `<div class="match-badge">${relevanceScore}% match</div>` : ""}
           </div>
-          ${showImage ? `
-            <div class="card-image">
-              ${p.image ? `<img src="${p.image}" alt="${titleText}" loading="lazy" onerror="this.style.display='none'">` : `<span style="font-size:36px">📱</span>`}
-            </div>
-          ` : ``}
+      ${showImage ? `
+        <a
+          class="product-image-link"
+          href="product.html?id=${encodeURIComponent(p.id)}"
+          data-product-id="${p.id}"
+          aria-label="View ${titleText}"
+        >
+          <div class="card-image">
+            ${p.image
+              ? `<img src="${p.image}"
+                      alt="${titleText}"
+                      loading="lazy"
+                      onerror="this.style.display='none'">`
+              : `<span style="font-size:36px">📱</span>`
+            }
+          </div>
+        </a>
+      ` : ``}
           <div class="card-body">
             <div>
               <div class="meta-container">
@@ -1063,6 +1076,21 @@
 
   results.addEventListener("click", (e) => {
     const btn = e.target.closest(".track-price-btn");
+    const imageLink = e.target.closest(".product-image-link");
+
+    if (imageLink) {
+        const productId = imageLink.dataset.productId;
+        const product = cachedProducts.find(
+            p => String(p.id) === String(productId)
+        );
+        if (product) {
+            sessionStorage.setItem(
+                "selectedProduct",
+                JSON.stringify(product)
+            );
+        }
+        return;
+    }
     if (btn) {
       selectedProductIdForAlert = btn.dataset.productId;
       selectedProductTargetPrice = btn.dataset.productMinPrice ? Number(btn.dataset.productMinPrice) : null;

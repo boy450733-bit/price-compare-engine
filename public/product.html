@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Product Price Comparison | Sasta.pk</title>
+  <meta id="metaDescription" name="description" content="Compare product prices across Pakistan's top online stores and track price history.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link id="googleFontsLink"
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+
+  <style>
+    :root {
+      --color-bg:#FAF7F0;
+      --color-surface:#FFFFFF;
+      --color-ink:#17231D;
+      --color-ink-soft:#5B6B62;
+      --color-brand:#0B6E4F;
+      --color-brand-dark:#094F39;
+      --color-accent:#E8A33D;
+      --color-accent-dark:#C4841F;
+      --color-line:#E4DDCB;
+      --color-danger:#C24B3F;
+      --color-ok:#0B6E4F;
+      --font-display:"Space Grotesk",sans-serif;
+      --font-body:"Inter",sans-serif;
+      --radius:16px;
+    }
+
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      background:var(--color-bg);
+      color:var(--color-ink);
+      font-family:var(--font-body);
+      -webkit-font-smoothing:antialiased;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    a { color:inherit; text-decoration:none; }
+    button,input { font:inherit; }
+    :focus-visible { outline:2px solid var(--color-brand); outline-offset:2px; }
+
+    header {
+      background:var(--color-surface);
+      border-bottom:1px solid var(--color-line);
+      padding:16px 24px;
+      position:sticky;
+      top:0;
+      z-index:100;
+      box-shadow:0 2px 8px rgba(23,35,29,.02);
+    }
+    .header-container {
+      max-width:1140px;
+      margin:auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .logo {
+      font-family:var(--font-display);
+      font-weight:700;
+      font-size:24px;
+      display:inline-flex;
+      align-items:center;
+      min-height:32px;
+    }
+    .logo-name { color:var(--color-brand-dark); }
+    .logo-tld { color:var(--color-accent); }
+    .header-nav {
+      display:flex;
+      gap:20px;
+      flex-wrap:wrap;
+      font-size:13.5px;
+      font-weight:600;
+      color:var(--color-ink-soft);
+    }
+    .header-nav a:hover { color:var(--color-brand); }
+
+    main { flex:1; }
+
+    .page {
+      max-width:1140px;
+      margin:0 auto;
+      padding:28px 24px 70px;
+    }
+
+    .breadcrumb {
+      font-size:12px;
+      color:var(--color-ink-soft);
+      margin-bottom:18px;
+    }
+    .breadcrumb a:hover { color:var(--color-brand); }
+
+    .product-hero {
+      display:grid;
+      grid-template-columns:minmax(280px,390px) 1fr;
+      gap:30px;
+      background:var(--color-surface);
+      border:1px solid var(--color-line);
+      border-radius:var(--radius);
+      overflow:hidden;
+      box-shadow:0 4px 14px rgba(23,35,29,.04);
+    }
+
+    .product-image-panel {
+      min-height:390px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:30px;
+      background:linear-gradient(135deg,#FCFAF4 0%,#F5F0E1 100%);
+      border-right:1px solid var(--color-line);
+      position:relative;
+    }
+    .product-image {
+      width:100%;
+      height:330px;
+      object-fit:contain;
+      mix-blend-mode:multiply;
+    }
+    .image-placeholder { font-size:72px; }
+    .best-badge {
+      position:absolute;
+      top:18px;
+      left:18px;
+      background:var(--color-accent);
+      color:#fff;
+      font-size:11px;
+      font-weight:700;
+      padding:6px 11px;
+      border-radius:999px;
+    }
+
+    .product-info {
+      padding:30px 30px 28px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .category-pill {
+      width:max-content;
+      color:var(--color-brand);
+      background:#E6F4EA;
+      padding:4px 9px;
+      border-radius:6px;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      font-size:10.5px;
+      font-weight:700;
+    }
+    .product-title {
+      font-family:var(--font-display);
+      font-size:clamp(26px,4vw,38px);
+      line-height:1.12;
+      margin:0;
+      letter-spacing:-.02em;
+    }
+    .product-meta {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      color:var(--color-ink-soft);
+      font-size:13px;
+    }
+    .stars { color:var(--color-accent-dark); font-weight:700; }
+    .price-block {
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:4px;
+    }
+    .current-price {
+      font-family:var(--font-display);
+      font-size:clamp(28px,4vw,42px);
+      font-weight:700;
+    }
+    .old-price {
+      color:var(--color-ink-soft);
+      text-decoration:line-through;
+      font-size:14px;
+    }
+    .price-change {
+      width:max-content;
+      padding:5px 9px;
+      border-radius:7px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .price-change.down { color:var(--color-brand); background:#E6F4EA; }
+    .price-change.up { color:var(--color-danger); background:#FDEDEA; }
+    .price-change.stable { color:var(--color-ink-soft); background:#F3F0E8; }
+
+    .hero-actions {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:4px;
+    }
+    .btn {
+      border:1px solid var(--color-line);
+      background:var(--color-surface);
+      color:var(--color-ink);
+      padding:10px 14px;
+      border-radius:9px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:700;
+      transition:.15s ease;
+    }
+    .btn:hover { transform:translateY(-1px); border-color:var(--color-brand); }
+    .btn-primary {
+      background:var(--color-brand);
+      color:#fff;
+      border-color:var(--color-brand);
+    }
+    .btn-primary:hover { background:var(--color-brand-dark); }
+
+    .section {
+      margin-top:24px;
+      background:var(--color-surface);
+      border:1px solid var(--color-line);
+      border-radius:var(--radius);
+      padding:24px;
+      box-shadow:0 4px 14px rgba(23,35,29,.025);
+    }
+    .section-heading {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .section-heading h2 {
+      margin:0;
+      font-family:var(--font-display);
+      font-size:20px;
+    }
+    .section-heading p {
+      margin:5px 0 0;
+      color:var(--color-ink-soft);
+      font-size:12.5px;
+    }
+
+    .chart-controls {
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .range-btn {
+      border:1px solid var(--color-line);
+      background:var(--color-bg);
+      padding:6px 10px;
+      border-radius:7px;
+      cursor:pointer;
+      color:var(--color-ink-soft);
+      font-size:11px;
+      font-weight:700;
+    }
+    .range-btn.active,
+    .range-btn:hover {
+      color:var(--color-brand);
+      border-color:var(--color-brand);
+      background:#F0F7F4;
+    }
+
+    .chart-wrap {
+      position:relative;
+      height:330px;
+      border:1px solid var(--color-line);
+      border-radius:12px;
+      background:#FEFDF9;
+      overflow:hidden;
+    }
+    #priceChart {
+      width:100%;
+      height:100%;
+      display:block;
+      touch-action:none;
+    }
+    .chart-tooltip {
+      position:absolute;
+      display:none;
+      pointer-events:none;
+      background:#17231D;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:7px;
+      font-size:11px;
+      white-space:nowrap;
+      box-shadow:0 4px 12px rgba(0,0,0,.18);
+      z-index:3;
+    }
+    .chart-empty {
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--color-ink-soft);
+      font-size:13px;
+    }
+
+    .offers-grid {
+      display:grid;
+      gap:9px;
+    }
+    .offer-row {
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      align-items:center;
+      gap:14px;
+      padding:12px 14px;
+      border:1px solid var(--color-line);
+      border-radius:10px;
+      background:#fff;
+      transition:.15s ease;
+    }
+    .offer-row:hover {
+      border-color:var(--color-brand);
+      background:#F4F9F6;
+      transform:translateX(2px);
+    }
+    .store-name {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      font-weight:700;
+    }
+    .store-dot {
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      flex:none;
+    }
+    .offer-stock {
+      font-size:10px;
+      font-weight:700;
+      color:var(--color-brand);
+      background:#E6F4EA;
+      padding:4px 7px;
+      border-radius:5px;
+    }
+    .offer-stock.out {
+      color:var(--color-danger);
+      background:#FDEDEA;
+    }
+    .offer-price {
+      font-family:var(--font-display);
+      font-size:16px;
+      font-weight:700;
+    }
+    .visit-btn {
+      padding:7px 10px;
+      border-radius:7px;
+      background:var(--color-brand);
+      color:#fff;
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .stats-grid {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+    .stat {
+      border:1px solid var(--color-line);
+      border-radius:11px;
+      padding:15px;
+      background:var(--color-bg);
+    }
+    .stat-label {
+      display:block;
+      color:var(--color-ink-soft);
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      font-size:10px;
+      font-weight:700;
+      margin-bottom:7px;
+    }
+    .stat-value {
+      font-family:var(--font-display);
+      font-size:19px;
+      font-weight:700;
+    }
+
+    .specs-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px 20px;
+    }
+    .spec-row {
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 0;
+      border-bottom:1px dashed var(--color-line);
+      font-size:12.5px;
+    }
+    .spec-key { color:var(--color-ink-soft); font-weight:600; }
+    .spec-value { text-align:right; font-weight:700; word-break:break-word; }
+
+    .alert-box {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      background:#F0F7F4;
+      border:1px solid rgba(11,110,79,.18);
+      border-radius:12px;
+      padding:16px;
+    }
+    .alert-box strong { display:block; font-family:var(--font-display); margin-bottom:4px; }
+    .alert-box span { color:var(--color-ink-soft); font-size:12px; }
+
+    .loading,
+    .error-state {
+      max-width:600px;
+      margin:80px auto;
+      text-align:center;
+      padding:40px 24px;
+      background:var(--color-surface);
+      border:1px solid var(--color-line);
+      border-radius:var(--radius);
+    }
+    .loading { color:var(--color-ink-soft); }
+    .error-state h2 { font-family:var(--font-display); margin:0 0 8px; }
+    .error-state p { color:var(--color-ink-soft); font-size:13px; }
+
+    footer {
+      background:var(--color-surface);
+      border-top:1px solid var(--color-line);
+      padding:36px 24px;
+      font-size:13px;
+      color:var(--color-ink-soft);
+      margin-top:30px;
+    }
+    .footer-container {
+      max-width:1140px;
+      margin:auto;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      align-items:center;
+      text-align:center;
+    }
+    .footer-links {
+      display:flex;
+      gap:24px;
+      flex-wrap:wrap;
+      justify-content:center;
+      font-size:13.5px;
+    }
+    .footer-links a:hover { color:var(--color-brand); }
+
+    .toast-container {
+      position:fixed;
+      right:24px;
+      bottom:24px;
+      z-index:1000;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-width:calc(100vw - 48px);
+    }
+    .toast {
+      background:var(--color-surface);
+      border:1px solid var(--color-line);
+      border-left:4px solid var(--color-brand);
+      border-radius:10px;
+      padding:12px 16px;
+      min-width:270px;
+      box-shadow:0 8px 24px rgba(0,0,0,.12);
+      font-size:13px;
+    }
+    .toast.error { border-left-color:var(--color-danger); }
+
+    .modal-overlay {
+      position:fixed;
+      inset:0;
+      background:rgba(23,35,29,.5);
+      backdrop-filter:blur(4px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+      padding:16px;
+    }
+    .modal-overlay.active { display:flex; }
+    .modal {
+      width:100%;
+      max-width:410px;
+      background:var(--color-surface);
+      border:1px solid var(--color-line);
+      border-radius:var(--radius);
+      padding:25px;
+      box-shadow:0 16px 40px rgba(0,0,0,.18);
+    }
+    .modal h3 {
+      margin:0 0 8px;
+      font-family:var(--font-display);
+    }
+    .modal p {
+      margin:0 0 16px;
+      color:var(--color-ink-soft);
+      font-size:13px;
+    }
+    .modal input {
+      width:100%;
+      padding:11px 13px;
+      border:1.5px solid var(--color-line);
+      border-radius:8px;
+      margin-bottom:10px;
+    }
+    .modal-actions {
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+    }
+
+    @media (max-width:800px) {
+      .product-hero { grid-template-columns:1fr; }
+      .product-image-panel {
+        min-height:300px;
+        border-right:0;
+        border-bottom:1px solid var(--color-line);
+      }
+      .product-image { height:260px; }
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
+      .specs-grid { grid-template-columns:1fr; }
+    }
+
+    @media (max-width:600px) {
+      header { padding:12px 16px; }
+      .header-container { justify-content:center; }
+      .header-nav { justify-content:center; gap:12px; }
+      .page { padding:20px 12px 50px; }
+      .product-info { padding:22px 18px; }
+      .product-image-panel { min-height:260px; padding:20px; }
+      .section { padding:18px 14px; }
+      .chart-wrap { height:280px; }
+      .offer-row { grid-template-columns:1fr auto; }
+      .offer-row .visit-btn { grid-column:2; }
+      .offer-price { font-size:14px; }
+      .stats-grid { grid-template-columns:1fr 1fr; }
+      .toast-container { left:16px; right:16px; bottom:16px; }
+      .toast { min-width:0; width:100%; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="header-container">
+    <a class="logo" id="logoSlot" href="index.html" aria-label="Home">
+      <span class="logo-name">Sasta</span><span class="logo-tld">.pk</span>
+    </a>
+
+    <nav class="header-nav" aria-label="Main Navigation">
+      <a href="index.html">Home</a>
+      <a href="index.html">Compare Prices</a>
+      <a href="deals.html">Top Deals</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div id="loadingState" class="loading">Loading product...</div>
+
+  <div id="productPage" class="page" style="display:none;">
+    <div class="breadcrumb">
+      <a href="index.html">Compare Prices</a>
+      <span> / </span>
+      <span id="breadcrumbTitle">Product</span>
+    </div>
+
+    <section class="product-hero">
+      <div class="product-image-panel">
+        <span id="bestBadge" class="best-badge">Best Price</span>
+        <img id="productImage" class="product-image" alt="" loading="eager">
+        <span id="imagePlaceholder" class="image-placeholder" style="display:none;">📱</span>
+      </div>
+
+      <div class="product-info">
+        <span id="productCategory" class="category-pill">Mobile</span>
+        <h1 id="productTitle" class="product-title">Product</h1>
+
+        <div class="product-meta">
+          <span id="rating"></span>
+          <span>•</span>
+          <span id="offerCount"></span>
+          <span>•</span>
+          <span id="updatedAt"></span>
+        </div>
+
+        <div class="price-block">
+          <span id="currentPrice" class="current-price">N/A</span>
+          <span id="oldPrice" class="old-price"></span>
+          <span id="priceChange" class="price-change stable">Stable</span>
+        </div>
+
+        <div class="hero-actions">
+          <button id="trackPriceBtn" class="btn btn-primary" type="button">🔔 Track Price</button>
+          <button id="shareBtn" class="btn" type="button">↗ Share</button>
+          <a href="index.html" class="btn">← Compare More</a>
+        </div>
+
+        <div class="alert-box">
+          <div>
+            <strong>Want a better price?</strong>
+            <span>Set a price target and we'll notify you when this product reaches it.</span>
+          </div>
+          <button id="targetBtn" class="btn" type="button">Set Target</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="chartSection">
+      <div class="section-heading">
+        <div>
+          <h2>Price History</h2>
+          <p>See how this product's price has changed over time.</p>
+        </div>
+        <div class="chart-controls" id="chartControls">
+          <button class="range-btn" data-range="7">7D</button>
+          <button class="range-btn active" data-range="30">30D</button>
+          <button class="range-btn" data-range="90">90D</button>
+          <button class="range-btn" data-range="all">All</button>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <svg id="priceChart" viewBox="0 0 1000 330" preserveAspectRatio="none" aria-label="Interactive price history chart"></svg>
+        <div id="chartTooltip" class="chart-tooltip"></div>
+        <div id="chartEmpty" class="chart-empty" style="display:none;">Not enough price history is available yet.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <div>
+          <h2>Compare Store Prices</h2>
+          <p>Current offers sorted from lowest to highest price.</p>
+        </div>
+      </div>
+      <div id="offersGrid" class="offers-grid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <div>
+          <h2>Price Snapshot</h2>
+          <p>Useful indicators based on the available price history.</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Current best</span>
+          <span id="statCurrent" class="stat-value">N/A</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Lowest recorded</span>
+          <span id="statLowest" class="stat-value">N/A</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Highest recorded</span>
+          <span id="statHighest" class="stat-value">N/A</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">History points</span>
+          <span id="statPoints" class="stat-value">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="specsSection">
+      <div class="section-heading">
+        <div>
+          <h2>Specifications</h2>
+          <p>Product information supplied by the comparison backend.</p>
+        </div>
+      </div>
+      <div id="specsGrid" class="specs-grid"></div>
+    </section>
+  </div>
+
+  <div id="errorState" class="error-state" style="display:none;">
+    <h2>Product not found</h2>
+    <p id="errorMessage">We couldn't load this product.</p>
+    <a class="btn btn-primary" href="index.html">Back to Compare</a>
+  </div>
+</main>
+
+<footer id="footerSlot">
+  <div class="footer-container">
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="index.html">Compare Prices</a>
+      <a href="deals.html">Top Deals</a>
+      <a href="#">About Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+    <div id="footerTxt"></div>
+  </div>
+</footer>
+
+<div id="alertModal" class="modal-overlay">
+  <div class="modal">
+    <h3>🔔 Track Price</h3>
+    <p id="alertProductText">We'll notify you when the price reaches your target.</p>
+    <input id="alertEmail" type="email" placeholder="Enter your email address" autocomplete="email">
+    <input id="alertTargetPrice" type="number" min="1" placeholder="Target price in Rs">
+    <div class="modal-actions">
+      <button id="closeModal" class="btn" type="button">Cancel</button>
+      <button id="submitAlert" class="btn btn-primary" type="button">Notify Me</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script>
+(function () {
+  const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "" };
+
+  const state = {
+    product: null,
+    history: [],
+    range: "30",
+    settings: null
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatPKR(value) {
+    if (value === null || value === undefined || value === "" || Number.isNaN(Number(value))) return "N/A";
+    return "Rs " + Number(value).toLocaleString("en-PK");
+  }
+
+  function relativeTime(dateStr) {
+    if (!dateStr) return "Update time unavailable";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "Update time unavailable";
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "Just updated";
+    if (mins < 60) return mins + "m ago";
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    return Math.floor(hrs / 24) + "d ago";
+  }
+
+  function showToast(message, type = "success") {
+    const el = document.createElement("div");
+    el.className = "toast" + (type === "error" ? " error" : "");
+    el.textContent = message;
+    $("toastContainer").appendChild(el);
+    setTimeout(() => el.remove(), 4500);
+  }
+
+  function getProductId() {
+    return new URLSearchParams(location.search).get("id");
+  }
+
+  function normalizeProduct(raw) {
+    if (!raw) return null;
+    return raw.product || raw.data || raw;
+  }
+
+  async function fetchProduct(productId) {
+    // First try the dedicated detail endpoint.
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products/${encodeURIComponent(productId)}`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const product = normalizeProduct(data);
+        if (product && String(product.id) === String(productId)) return product;
+      }
+    } catch (e) {
+      console.warn("Product detail endpoint unavailable:", e);
+    }
+
+    // If the visitor came from index.html, use the exact product object
+    // already cached in sessionStorage. This avoids a second product search.
+    try {
+      const cached = JSON.parse(sessionStorage.getItem("selectedProduct") || "null");
+      if (cached && String(cached.id) === String(productId)) return cached;
+    } catch (e) {}
+
+    throw new Error("Product could not be loaded.");
+  }
+
+  async function fetchHistory(productId) {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products/${encodeURIComponent(productId)}/history`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data.history) ? data.history : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
+      if (res.ok) state.settings = await res.json();
+    } catch (e) {
+      state.settings = null;
+    }
+    applySettings();
+  }
+
+  function applySettings() {
+    const settings = state.settings || {};
+    const theme = settings.theme || {};
+
+    if (theme.brandColor) document.documentElement.style.setProperty("--color-brand", theme.brandColor);
+    if (theme.accentColor) document.documentElement.style.setProperty("--color-accent", theme.accentColor);
+    if (theme.fontBody) document.documentElement.style.setProperty("--font-body", `"${theme.fontBody}", sans-serif`);
+    if (theme.fontDisplay) document.documentElement.style.setProperty("--font-display", `"${theme.fontDisplay}", sans-serif`);
+
+    const rawLogo = settings.logoText || CFG.BRAND_NAME || "Sasta.pk";
+    const dot = rawLogo.indexOf(".");
+    const name = dot > 0 ? rawLogo.slice(0, dot) : rawLogo.slice(0, Math.ceil(rawLogo.length / 2));
+    const tld = dot > 0 ? rawLogo.slice(dot) : rawLogo.slice(Math.ceil(rawLogo.length / 2));
+
+    $("logoSlot").innerHTML =
+      `<span class="logo-name">${escapeHtml(name)}</span><span class="logo-tld">${escapeHtml(tld)}</span>`;
+
+    if (settings.customHead) {
+      const temp = document.createElement("div");
+      temp.innerHTML = settings.customHead;
+      while (temp.firstChild) document.head.appendChild(temp.firstChild);
+    }
+
+    const footerText = settings.footerText || "";
+    const footerLinks = `
+      <a href="index.html">Home</a>
+      <a href="index.html">Compare Prices</a>
+      <a href="deals.html">Top Deals</a>
+      <a href="#">About Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    `;
+    $("footerSlot").innerHTML =
+      `<div class="footer-container"><div class="footer-links">${footerLinks}</div><div>${escapeHtml(footerText)}</div></div>`;
+  }
+
+  function extractPriceHistory() {
+    return state.history
+      .map(h => ({
+        price: Number(h.price),
+        date: h.recorded_at || h.created_at || h.scraped_at || h.date || null
+      }))
+      .filter(h => Number.isFinite(h.price) && h.date)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  function getVisibleHistory() {
+    const history = extractPriceHistory();
+    if (state.range === "all") return history;
+
+    const days = Number(state.range);
+    if (!Number.isFinite(days)) return history;
+
+    const cutoff = Date.now() - days * 86400000;
+    const filtered = history.filter(h => new Date(h.date).getTime() >= cutoff);
+
+    // If there are no records inside the selected window, show the latest
+    // available points rather than displaying an empty chart.
+    return filtered.length ? filtered : history.slice(-Math.min(history.length, 30));
+  }
+
+  function drawChart() {
+    const svg = $("priceChart");
+    const tooltip = $("chartTooltip");
+    const data = getVisibleHistory();
+
+    svg.innerHTML = "";
+    tooltip.style.display = "none";
+
+    if (data.length < 2) {
+      $("chartEmpty").style.display = "flex";
+      svg.style.display = "none";
+      return;
+    }
+
+    $("chartEmpty").style.display = "none";
+    svg.style.display = "block";
+
+    const W = 1000;
+    const H = 330;
+    const pad = { l: 68, r: 28, t: 28, b: 48 };
+    const innerW = W - pad.l - pad.r;
+    const innerH = H - pad.t - pad.b;
+
+    const prices = data.map(d => d.price);
+    let min = Math.min(...prices);
+    let max = Math.max(...prices);
+
+    if (min === max) {
+      min *= 0.98;
+      max *= 1.02;
+    }
+
+    const x = i => pad.l + (i / (data.length - 1)) * innerW;
+    const y = price => pad.t + ((max - price) / (max - min)) * innerH;
+
+    const NS = "http://www.w3.org/2000/svg";
+    const make = (tag, attrs = {}) => {
+      const el = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    };
+
+    // Horizontal grid and price labels.
+    for (let i = 0; i <= 4; i++) {
+      const price = min + ((max - min) * i / 4);
+      const yy = y(price);
+
+      svg.appendChild(make("line", {
+        x1: pad.l, y1: yy, x2: W - pad.r, y2: yy,
+        stroke: "#E4DDCB", "stroke-width": 1
+      }));
+
+      const label = make("text", {
+        x: pad.l - 10, y: yy + 4,
+        "text-anchor": "end", fill: "#5B6B62",
+        "font-size": 11, "font-family": "Inter, sans-serif"
+      });
+      label.textContent = "Rs " + Math.round(price).toLocaleString("en-PK");
+      svg.appendChild(label);
+    }
+
+    const points = data.map((d, i) => `${x(i)},${y(d.price)}`).join(" ");
+    const areaPoints = `${pad.l},${H - pad.b} ${points} ${W - pad.r},${H - pad.b}`;
+
+    svg.appendChild(make("polygon", {
+      points: areaPoints,
+      fill: "rgba(11,110,79,.08)"
+    }));
+
+    svg.appendChild(make("polyline", {
+      points,
+      fill: "none",
+      stroke: "var(--color-brand)",
+      "stroke-width": 4,
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    }));
+
+    // Date labels.
+    const labelIndexes = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])];
+    labelIndexes.forEach(i => {
+      const d = new Date(data[i].date);
+      const text = make("text", {
+        x: x(i), y: H - 17,
+        "text-anchor": i === 0 ? "start" : i === data.length - 1 ? "end" : "middle",
+        fill: "#5B6B62",
+        "font-size": 11,
+        "font-family": "Inter, sans-serif"
+      });
+      text.textContent = d.toLocaleDateString("en-PK", { day: "numeric", month: "short" });
+      svg.appendChild(text);
+    });
+
+    // Invisible interaction zones.
+    data.forEach((d, i) => {
+      const hit = make("circle", {
+        cx: x(i), cy: y(d.price), r: 9,
+        fill: "transparent",
+        "data-index": i
+      });
+
+      hit.addEventListener("pointerenter", () => {
+        const rect = svg.getBoundingClientRect();
+        const svgX = x(i) / W * rect.width;
+        const svgY = y(d.price) / H * rect.height;
+
+        tooltip.textContent =
+          `${new Date(d.date).toLocaleDateString("en-PK", { day:"numeric", month:"short", year:"numeric" })} • ${formatPKR(d.price)}`;
+
+        tooltip.style.display = "block";
+        tooltip.style.left = Math.max(8, Math.min(rect.width - 190, svgX - 55)) + "px";
+        tooltip.style.top = Math.max(8, svgY - 42) + "px";
+      });
+
+      hit.addEventListener("pointerleave", () => {
+        tooltip.style.display = "none";
+      });
+
+      svg.appendChild(hit);
+    });
+  }
+
+  function renderProduct() {
+    const p = state.product;
+    if (!p) return;
+
+    const offers = Array.isArray(p.offers) ? [...p.offers] : [];
+    offers.sort((a, b) => Number(a.price ?? Infinity) - Number(b.price ?? Infinity));
+
+    const bestPrice = p.min_price != null
+      ? Number(p.min_price)
+      : (offers.length ? Number(offers[0].price) : null);
+
+    $("breadcrumbTitle").textContent = p.title || "Product";
+    $("productTitle").textContent = p.title || "Product";
+    $("productCategory").textContent = p.category || "Mobile";
+    $("currentPrice").textContent = formatPKR(bestPrice);
+    $("offerCount").textContent = `${offers.length} store offer${offers.length === 1 ? "" : "s"}`;
+
+    const rating = p.max_rating && Number(p.max_rating) > 0
+      ? `★ ${Number(p.max_rating).toFixed(1)}`
+      : "Verified Deal";
+    $("rating").innerHTML = `<span class="stars">${escapeHtml(rating)}</span>`;
+
+    $("updatedAt").textContent = p.scraped_at ? relativeTime(p.scraped_at) : "Latest prices";
+
+    $("bestBadge").textContent = bestPrice != null ? `Best: ${formatPKR(bestPrice)}` : "Best Price";
+
+    const image = $("productImage");
+    const placeholder = $("imagePlaceholder");
+    if (p.image) {
+      image.src = p.image;
+      image.alt = p.title || "Product";
+      image.style.display = "block";
+      placeholder.style.display = "none";
+      image.onerror = () => {
+        image.style.display = "none";
+        placeholder.style.display = "inline";
+      };
+    } else {
+      image.style.display = "none";
+      placeholder.style.display = "inline";
+    }
+
+    // Specs from the product object. Also include common parsed card fields.
+    const specs = {};
+    if (p.specs && typeof p.specs === "object") {
+      Object.entries(p.specs).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== "") specs[k] = v;
+      });
+    }
+    if (p.brand && !specs.brand) specs.brand = p.brand;
+    if (p.category && !specs.category) specs.category = p.category;
+
+    const specsEntries = Object.entries(specs);
+    $("specsGrid").innerHTML = specsEntries.length
+      ? specsEntries.map(([key, value]) => `
+          <div class="spec-row">
+            <span class="spec-key">${escapeHtml(key.replace(/_/g, " "))}</span>
+            <span class="spec-value">${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}</span>
+          </div>
+        `).join("")
+      : `<div style="color:var(--color-ink-soft);font-size:13px;">No additional specifications available.</div>`;
+
+    $("offersGrid").innerHTML = offers.length
+      ? offers.map((o, index) => `
+          <a class="offer-row" href="${escapeHtml(CFG.API_BASE_URL + "/out/" + o.id)}" target="_blank" rel="noopener noreferrer sponsored">
+            <span class="store-name">
+              <span class="store-dot" style="background:${escapeHtml(o.storeColor || "#0B6E4F")}"></span>
+              ${escapeHtml(o.store || "Store")}
+              ${index === 0 ? `<small style="color:var(--color-brand);font-weight:700;">Lowest</small>` : ""}
+            </span>
+            <span class="offer-stock ${o.in_stock === false ? "out" : ""}">
+              ${o.in_stock === false ? "Out of stock" : "In stock"}
+            </span>
+            <span class="offer-price">${formatPKR(o.price)}</span>
+            <span class="visit-btn">View Deal →</span>
+          </a>
+        `).join("")
+      : `<div style="color:var(--color-ink-soft);font-size:13px;">No current store offers found.</div>`;
+
+    $("statCurrent").textContent = formatPKR(bestPrice);
+
+    const history = extractPriceHistory();
+    if (history.length) {
+      const prices = history.map(x => x.price);
+      $("statLowest").textContent = formatPKR(Math.min(...prices));
+      $("statHighest").textContent = formatPKR(Math.max(...prices));
+      $("statPoints").textContent = prices.length.toLocaleString("en-PK");
+
+      const first = prices[0];
+      const latest = prices[prices.length - 1];
+      const change = latest - first;
+      const changeEl = $("priceChange");
+
+      if (change < 0) {
+        changeEl.className = "price-change down";
+        changeEl.textContent = `↓ ${formatPKR(Math.abs(change))} since tracking`;
+        $("oldPrice").textContent = formatPKR(first);
+      } else if (change > 0) {
+        changeEl.className = "price-change up";
+        changeEl.textContent = `↑ ${formatPKR(change)} since tracking`;
+        $("oldPrice").textContent = formatPKR(first);
+      } else {
+        changeEl.className = "price-change stable";
+        changeEl.textContent = "Stable since tracking";
+        $("oldPrice").textContent = "";
+      }
+    } else {
+      $("statLowest").textContent = "N/A";
+      $("statHighest").textContent = "N/A";
+      $("statPoints").textContent = "0";
+      $("priceChange").className = "price-change stable";
+      $("priceChange").textContent = "No history yet";
+    }
+
+    const metaTitle = p.title ? `${p.title} Price in Pakistan | Compare Stores` : "Product Price Comparison";
+    document.title = metaTitle;
+    $("metaDescription").setAttribute(
+      "content",
+      `${p.title || "Product"} price comparison in Pakistan. Compare current offers, store prices and price history.`
+    );
+
+    // Product JSON-LD for search engines.
+    let jsonLd = document.getElementById("productJsonLd");
+    if (!jsonLd) {
+      jsonLd = document.createElement("script");
+      jsonLd.id = "productJsonLd";
+      jsonLd.type = "application/ld+json";
+      document.head.appendChild(jsonLd);
+    }
+    jsonLd.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: p.title || "Product",
+      image: p.image ? [p.image] : undefined,
+      category: p.category || undefined,
+      offers: offers.length ? {
+        "@type": "AggregateOffer",
+        lowPrice: Math.min(...offers.map(o => Number(o.price)).filter(Number.isFinite)),
+        highPrice: Math.max(...offers.map(o => Number(o.price)).filter(Number.isFinite)),
+        priceCurrency: "PKR",
+        offerCount: offers.length
+      } : undefined
+    });
+
+    drawChart();
+  }
+
+  function openAlertModal() {
+    const p = state.product;
+    if (!p) return;
+    const offers = p.offers || [];
+    const best = p.min_price != null ? Number(p.min_price) :
+      offers.length ? Math.min(...offers.map(o => Number(o.price))) : "";
+
+    $("alertProductText").textContent =
+      `We'll notify you when "${p.title || "this product"}" reaches your target price.`;
+    $("alertTargetPrice").value = Number.isFinite(best) ? Math.round(best) : "";
+    $("alertModal").classList.add("active");
+    $("alertEmail").focus();
+  }
+
+  async function submitAlert() {
+    const email = $("alertEmail").value.trim();
+    const targetPrice = Number($("alertTargetPrice").value);
+
+    if (!email || !email.includes("@")) {
+      showToast("Please enter a valid email address.", "error");
+      return;
+    }
+    if (!Number.isFinite(targetPrice) || targetPrice <= 0) {
+      showToast("Please enter a valid target price.", "error");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/alerts/subscribe`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          email,
+          productId:state.product.id,
+          targetPrice
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Subscription failed.");
+      }
+
+      $("alertModal").classList.remove("active");
+      $("alertEmail").value = "";
+      showToast("Price alert created successfully.");
+    } catch (e) {
+      showToast(e.message || "Unable to create price alert.", "error");
+    }
+  }
+
+  async function shareProduct() {
+    const title = state.product?.title || "Product";
+    const url = location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text:`Compare ${title} prices`, url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        showToast("Product link copied.");
+      } else {
+        showToast("Copy this page URL to share it.");
+      }
+    } catch (e) {}
+  }
+
+  async function init() {
+    const id = getProductId();
+
+    if (!id) {
+      $("loadingState").style.display = "none";
+      $("errorState").style.display = "block";
+      $("errorMessage").textContent = "No product ID was supplied.";
+      return;
+    }
+
+    await loadSettings();
+
+    try {
+      state.product = await fetchProduct(id);
+      state.history = await fetchHistory(id);
+
+      $("loadingState").style.display = "none";
+      $("productPage").style.display = "block";
+
+      renderProduct();
+
+      $("chartControls").querySelectorAll(".range-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.range = btn.dataset.range;
+          $("chartControls").querySelectorAll(".range-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          drawChart();
+        });
+      });
+
+      $("trackPriceBtn").addEventListener("click", openAlertModal);
+      $("targetBtn").addEventListener("click", openAlertModal);
+      $("shareBtn").addEventListener("click", shareProduct);
+      $("submitAlert").addEventListener("click", submitAlert);
+
+      $("closeModal").addEventListener("click", () => $("alertModal").classList.remove("active"));
+      $("alertModal").addEventListener("click", e => {
+        if (e.target === $("alertModal")) $("alertModal").classList.remove("active");
+      });
+    } catch (e) {
+      console.error(e);
+      $("loadingState").style.display = "none";
+      $("errorState").style.display = "block";
+      $("errorMessage").textContent =
+        "This product could not be loaded. Try opening it again from the comparison page.";
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

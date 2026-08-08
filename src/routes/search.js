@@ -159,6 +159,133 @@ router.get("/products", async (req, res) => {
   });
 });
 
+// Get single product details by product ID
+// Returns the product + all store offers belonging to the same fingerprint
+router.get("/products/:id", async (req, res) => {
+  try {
+    const productId = Number(req.params.id);
+
+    if (!Number.isInteger(productId) || productId <= 0) {
+      return res.status(400).json({
+        error: "Invalid product ID"
+      });
+    }
+
+    // First find the requested product and its canonical fingerprint
+    const { rows: baseRows } = await db(
+      `
+      SELECT
+        p.id,
+        p.fingerprint,
+        p.title,
+        p.image,
+        p.brand,
+        p.model,
+        p.category,
+        p.specs,
+        p.scraped_at
+      FROM products p
+      WHERE p.id = $1
+      LIMIT 1
+      `,
+      [productId]
+    );
+
+    if (baseRows.length === 0) {
+      return res.status(404).json({
+        error: "Product not found"
+      });
+    }
+
+    const baseProduct = baseRows[0];
+
+    // Get all offers for the same canonical product
+    const { rows: offerRows } = await db(
+      `
+      SELECT
+        p.id,
+        p.store,
+        p.price,
+        p.url,
+        p.image,
+        p.in_stock,
+        p.rating,
+        p.scraped_at,
+        s.color AS "storeColor"
+      FROM products p
+      JOIN stores s
+        ON s.name = p.store
+      WHERE p.fingerprint = $1
+        AND s.enabled = true
+      ORDER BY p.price ASC NULLS LAST
+      `,
+      [baseProduct.fingerprint]
+    );
+
+    // Calculate values used by product.html
+    const validPrices = offerRows
+      .map(o => Number(o.price))
+      .filter(price => Number.isFinite(price) && price > 0);
+
+    const minPrice = validPrices.length
+      ? Math.min(...validPrices)
+      : null;
+
+    const maxPrice = validPrices.length
+      ? Math.max(...validPrices)
+      : null;
+
+    const ratings = offerRows
+      .map(o => Number(o.rating))
+      .filter(rating => Number.isFinite(rating));
+
+    const maxRating = ratings.length
+      ? Math.max(...ratings)
+      : null;
+
+    const product = {
+      id: baseProduct.id,
+      fingerprint: baseProduct.fingerprint,
+      title: baseProduct.title,
+      image: baseProduct.image,
+      brand: baseProduct.brand,
+      model: baseProduct.model,
+      category: baseProduct.category || "Mobile",
+      specs: baseProduct.specs || null,
+      min_price: minPrice,
+      max_price: maxPrice,
+      max_rating: maxRating,
+      scraped_at: baseProduct.scraped_at,
+
+      offers: offerRows.map(o => ({
+        id: o.id,
+        store: o.store,
+        price: o.price,
+        url: o.url,
+        image: o.image,
+        in_stock: o.in_stock,
+        rating: o.rating,
+        scraped_at: o.scraped_at,
+        storeColor: o.storeColor
+      }))
+    };
+
+    res.json({
+      product
+    });
+
+  } catch (err) {
+    console.error(
+      "Failed to fetch product:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: "Failed to fetch product"
+    });
+  }
+});
+
 // Inside your admin or public API routes
 // Inside your /top-searches route
 router.get("/top-searches", async (req, res) => {
