@@ -40,7 +40,7 @@ async function autoSetup() {
   await pool.query(sql);
   console.log("Schema ready.");
   const getRandomColor = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-
+/*
   for (const config of initialStoreConfigs) {
     await pool.query(
       `INSERT INTO stores (name, color, base_url, search_url_template, affiliate_param, selectors)
@@ -62,7 +62,7 @@ async function autoSetup() {
     );
   }
   console.log(`Stores seeded: ${initialStoreConfigs.map((c) => c.name).join(", ")}`);
-
+*/
   await pool.query(
     `INSERT INTO site_settings (id, data) VALUES (1, $1)
      ON CONFLICT (id) DO NOTHING`,
