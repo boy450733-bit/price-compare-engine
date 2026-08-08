@@ -391,9 +391,35 @@
       margin-bottom:7px;
     }
     .stat-value {
+      display:block;
       font-family:var(--font-display);
-      font-size:19px;
+      font-size:20px;
+      line-height:1.2;
       font-weight:700;
+      text-align:center;
+    }
+    .stat-footer {
+      display:block;
+      margin-top:10px;
+      padding-top:8px;
+      border-top:1px dashed var(--color-line);
+      color:var(--color-ink-soft);
+      font-size:9.5px;
+      line-height:1.25;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .stat {
+      min-width:0;
+      text-align:center;
+      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .stat:hover {
+      transform:translateY(-1px);
+      border-color:rgba(11,110,79,.28);
+      box-shadow:0 4px 12px rgba(23,35,29,.035);
     }
 
     .specs-grid {
@@ -555,7 +581,10 @@
       .offer-row { grid-template-columns:1fr auto; }
       .offer-row .visit-btn { grid-column:2; }
       .offer-price { font-size:14px; }
-      .stats-grid { grid-template-columns:1fr 1fr; }
+      .stats-grid { grid-template-columns:1fr 1fr; gap:9px; }
+      .stat { padding:13px 10px; }
+      .stat-value { font-size:17px; }
+      .stat-footer { font-size:9px; }
       .toast-container { left:16px; right:16px; bottom:16px; }
       .toast { min-width:0; width:100%; }
     }
@@ -572,7 +601,7 @@
     <nav class="header-nav" aria-label="Main Navigation">
       <a href="/">Home</a>
       <a href="/">Compare Prices</a>
-      <a href="deals.html">Top Deals</a>
+      <a href="/deals">Top Deals</a>
     </nav>
   </div>
 </header>
@@ -670,18 +699,22 @@
         <div class="stat">
           <span class="stat-label">Current best</span>
           <span id="statCurrent" class="stat-value">N/A</span>
+          <span id="statCurrentDate" class="stat-footer">Was on: —</span>
         </div>
         <div class="stat">
           <span class="stat-label">Lowest recorded</span>
           <span id="statLowest" class="stat-value">N/A</span>
+          <span id="statLowestDate" class="stat-footer">Was on: —</span>
         </div>
         <div class="stat">
           <span class="stat-label">Highest recorded</span>
           <span id="statHighest" class="stat-value">N/A</span>
+          <span id="statHighestDate" class="stat-footer">Was on: —</span>
         </div>
         <div class="stat">
           <span class="stat-label">History points</span>
           <span id="statPoints" class="stat-value">0</span>
+          <span id="statPointsDate" class="stat-footer">Latest: —</span>
         </div>
       </div>
     </section>
@@ -708,8 +741,8 @@
   <div class="footer-container">
     <div class="footer-links">
       <a href="/">Home</a>
-      <a href="index.html">Compare Prices</a>
-      <a href="deals.html">Top Deals</a>
+      <a href="/">Compare Prices</a>
+      <a href="/deals">Top Deals</a>
       <a href="#">About Us</a>
       <a href="#">Privacy Policy</a>
       <a href="#">Terms of Service</a>
@@ -862,9 +895,9 @@
 
     const footerText = settings.footerText || "";
     const footerLinks = `
-      <a href="index.html">Home</a>
-      <a href="index.html">Compare Prices</a>
-      <a href="deals.html">Top Deals</a>
+      <a href="/">Home</a>
+      <a href="/">Compare Prices</a>
+      <a href="/deals">Top Deals</a>
       <a href="#">About Us</a>
       <a href="#">Privacy Policy</a>
       <a href="#">Terms of Service</a>
@@ -1020,6 +1053,28 @@
     });
   }
 
+  function formatHistoryDate(dateStr) {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-PK", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+  }
+
+  function findHistoryDate(history, price, fallback = null) {
+    const matches = history.filter(h => Number(h.price) === Number(price));
+    return matches.length ? matches[matches.length - 1].date : fallback;
+  }
+
+  function setStatFooter(id, label, date) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = `${label}: ${formatHistoryDate(date)}`;
+  }
+
   function renderProduct() {
     const p = state.product;
     if (!p) return;
@@ -1104,9 +1159,19 @@
     const history = extractPriceHistory();
     if (history.length) {
       const prices = history.map(x => x.price);
-      $("statLowest").textContent = formatPKR(Math.min(...prices));
-      $("statHighest").textContent = formatPKR(Math.max(...prices));
+      const lowest = Math.min(...prices);
+      const highest = Math.max(...prices);
+      const latestPoint = history[history.length - 1];
+
+      $("statCurrent").textContent = formatPKR(bestPrice);
+      $("statLowest").textContent = formatPKR(lowest);
+      $("statHighest").textContent = formatPKR(highest);
       $("statPoints").textContent = prices.length.toLocaleString("en-PK");
+
+      setStatFooter("statCurrentDate", "Was on", findHistoryDate(history, bestPrice, latestPoint.date));
+      setStatFooter("statLowestDate", "Was on", findHistoryDate(history, lowest));
+      setStatFooter("statHighestDate", "Was on", findHistoryDate(history, highest));
+      setStatFooter("statPointsDate", "Latest", latestPoint.date);
 
       const first = prices[0];
       const latest = prices[prices.length - 1];
@@ -1127,9 +1192,14 @@
         $("oldPrice").textContent = "";
       }
     } else {
+      $("statCurrent").textContent = formatPKR(bestPrice);
       $("statLowest").textContent = "N/A";
       $("statHighest").textContent = "N/A";
       $("statPoints").textContent = "0";
+      setStatFooter("statCurrentDate", "Checked", p.scraped_at);
+      setStatFooter("statLowestDate", "Was on", null);
+      setStatFooter("statHighestDate", "Was on", null);
+      setStatFooter("statPointsDate", "Latest", p.scraped_at);
       $("priceChange").className = "price-change stable";
       $("priceChange").textContent = "No history yet";
     }
