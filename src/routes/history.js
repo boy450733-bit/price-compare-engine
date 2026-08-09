@@ -8,13 +8,21 @@ router.get("/products/:id/history", async (req, res) => {
   try {
     const { id } = req.params;
     const { rows } = await db(
-      `SELECT price, recorded_at 
+      `SELECT price, created_at AS recorded_at 
        FROM price_history 
        WHERE product_id = $1 
-       ORDER BY recorded_at ASC`,
+       ORDER BY created_at ASC`,
       [id]
     );
-    res.json({ history: rows });
+
+    // If there is only 1 entry, duplicate it to ensure the frontend sparkline 
+    // and trend logic have at least 2 points to render without gaps or flat-line errors.
+    let expandedRows = rows;
+    if (rows.length === 1) {
+      expandedRows = [rows[0], rows[0]];
+    }
+
+    res.json({ history: expandedRows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
