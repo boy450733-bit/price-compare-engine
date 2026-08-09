@@ -276,6 +276,261 @@ router.get("/products/:id", async (req, res) => {
     });
   }
 });
+
+// ------------------------------------------------------------
+// Trending / popular products
+// Uses search_log to find the most searched queries,
+// then resolves each query to the best matching product.
+// ------------------------------------------------------------
+router.get("/trending-products", async (req, res) => {
+  const limit = Math.min(
+    Math.max(Number(req.query.limit) || 8, 1),
+    12
+  );
+
+  // Optional: don't show the product currently being viewed
+  const excludeId = req.query.excludeId
+    ? String(req.query.excludeId)
+    : null;
+
+  try {
+    const { rows } = await db(
+      `
+      WITH normalized_searches AS (
+        SELECT
+          LOWER(
+            REGEXP_REPLACE(
+              REPLACE(TRIM(query), '+', ' '),
+              '\\s+',
+              ' ',
+              'g'
+            )
+          ) AS normalized_query,
+
+          TRIM(
+            REGEXP_REPLACE(
+              REPLACE(query, '+', ' '),
+              '\\s+',
+              ' ',
+              'g'
+            )
+          ) AS display_query
+
+        FROM search_log
+
+        WHERE query IS NOT NULL
+          AND TRIM(query) <> ''
+      ),
+
+      top_queries AS (
+        SELECT
+          normalized_query,
+          MIN(display_query) AS display_query,
+          COUNT(*) AS search_count
+
+        FROM normalized_searches
+
+        WHERE LENGTH(normalized_query) >= 2
+
+        GROUP BY normalized_query
+
+        ORDER BY search_count DESC
+
+        LIMIT $2
+      ),
+
+      matched_products AS (
+
+        SELECT
+          tq.normalized_query,
+          tq.display_query,
+          tq.search_count,
+
+          match.id,
+          match.fingerprint,
+          match.title,
+          match.image,
+          match.brand,
+          match.model,
+          match.category,
+          match.min_price,
+          match.max_rating
+
+        FROM top_queries tq
+
+        CROSS JOIN LATERAL (
+
+          SELECT
+            MIN(p.id::text)::text AS id,
+            p.fingerprint,
+
+            MAX(p.title) AS title,
+            MAX(p.image) AS image,
+            MAX(p.brand) AS brand,
+            MAX(p.model) AS model,
+            MAX(p.category) AS category,
+
+            MIN(p.price) AS min_price,
+            MAX(COALESCE(p.rating, 0)) AS max_rating,
+
+            MAX(
+              similarity(
+                LOWER(p.title),
+                tq.normalized_query
+              )
+            ) AS match_score
+
+          FROM products p
+
+          JOIN stores s
+            ON s.name = p.store
+
+          WHERE
+            s.enabled = true
+
+            AND p.title % tq.normalized_query
+
+            AND (
+              $1::text IS NULL
+              OR p.id::text <> $1::text
+            )
+
+          GROUP BY p.fingerprint
+
+          ORDER BY
+            match_score DESC,
+            min_price ASC NULLS LAST
+
+          LIMIT 1
+
+        ) match
+      )
+
+      SELECT
+        mp.normalized_query,
+        mp.display_query,
+        mp.search_count,
+
+        mp.id,
+        mp.fingerprint,
+        mp.title,
+        mp.image,
+        mp.brand,
+        mp.model,
+        mp.category,
+        mp.min_price,
+        mp.max_rating,
+
+        COALESCE(offers.offers, '[]'::json) AS offers
+
+      FROM matched_products mp
+
+      LEFT JOIN LATERAL (
+
+        SELECT
+          json_agg(
+            json_build_object(
+              'id', p.id,
+              'store', p.store,
+              'price', p.price,
+              'url', p.url,
+              'in_stock', p.in_stock,
+              'rating', p.rating,
+              'storeColor', s.color
+            )
+
+            ORDER BY p.price ASC NULLS LAST
+
+          ) AS offers
+
+        FROM products p
+
+        JOIN stores s
+          ON s.name = p.store
+
+        WHERE
+          p.fingerprint = mp.fingerprint
+          AND s.enabled = true
+
+      ) offers ON true
+
+      ORDER BY
+        mp.search_count DESC,
+        mp.min_price ASC NULLS LAST
+      `,
+      [excludeId, limit]
+    );
+
+    // Remove duplicate fingerprints just in case
+    // multiple search queries resolve to the same product.
+    const seen = new Set();
+
+    const products = [];
+
+    for (const row of rows) {
+      if (!row.fingerprint) continue;
+
+      if (seen.has(row.fingerprint)) {
+        continue;
+      }
+
+      seen.add(row.fingerprint);
+
+      let offers = row.offers;
+
+      if (typeof offers === "string") {
+        try {
+          offers = JSON.parse(offers);
+        } catch {
+          offers = [];
+        }
+      }
+
+      products.push({
+        query: row.display_query,
+        search_count: Number(row.search_count || 0),
+
+        product: {
+          id: row.id,
+          fingerprint: row.fingerprint,
+          title: row.title,
+          image: row.image,
+          brand: row.brand,
+          model: row.model,
+          category: row.category || "Mobile",
+
+          min_price:
+            row.min_price !== null
+              ? Number(row.min_price)
+              : null,
+
+          max_rating:
+            row.max_rating !== null
+              ? Number(row.max_rating)
+              : 0,
+
+          offers: Array.isArray(offers) ? offers : []
+        }
+      });
+    }
+
+    res.json({
+      products
+    });
+
+  } catch (err) {
+    console.error(
+      "Failed to fetch trending products:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: "Failed to fetch trending products",
+      products: []
+    });
+  }
+});
+
 // Inside your admin or public API routes
 // Inside your /top-searches route
 router.get("/top-searches", async (req, res) => {
