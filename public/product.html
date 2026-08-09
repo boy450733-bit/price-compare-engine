@@ -180,6 +180,64 @@
       flex-wrap:wrap;
       margin-top:4px;
     }
+    .product-gallery {
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+    .product-main-image-wrap {
+      width:100%;
+      min-height:300px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    }
+    .product-image {
+      width:100%;
+      height:300px;
+      object-fit:contain;
+      mix-blend-mode:multiply;
+    }
+    .product-gallery-thumbs {
+      width:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .gallery-thumb {
+      width:54px;
+      height:54px;
+      padding:4px;
+      border:1px solid var(--color-line);
+      border-radius:8px;
+      background:#fff;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:.15s ease;
+    }
+    .gallery-thumb:hover, .gallery-thumb.active {
+      border-color:var(--color-brand);
+      box-shadow:0 0 0 2px rgba(11,110,79,.10);
+    }
+    .gallery-thumb img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      mix-blend-mode:multiply;
+    }
+    .gallery-count {
+      font-size:9px;
+      color:var(--color-ink-soft);
+      text-align:center;
+    }
+
     .current-price {
       font-family:var(--font-display);
       font-size:clamp(28px,4vw,42px);
@@ -457,6 +515,18 @@
     .trending-store { display:inline-flex; align-items:center; gap:5px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
     .trending-store-dot { width:6px; height:6px; border-radius:50%; flex:none; }
     .trending-view { color:var(--color-brand); font-weight:800; white-space:nowrap; }
+    .trending-stats { display:flex; align-items:center; gap:7px; flex-wrap:wrap; color:var(--color-ink-soft); font-size:9px; }
+    .trending-stat { display:inline-flex; align-items:center; gap:3px; }
+    .trending-saving { color:var(--color-brand); font-weight:800; }
+    .trending-price-line { width:38px; height:14px; flex:none; }
+    .trending-price-line polyline { fill:none; stroke:var(--color-brand); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .trending-price-line.down polyline { stroke:var(--color-brand); }
+    .trending-price-line.up polyline { stroke:var(--color-danger); }
+    .trending-price-line.stable polyline { stroke:var(--color-ink-soft); }
+    .trending-offer-line { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--color-ink-soft); font-size:9.5px; }
+    .trending-store-count { font-weight:700; }
+    .trending-best-store { display:inline-flex; align-items:center; gap:4px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
     .trending-empty { grid-column:1/-1; padding:18px; text-align:center; color:var(--color-ink-soft); font-size:12px; border:1px dashed var(--color-line); border-radius:10px; }
 
     .alert-box {
@@ -586,6 +656,7 @@
         border-bottom:1px solid var(--color-line);
       }
       .product-image { height:260px; }
+      .product-main-image-wrap { min-height:260px; }
       .stats-grid { grid-template-columns:repeat(2,1fr); }
       .specs-grid { grid-template-columns:1fr; }
     }
@@ -643,8 +714,14 @@
     <section class="product-hero">
       <div class="product-image-panel">
         <span id="bestBadge" class="best-badge">Best Price</span>
-        <img id="productImage" class="product-image" alt="" loading="eager">
-        <span id="imagePlaceholder" class="image-placeholder" style="display:none;">📱</span>
+        <div class="product-gallery" id="productGallery">
+          <div class="product-main-image-wrap">
+            <img id="productImage" class="product-image" alt="" loading="eager">
+            <span id="imagePlaceholder" class="image-placeholder" style="display:none;">📱</span>
+          </div>
+          <div id="productGalleryThumbs" class="product-gallery-thumbs" aria-label="Product images"></div>
+          <div id="galleryCount" class="gallery-count"></div>
+        </div>
       </div>
 
       <div class="product-info">
@@ -1124,6 +1201,78 @@
     el.textContent = `${label}: ${formatHistoryDate(date)}`;
   }
 
+  function getProductImages(product, offers = []) {
+    const candidates = [
+      product?.image,
+      ...(Array.isArray(product?.images) ? product.images : []),
+      ...offers.map(o => o?.image)
+    ];
+
+    const seen = new Set();
+    return candidates.filter(url => {
+      if (!url || typeof url !== "string") return false;
+      const clean = url.trim();
+      if (!clean || seen.has(clean)) return false;
+      seen.add(clean);
+      return true;
+    }).slice(0, 8);
+  }
+
+  function renderProductGallery(product, offers = []) {
+    const image = $("productImage");
+    const placeholder = $("imagePlaceholder");
+    const thumbs = $("productGalleryThumbs");
+    const count = $("galleryCount");
+    const images = getProductImages(product, offers);
+
+    if (!images.length) {
+      image.style.display = "none";
+      placeholder.style.display = "inline";
+      thumbs.innerHTML = "";
+      count.textContent = "";
+      return;
+    }
+
+    image.style.display = "block";
+    placeholder.style.display = "none";
+    image.alt = product.title || "Product";
+
+    let activeIndex = 0;
+
+    const setMainImage = (index) => {
+      activeIndex = index;
+      image.src = images[index];
+      image.alt = `${product.title || "Product"} image ${index + 1}`;
+      image.onerror = () => {
+        image.style.display = "none";
+        placeholder.style.display = "inline";
+      };
+      image.onload = () => {
+        image.style.display = "block";
+        placeholder.style.display = "none";
+      };
+
+      thumbs.querySelectorAll(".gallery-thumb").forEach((btn, i) => {
+        btn.classList.toggle("active", i === activeIndex);
+      });
+    };
+
+    thumbs.innerHTML = images.map((url, index) => `
+      <button class="gallery-thumb ${index === 0 ? "active" : ""}" type="button" data-gallery-index="${index}" aria-label="View image ${index + 1}">
+        <img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.gallery-thumb').style.display='none'">
+      </button>
+    `).join("");
+
+    thumbs.querySelectorAll(".gallery-thumb").forEach(btn => {
+      btn.addEventListener("click", () => {
+        setMainImage(Number(btn.dataset.galleryIndex));
+      });
+    });
+
+    count.textContent = images.length > 1 ? `${images.length} images from available stores` : "1 product image";
+    setMainImage(0);
+  }
+
   function renderProduct() {
     const p = state.product;
     if (!p) return;
@@ -1150,21 +1299,7 @@
 
     $("bestBadge").textContent = bestPrice != null ? `Best: ${formatPKR(bestPrice)}` : "Best Price";
 
-    const image = $("productImage");
-    const placeholder = $("imagePlaceholder");
-    if (p.image) {
-      image.src = p.image;
-      image.alt = p.title || "Product";
-      image.style.display = "block";
-      placeholder.style.display = "none";
-      image.onerror = () => {
-        image.style.display = "none";
-        placeholder.style.display = "inline";
-      };
-    } else {
-      image.style.display = "none";
-      placeholder.style.display = "inline";
-    }
+    renderProductGallery(p, offers);
 
     // Specs from the product object. Also include common parsed card fields.
     const specs = {};
@@ -1272,7 +1407,7 @@
       "@context": "https://schema.org",
       "@type": "Product",
       name: p.title || "Product",
-      image: p.image ? [p.image] : undefined,
+      image: getProductImages(p, offers),
       category: p.category || undefined,
       offers: offers.length ? {
         "@type": "AggregateOffer",
@@ -1290,14 +1425,21 @@
     return String(query || "").replace(/\+/g, " ").replace(/\s+/g, " ").trim();
   }
 
+  function priceLineSvg(direction = "stable") {
+    const points = direction === "down"
+      ? "1,10 8,8 14,9 21,5 28,6 37,2"
+      : direction === "up"
+        ? "1,3 8,5 14,4 21,8 28,7 37,11"
+        : "1,7 8,6 14,7 21,6 28,7 37,6";
+    return `<svg class="trending-price-line ${direction}" viewBox="0 0 38 14" aria-hidden="true"><polyline points="${points}"></polyline></svg>`;
+  }
+
   async function fetchTrendingProducts() {
     const section = $("trendingSection");
     const chips = $("trendingSearches");
     const grid = $("trendingProducts");
     if (!section || !chips || !grid) return;
 
-    // Admin-controlled visibility. The section is shown ONLY when
-    // showTrendingSection is explicitly true in site_settings.data.
     if (!isTrendingEnabled()) {
       section.style.display = "none";
       chips.innerHTML = "";
@@ -1306,10 +1448,11 @@
     }
 
     try {
-      section.style.display = "none";
-      chips.innerHTML = "";
-      grid.innerHTML = "";
-      const res = await fetch(`${CFG.API_BASE_URL}/api/trending-products`, {
+      const currentId = getProductId();
+      const params = new URLSearchParams({ limit: "8" });
+      if (currentId) params.set("excludeId", currentId);
+
+      const res = await fetch(`${CFG.API_BASE_URL}/api/trending-products?${params.toString()}`, {
         headers: { "Accept": "application/json" },
         cache: "no-store"
       });
@@ -1326,11 +1469,16 @@
 
       grid.innerHTML = items.map((item, index) => {
         const p = item.product || item;
-        const offers = Array.isArray(p.offers) ? p.offers : [];
-        const prices = offers.map(o => Number(o.price)).filter(Number.isFinite);
-        const price = p.min_price != null ? Number(p.min_price) : (prices.length ? Math.min(...prices) : null);
-        const bestOffer = offers.find(o => Number(o.price) === price) || offers[0] || {};
-        const query = item.query || "Trending";
+        if (!p?.id) return "";
+
+        const price = p.min_price != null ? Number(p.min_price) : null;
+        const maxPrice = p.max_price != null ? Number(p.max_price) : null;
+        const storeCount = Number(p.store_count || 0);
+        const saving = p.saving != null ? Number(p.saving) : ((maxPrice || 0) - (price || 0));
+        const query = normalizeTrendQuery(item.query || "Trending");
+        const trendDirection = p.trend_direction || "stable";
+        const bestStore = p.best_store || "Best available offer";
+        const storeColor = p.best_store_color || "#0B6E4F";
 
         return `
           <a class="trending-card" href="/product?id=${encodeURIComponent(p.id)}" aria-label="View ${escapeHtml(p.title || "product")}">
@@ -1342,8 +1490,17 @@
               <div class="trending-query">Trending: ${escapeHtml(query)}</div>
               <div class="trending-title">${escapeHtml(p.title || "Product")}</div>
               <div class="trending-price">${formatPKR(price)}</div>
+              <div class="trending-stats">
+                <span class="trending-stat trending-store-count">${storeCount} ${storeCount === 1 ? "store" : "stores"} offering</span>
+                ${saving > 0 ? `<span class="trending-stat trending-saving">Save ${formatPKR(saving)}</span>` : ""}
+                ${priceLineSvg(trendDirection)}
+              </div>
+              <div class="trending-offer-line">
+                <span class="trending-best-store"><span class="trending-store-dot" style="background:${escapeHtml(storeColor)}"></span>${escapeHtml(bestStore)}</span>
+                ${maxPrice != null && maxPrice > price ? `<span>up to ${formatPKR(maxPrice)}</span>` : ""}
+              </div>
               <div class="trending-meta">
-                <span class="trending-store"><span class="trending-store-dot" style="background:${escapeHtml(bestOffer.storeColor || "#0B6E4F")}"></span>${escapeHtml(bestOffer.store || "Multiple stores")}</span>
+                <span class="trending-store">${Number(item.search_count || 0).toLocaleString("en-PK")} searches</span>
                 <span class="trending-view">View →</span>
               </div>
             </div>

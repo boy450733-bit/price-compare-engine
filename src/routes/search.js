@@ -159,8 +159,10 @@ router.get("/products", async (req, res) => {
   });
 });
 
-// Get single product details by product ID
-// Returns the product + all store offers belonging to the same fingerprint
+// ------------------------------------------------------------
+// Single product details
+// Full product + all enabled store offers + gallery images
+// ------------------------------------------------------------
 router.get("/products/:id", async (req, res) => {
   try {
     const productId = String(req.params.id || "").trim();
@@ -171,25 +173,29 @@ router.get("/products/:id", async (req, res) => {
       });
     }
 
-    // Find the requested product and its canonical fingerprint
+    // ----------------------------------------------------------
+    // Find the requested product and canonical fingerprint
+    // ----------------------------------------------------------
     const { rows: baseRows } = await db(
-      `SELECT
-         p.id,
-         p.fingerprint,
-         p.title,
-         p.image,
-         p.brand,
-         p.model,
-         p.category,
-         p.specs,
-         p.scraped_at
-       FROM products p
-       WHERE p.id = $1
-       LIMIT 1`,
+      `
+      SELECT
+        p.id,
+        p.fingerprint,
+        p.title,
+        p.image,
+        p.brand,
+        p.model,
+        p.category,
+        p.specs,
+        p.scraped_at
+      FROM products p
+      WHERE p.id::text = $1
+      LIMIT 1
+      `,
       [productId]
     );
 
-    if (baseRows.length === 0) {
+    if (!baseRows.length) {
       return res.status(404).json({
         error: "Product not found"
       });
@@ -197,70 +203,118 @@ router.get("/products/:id", async (req, res) => {
 
     const baseProduct = baseRows[0];
 
-    // Get all active store offers belonging to this product fingerprint
+    // ----------------------------------------------------------
+    // All current offers for the same canonical product
+    // Also retrieve each store's own product image.
+    // ----------------------------------------------------------
     const { rows: offerRows } = await db(
-      `SELECT
-         p.id,
-         p.store,
-         p.price,
-         p.url,
-         p.image,
-         p.in_stock,
-         p.rating,
-         p.scraped_at,
-         s.color AS "storeColor"
-       FROM products p
-       JOIN stores s ON s.name = p.store
-       WHERE p.fingerprint = $1
-         AND s.enabled = true
-       ORDER BY p.price ASC NULLS LAST`,
+      `
+      SELECT
+        p.id,
+        p.store,
+        p.price,
+        p.url,
+        p.image,
+        p.in_stock,
+        p.rating,
+        p.scraped_at,
+        s.color AS "storeColor"
+      FROM products p
+      JOIN stores s
+        ON s.name = p.store
+      WHERE
+        p.fingerprint = $1
+        AND s.enabled = true
+      ORDER BY
+        p.price ASC NULLS LAST
+      `,
       [baseProduct.fingerprint]
     );
 
-    // Calculate minimum price
+    // ----------------------------------------------------------
+    // Build unique image gallery.
+    //
+    // Primary image is always first.
+    // Then add unique store images.
+    // Maximum 8 images to keep payload reasonable.
+    // ----------------------------------------------------------
+    const images = [];
+    const seenImages = new Set();
+
+    const addImage = (url) => {
+      if (!url || typeof url !== "string") return;
+
+      const clean = url.trim();
+
+      if (!clean || seenImages.has(clean)) return;
+
+      seenImages.add(clean);
+      images.push(clean);
+    };
+
+    addImage(baseProduct.image);
+
+    for (const offer of offerRows) {
+      addImage(offer.image);
+
+      if (images.length >= 8) break;
+    }
+
+    // ----------------------------------------------------------
+    // Price statistics
+    // ----------------------------------------------------------
     const validPrices = offerRows
       .map(o => Number(o.price))
       .filter(price => Number.isFinite(price) && price > 0);
 
-    const minPrice = validPrices.length > 0
+    const minPrice = validPrices.length
       ? Math.min(...validPrices)
       : null;
 
-    // Calculate maximum price
-    const maxPrice = validPrices.length > 0
+    const maxPrice = validPrices.length
       ? Math.max(...validPrices)
       : null;
 
-    // Calculate maximum rating
     const ratings = offerRows
       .map(o => Number(o.rating))
       .filter(rating => Number.isFinite(rating));
 
-    const maxRating = ratings.length > 0
+    const maxRating = ratings.length
       ? Math.max(...ratings)
-      : 0;
+      : null;
 
-    // Keep the same structure as /api/products search results
+    // ----------------------------------------------------------
+    // Final product object
+    // ----------------------------------------------------------
     const product = {
       id: baseProduct.id,
       fingerprint: baseProduct.fingerprint,
-      relevance: null,
-      min_price: minPrice,
-      max_rating: maxRating,
+
       title: baseProduct.title,
       image: baseProduct.image,
+      images,
+
       brand: baseProduct.brand,
       model: baseProduct.model,
       category: baseProduct.category || "Mobile",
+
+      specs: baseProduct.specs || null,
+
+      min_price: minPrice,
+      max_price: maxPrice,
+      max_rating: maxRating,
+
       scraped_at: baseProduct.scraped_at,
-      specs: baseProduct.specs || {},
+
       offers: offerRows.map(o => ({
         id: o.id,
         store: o.store,
         price: o.price,
         url: o.url,
+        image: o.image,
         in_stock: o.in_stock,
         rating: o.rating,
+        scraped_at: o.scraped_at,
         storeColor: o.storeColor
       }))
     };
@@ -268,8 +322,12 @@ router.get("/products/:id", async (req, res) => {
     res.json({
       product
     });
+
   } catch (err) {
-    console.error("Failed to fetch product:", err.message);
+    console.error(
+      "Failed to fetch product:",
+      err.message
+    );
 
     res.status(500).json({
       error: "Failed to fetch product"
@@ -279,8 +337,10 @@ router.get("/products/:id", async (req, res) => {
 
 // ------------------------------------------------------------
 // Trending / popular products
-// Uses search_log to find the most searched queries,
-// then resolves each query to the best matching product.
+//
+// Lightweight endpoint:
+// NO offers array.
+// Returns only information required by trending cards.
 // ------------------------------------------------------------
 router.get("/trending-products", async (req, res) => {
   const limit = Math.min(
@@ -288,7 +348,6 @@ router.get("/trending-products", async (req, res) => {
     12
   );
 
-  // Optional: don't show the product currently being viewed
   const excludeId = req.query.excludeId
     ? String(req.query.excludeId)
     : null;
@@ -318,7 +377,8 @@ router.get("/trending-products", async (req, res) => {
 
         FROM search_log
 
-        WHERE query IS NOT NULL
+        WHERE
+          query IS NOT NULL
           AND TRIM(query) <> ''
       ),
 
@@ -354,14 +414,20 @@ router.get("/trending-products", async (req, res) => {
           match.model,
           match.category,
           match.min_price,
-          match.max_rating
+          match.max_price,
+          match.max_rating,
+          match.store_count,
+          match.best_store,
+          match.best_store_color,
+          match.trend_direction
 
         FROM top_queries tq
 
         CROSS JOIN LATERAL (
 
           SELECT
-            MIN(p.id::text)::text AS id,
+            MIN(p.id::text) AS id,
+
             p.fingerprint,
 
             MAX(p.title) AS title,
@@ -371,14 +437,47 @@ router.get("/trending-products", async (req, res) => {
             MAX(p.category) AS category,
 
             MIN(p.price) AS min_price,
-            MAX(COALESCE(p.rating, 0)) AS max_rating,
+            MAX(p.price) AS max_price,
+
+            MAX(
+              COALESCE(p.rating, 0)
+            ) AS max_rating,
+
+            COUNT(DISTINCT p.store) AS store_count,
+
+            (
+              ARRAY_AGG(
+                p.store
+                ORDER BY p.price ASC NULLS LAST
+              )
+            )[1] AS best_store,
+
+            (
+              ARRAY_AGG(
+                s.color
+                ORDER BY p.price ASC NULLS LAST
+              )
+            )[1] AS best_store_color,
 
             MAX(
               similarity(
                 LOWER(p.title),
                 tq.normalized_query
               )
-            ) AS match_score
+            ) AS match_score,
+
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM price_history ph
+                WHERE ph.product_id::text = ANY(
+                  ARRAY_AGG(p.id::text)
+                )
+                AND ph.recorded_at >= NOW() - INTERVAL '90 days'
+              )
+              THEN 'stable'
+              ELSE 'stable'
+            END AS trend_direction
 
           FROM products p
 
@@ -407,62 +506,41 @@ router.get("/trending-products", async (req, res) => {
       )
 
       SELECT
-        mp.normalized_query,
-        mp.display_query,
-        mp.search_count,
+        normalized_query,
+        display_query,
+        search_count,
 
-        mp.id,
-        mp.fingerprint,
-        mp.title,
-        mp.image,
-        mp.brand,
-        mp.model,
-        mp.category,
-        mp.min_price,
-        mp.max_rating,
+        id,
+        fingerprint,
+        title,
+        image,
+        brand,
+        model,
+        category,
 
-        COALESCE(offers.offers, '[]'::json) AS offers
+        min_price,
+        max_price,
+        max_rating,
 
-      FROM matched_products mp
+        store_count,
 
-      LEFT JOIN LATERAL (
+        best_store,
+        best_store_color,
 
-        SELECT
-          json_agg(
-            json_build_object(
-              'id', p.id,
-              'store', p.store,
-              'price', p.price,
-              'url', p.url,
-              'in_stock', p.in_stock,
-              'rating', p.rating,
-              'storeColor', s.color
-            )
+        trend_direction
 
-            ORDER BY p.price ASC NULLS LAST
-
-          ) AS offers
-
-        FROM products p
-
-        JOIN stores s
-          ON s.name = p.store
-
-        WHERE
-          p.fingerprint = mp.fingerprint
-          AND s.enabled = true
-
-      ) offers ON true
+      FROM matched_products
 
       ORDER BY
-        mp.search_count DESC,
-        mp.min_price ASC NULLS LAST
+        search_count DESC,
+        min_price ASC NULLS LAST
       `,
       [excludeId, limit]
     );
 
-    // Remove duplicate fingerprints just in case
-    // multiple search queries resolve to the same product.
+    // ----------------------------------------------------------
+    // Remove duplicate canonical products.
+    // ----------------------------------------------------------
     const seen = new Set();
 
     const products = [];
@@ -476,15 +554,22 @@ router.get("/trending-products", async (req, res) => {
 
       seen.add(row.fingerprint);
 
-      let offers = row.offers;
+      const minPrice =
+        row.min_price !== null
+          ? Number(row.min_price)
+          : null;
 
-      if (typeof offers === "string") {
-        try {
-          offers = JSON.parse(offers);
-        } catch {
-          offers = [];
-        }
-      }
+      const maxPrice =
+        row.max_price !== null
+          ? Number(row.max_price)
+          : null;
+
+      const saving =
+        minPrice !== null &&
+        maxPrice !== null &&
+        maxPrice > minPrice
+          ? maxPrice - minPrice
+          : 0;
 
       products.push({
         query: row.display_query,
@@ -493,28 +578,41 @@ router.get("/trending-products", async (req, res) => {
         product: {
           id: row.id,
           fingerprint: row.fingerprint,
+
           title: row.title,
           image: row.image,
+
           brand: row.brand,
           model: row.model,
           category: row.category || "Mobile",
 
-          min_price:
-            row.min_price !== null
-              ? Number(row.min_price)
-              : null,
+          min_price: minPrice,
+          max_price: maxPrice,
 
           max_rating:
             row.max_rating !== null
               ? Number(row.max_rating)
               : 0,
 
-          offers: Array.isArray(offers) ? offers : []
+          store_count:
+            Number(row.store_count || 0),
+
+          saving,
+
+          best_store:
+            row.best_store || "Multiple stores",
+
+          best_store_color:
+            row.best_store_color || "#0B6E4F",
+
+          trend_direction:
+            row.trend_direction || "stable"
         }
       });
     }
 
     res.json({
+      queries: products.map(p => p.query),
       products
     });
 
@@ -526,6 +624,7 @@ router.get("/trending-products", async (req, res) => {
 
     res.status(500).json({
       error: "Failed to fetch trending products",
+      queries: [],
       products: []
     });
   }
