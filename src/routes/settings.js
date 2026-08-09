@@ -40,6 +40,7 @@ router.get("/settings", async (_req, res) => {
     dealsColCount: settings.dealsColCount,
     theme: settings.theme,
     productsPerPage: settings.productsPerPage,
+    showTrendingSection: settings.showTrendingSection,
     cardFeatures: settings.cardFeatures,
     customHead: settings.customHead || "" // Added for your head/revenue tags
   };
