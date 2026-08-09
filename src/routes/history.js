@@ -8,10 +8,10 @@ router.get("/products/:id/history", async (req, res) => {
   try {
     const { id } = req.params;
     const { rows } = await db(
-      `SELECT price, created_at AS recorded_at 
+      `SELECT price, recorded_at AS recorded_at 
        FROM price_history 
        WHERE product_id = $1 
-       ORDER BY created_at ASC`,
+       ORDER BY recorded_at ASC`,
       [id]
     );
 
