@@ -1210,27 +1210,99 @@
     observer.observe(sentinel);
   }
 
-  // Initialize lifecycle
+    // Initialize lifecycle
   async function initApp() {
-    // Render skeleton/search placeholder immediately
     const inputEl = document.getElementById("searchInput");
-    if (inputEl && !inputEl.value) {
-      document.getElementById("filterBar").classList.add("visible");
-      document.getElementById("results").innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+
+    // ------------------------------------------------------------
+    // Get query from URL
+    // Example:
+    // https://pce.up.railway.app/?q=Xiaomi%20Redmi%20hot
+    // ------------------------------------------------------------
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlQuery = (urlParams.get("q") || "").trim();
+
+    // ------------------------------------------------------------
+    // If URL contains q, use it as the authoritative query.
+    // Otherwise use whatever is already in the search input.
+    // ------------------------------------------------------------
+    const initialQuery =
+      urlQuery ||
+      (inputEl?.value || "").trim();
+
+    // Put URL query into search box
+    if (urlQuery && inputEl) {
+      inputEl.value = urlQuery;
     }
-    // Load settings, stores, and initial search concurrently
+
+    // ------------------------------------------------------------
+    // Show initial skeleton
+    // ------------------------------------------------------------
+    if (inputEl && !inputEl.value) {
+      document.getElementById("filterBar")?.classList.add("visible");
+
+      document.getElementById("results").innerHTML =
+        Array.from({ length: 6 })
+          .map(() => `<div class="skeleton"></div>`)
+          .join("");
+    }
+
+    // ------------------------------------------------------------
+    // Load settings + stores first.
+    //
+    // IMPORTANT:
+    // Do NOT call random/top-search fallback here yet.
+    // We first determine whether a real query exists.
+    // ------------------------------------------------------------
     await Promise.all([
       loadSettings(),
-      loadStores(),
-      fetchNewSearch("", settings && settings.productsPerPage ? Number(settings.productsPerPage) : 8)
+      loadStores()
     ]);
 
+    // ------------------------------------------------------------
+    // Determine page size AFTER settings have loaded
+    // ------------------------------------------------------------
+    const pageSize =
+      settings && settings.productsPerPage
+        ? Number(settings.productsPerPage)
+        : 8;
+
+    // ------------------------------------------------------------
+    // CASE 1:
+    // Explicit query exists in URL/input.
+    //
+    // Example:
+    // ?q=Xiaomi Redmi hot
+    //
+    // NEVER replace this with a random trending query.
+    // ------------------------------------------------------------
+    if (initialQuery) {
+      await fetchNewSearch(initialQuery, pageSize);
+    }
+
+    // ------------------------------------------------------------
+    // CASE 2:
+    // No URL query and no input query.
+    //
+    // Only NOW allow your existing fallback logic to select
+    // a random/top search so the homepage isn't blank.
+    // ------------------------------------------------------------
+    else {
+      await fetchNewSearch(
+        "",
+        pageSize
+      );
+    }
+
+    // ------------------------------------------------------------
+    // Infinite scroll
+    // ------------------------------------------------------------
     setupInfiniteScroll({
       containerSelector: "#results",
       sentinelId: "productsSentinel",
-      pageSize: settings && settings.productsPerPage ? Number(settings.productsPerPage) : 10
+      pageSize
     });
-  } 
+  }
 
   initApp();
 
