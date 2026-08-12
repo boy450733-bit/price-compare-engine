@@ -6,6 +6,7 @@
 
   <title>Product Price Comparison | Sasta.pk</title>
   <meta id="metaDescription" name="description" content="Compare product prices across Pakistan's top online stores and track price history.">
+  <link rel="canonical" href="">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -121,13 +122,6 @@
       border-right:1px solid var(--color-line);
       position:relative;
     }
-    .product-image {
-      width:100%;
-      height:330px;
-      object-fit:contain;
-      mix-blend-mode:multiply;
-    }
-    .image-placeholder { font-size:72px; }
     .best-badge {
       position:absolute;
       top:18px;
@@ -138,6 +132,7 @@
       font-weight:700;
       padding:6px 11px;
       border-radius:999px;
+      z-index:2;
     }
 
     .product-info {
@@ -201,6 +196,7 @@
       object-fit:contain;
       mix-blend-mode:multiply;
     }
+    .image-placeholder { font-size:72px; }
     .product-gallery-thumbs {
       width:100%;
       display:flex;
@@ -438,6 +434,14 @@
       border-radius:11px;
       padding:15px;
       background:var(--color-bg);
+      min-width:0;
+      text-align:center;
+      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .stat:hover {
+      transform:translateY(-1px);
+      border-color:rgba(11,110,79,.28);
+      box-shadow:0 4px 12px rgba(23,35,29,.035);
     }
     .stat-label {
       display:block;
@@ -468,16 +472,6 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-    }
-    .stat {
-      min-width:0;
-      text-align:center;
-      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-    }
-    .stat:hover {
-      transform:translateY(-1px);
-      border-color:rgba(11,110,79,.28);
-      box-shadow:0 4px 12px rgba(23,35,29,.035);
     }
 
     .specs-grid {
@@ -526,8 +520,6 @@
     .trending-offer-line { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--color-ink-soft); font-size:9.5px; }
     .trending-store-count { font-weight:700; }
     .trending-best-store { display:inline-flex; align-items:center; gap:4px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-
-    .trending-empty { grid-column:1/-1; padding:18px; text-align:center; color:var(--color-ink-soft); font-size:12px; border:1px dashed var(--color-line); border-radius:10px; }
 
     .alert-box {
       display:flex;
@@ -936,7 +928,6 @@
   }
 
   async function fetchProduct(productId) {
-    // First try the dedicated detail endpoint.
     try {
       const res = await fetch(`${CFG.API_BASE_URL}/api/products/${encodeURIComponent(productId)}`, {
         headers: { "Accept": "application/json" }
@@ -950,8 +941,6 @@
       console.warn("Product detail endpoint unavailable:", e);
     }
 
-    // If the visitor came from index.html, use the exact product object
-    // already cached in sessionStorage. This avoids a second product search.
     try {
       const cached = JSON.parse(sessionStorage.getItem("selectedProduct") || "null");
       if (cached && String(cached.id) === String(productId)) return cached;
@@ -983,8 +972,6 @@
     applySettings();
   }
 
-  // Settings are returned as the JSON object from site_settings.data.
-  // Also support APIs that wrap it as { data: {...} }.
   function getPageSettings() {
     const raw = state.settings || {};
     return raw && typeof raw.data === "object" && raw.data !== null
@@ -1052,8 +1039,6 @@
     const cutoff = Date.now() - days * 86400000;
     const filtered = history.filter(h => new Date(h.date).getTime() >= cutoff);
 
-    // If there are no records inside the selected window, show the latest
-    // available points rather than displaying an empty chart.
     return filtered.length ? filtered : history.slice(-Math.min(history.length, 30));
   }
 
@@ -1099,7 +1084,6 @@
       return el;
     };
 
-    // Horizontal grid and price labels.
     for (let i = 0; i <= 4; i++) {
       const price = min + ((max - min) * i / 4);
       const yy = y(price);
@@ -1135,7 +1119,6 @@
       "stroke-linejoin": "round"
     }));
 
-    // Date labels.
     const labelIndexes = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])];
     labelIndexes.forEach(i => {
       const d = new Date(data[i].date);
@@ -1150,7 +1133,6 @@
       svg.appendChild(text);
     });
 
-    // Invisible interaction zones.
     data.forEach((d, i) => {
       const hit = make("circle", {
         cx: x(i), cy: y(d.price), r: 9,
@@ -1301,7 +1283,6 @@
 
     renderProductGallery(p, offers);
 
-    // Specs from the product object. Also include common parsed card fields.
     const specs = {};
     if (p.specs && typeof p.specs === "object") {
       Object.entries(p.specs).forEach(([k, v]) => {
@@ -1390,12 +1371,12 @@
 
     const metaTitle = p.title ? `${p.title} Price in Pakistan | Compare Stores` : "Product Price Comparison";
     document.title = metaTitle;
+    document.querySelector('link[rel="canonical"]').setAttribute("href", location.href);
     $("metaDescription").setAttribute(
       "content",
       `${p.title || "Product"} price comparison in Pakistan. Compare current offers, store prices and price history.`
     );
 
-    // Product JSON-LD for search engines.
     let jsonLd = document.getElementById("productJsonLd");
     if (!jsonLd) {
       jsonLd = document.createElement("script");
@@ -1605,8 +1586,10 @@
       $("loadingState").style.display = "none";
       $("productPage").style.display = "block";
 
-      renderProduct();
-      fetchTrendingProducts();
+      requestAnimationFrame(() => {
+        renderProduct();
+        fetchTrendingProducts();
+      });
 
       $("chartControls").querySelectorAll(".range-btn").forEach(btn => {
         btn.addEventListener("click", () => {
