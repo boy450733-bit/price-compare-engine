@@ -899,9 +899,14 @@
     return new URLSearchParams(location.search).get("id");
   }
 
-  function normalizeProduct(raw) {
+  function normalizeProduct(raw, requestedId) {
     if (!raw) return null;
-    return raw.product || raw.data || raw;
+    const p = raw.product || raw.data || raw;
+    if (p && (String(p.id) === String(requestedId) || !p.id)) {
+      if (!p.id) p.id = requestedId;
+      return p;
+    }
+    return p;
   }
 
   async function fetchProduct(productId) {
@@ -911,8 +916,8 @@
       });
       if (res.ok) {
         const data = await res.json();
-        const product = normalizeProduct(data);
-        if (product && String(product.id) === String(productId)) return product;
+        const product = normalizeProduct(data, productId);
+        if (product) return product;
       }
     } catch (e) {
       console.warn("Product detail endpoint unavailable:", e);
@@ -920,7 +925,19 @@
 
     try {
       const cached = JSON.parse(sessionStorage.getItem("selectedProduct") || "null");
-      if (cached && String(cached.id) === String(productId)) return cached;
+      if (cached) return cached;
+    } catch (e) {}
+
+    // Fallback: If backend returns product directly or via alternative route structure
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products?id=${encodeURIComponent(productId)}`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const product = normalizeProduct(data, productId);
+        if (product) return product;
+      }
     } catch (e) {}
 
     throw new Error("Product could not be loaded.");
@@ -1022,18 +1039,19 @@
   function drawChart() {
     const svg = $("priceChart");
     const tooltip = $("chartTooltip");
+    if (!svg || !tooltip) return;
     const data = getVisibleHistory();
 
     svg.innerHTML = "";
     tooltip.style.display = "none";
 
     if (data.length < 2) {
-      $("chartEmpty").style.display = "flex";
+      if ($("chartEmpty")) $("chartEmpty").style.display = "flex";
       svg.style.display = "none";
       return;
     }
 
-    $("chartEmpty").style.display = "none";
+    if ($("chartEmpty")) $("chartEmpty").style.display = "none";
     svg.style.display = "block";
 
     const W = 1000;
@@ -1183,138 +1201,52 @@
     const images = getProductImages(product, offers);
 
     if (!images.length) {
-      image.style.display = "none";
-      thumbs.innerHTML = "";
+      if (image) image.style.display = "none";
+      if (thumbs) thumbs.innerHTML = "";
       return;
     }
 
-    image.style.display = "block";
-    image.alt = product.title || "Product";
+    if (image) {
+      image.style.display = "block";
+      image.alt = product.title || "Product";
+    }
 
     let activeIndex = 0;
 
     const setMainImage = (index) => {
       activeIndex = index;
-      image.src = images[index];
-      image.alt = `${product.title || "Product"} image ${index + 1}`;
+      if (image) {
+        image.src = images[index];
+        image.alt = `${product.title || "Product"} image ${index + 1}`;
+      }
 
-      thumbs.querySelectorAll(".gallery-thumb").forEach((btn, i) => {
-        btn.classList.toggle("active", i === activeIndex);
-      });
+      if (thumbs) {
+        thumbs.querySelectorAll(".gallery-thumb").forEach((btn, i) => {
+          btn.classList.toggle("active", i === activeIndex);
+        });
+      }
     };
 
-    thumbs.innerHTML = images.map((url, index) => `
-      <button class="gallery-thumb ${index === 0 ? "active" : ""}" type="button" data-gallery-index="${index}" aria-label="View image ${index + 1}">
-        <img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.gallery-thumb').style.display='none'">
-      </button>
-    `).join("");
+    if (thumbs) {
+      thumbs.innerHTML = images.map((url, index) => `
+        <button class="gallery-thumb ${index === 0 ? "active" : ""}" type="button" data-gallery-index="${index}" aria-label="View image ${index + 1}">
+          <img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.gallery-thumb').style.display='none'">
+        </button>
+      `).join("");
 
-    thumbs.querySelectorAll(".gallery-thumb").forEach(btn => {
-      btn.addEventListener("click", () => {
-        setMainImage(Number(btn.dataset.galleryIndex));
+      thumbs.querySelectorAll(".gallery-thumb").forEach(btn => {
+        btn.addEventListener("click", () => {
+          setMainImage(Number(btn.dataset.galleryIndex));
+        });
       });
-    });
+    }
 
     setMainImage(0);
-  }
-
-  function renderFullPageStructure() {
-    // Injects the remaining sections dynamically inside the main wrapper without causing shifts
-    const mainPage = $("productPage");
-    const sectionsHtml = `
-      <section class="section" id="chartSection">
-        <div class="section-heading">
-          <div>
-            <h2>Price History</h2>
-            <p>See how this product's price has changed over time.</p>
-          </div>
-          <div class="chart-controls" id="chartControls">
-            <button class="range-btn" data-range="7">7D</button>
-            <button class="range-btn active" data-range="30">30D</button>
-            <button class="range-btn" data-range="90">90D</button>
-            <button class="range-btn" data-range="all">All</button>
-          </div>
-        </div>
-
-        <div class="chart-wrap">
-          <svg id="priceChart" viewBox="0 0 1000 330" preserveAspectRatio="none" aria-label="Interactive price history chart"></svg>
-          <div id="chartTooltip" class="chart-tooltip"></div>
-          <div id="chartEmpty" class="chart-empty" style="display:none;">Not enough price history is available yet.</div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-heading">
-          <div>
-            <h2>Compare Store Prices</h2>
-            <p>Current offers sorted from lowest to highest price.</p>
-          </div>
-        </div>
-        <div id="offersGrid" class="offers-grid"></div>
-      </section>
-
-      <section class="section">
-        <div class="section-heading">
-          <div>
-            <h2>Price Snapshot</h2>
-            <p>Useful indicators based on the available price history.</p>
-          </div>
-        </div>
-        <div class="stats-grid">
-          <div class="stat">
-            <span class="stat-label">Current best</span>
-            <span id="statCurrent" class="stat-value">N/A</span>
-            <span id="statCurrentDate" class="stat-footer">Was on: —</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Lowest recorded</span>
-            <span id="statLowest" class="stat-value">N/A</span>
-            <span id="statLowestDate" class="stat-footer">Was on: —</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Highest recorded</span>
-            <span id="statHighest" class="stat-value">N/A</span>
-            <span id="statHighestDate" class="stat-footer">Was on: —</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">History points</span>
-            <span id="statPoints" class="stat-value">0</span>
-            <span id="statPointsDate" class="stat-footer">Latest: —</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="specsSection">
-        <div class="section-heading">
-          <div>
-            <h2>Specifications</h2>
-            <p>Product information supplied by the comparison backend.</p>
-          </div>
-        </div>
-        <div id="specsGrid" class="specs-grid"></div>
-      </section>
-
-      <section class="section trending-section" id="trendingSection">
-        <div class="section-heading">
-          <div>
-            <h2>Trending Searches</h2>
-            <p>Popular products people are searching for right now.</p>
-          </div>
-          <span class="trending-live"><span></span> Live trends</span>
-        </div>
-        <div id="trendingSearches" class="trending-searches"></div>
-        <div id="trendingProducts" class="trending-products"></div>
-      </section>
-    `;
-    mainPage.insertAdjacentHTML('beforeend', sectionsHtml);
   }
 
   function renderProduct() {
     const p = state.product;
     if (!p) return;
-
-    // Build full dynamic containers now that data is ready
-    renderFullPageStructure();
 
     const offers = Array.isArray(p.offers) ? [...p.offers] : [];
     offers.sort((a, b) => Number(a.price ?? Infinity) - Number(b.price ?? Infinity));
@@ -1359,41 +1291,41 @@
     offerEl.textContent = `${offers.length} store offer${offers.length === 1 ? "" : "s"}`;
 
     const alertBox = document.querySelector(".alert-box");
-    alertBox.classList.remove("skeleton-box");
-    alertBox.style.opacity = "1";
+    if (alertBox) {
+      alertBox.classList.remove("skeleton-box");
+      alertBox.style.opacity = "1";
+    }
 
     const heroActions = document.querySelector(".hero-actions");
-    heroActions.innerHTML = `
-      <button id="trackPriceBtn" class="btn btn-primary" type="button">🔔 Track Price</button>
-      <button id="shareBtn" class="btn" type="button">↗ Share</button>
-      <a href="/" class="btn">← Compare More</a>
-    `;
+    if (heroActions) {
+      heroActions.innerHTML = `
+        <button id="trackPriceBtn" class="btn btn-primary" type="button">🔔 Track Price</button>
+        <button id="shareBtn" class="btn" type="button">↗ Share</button>
+        <a href="/" class="btn">← Compare More</a>
+      `;
+      $("trackPriceBtn").addEventListener("click", openAlertModal);
+      $("shareBtn").addEventListener("click", shareProduct);
+    }
 
-    // Add back listeners for newly rendered action buttons
-    $("trackPriceBtn").addEventListener("click", openAlertModal);
-    $("shareBtn").addEventListener("click", shareProduct);
-
-    // Add meta info header badge
     const metaContainer = document.querySelector(".product-meta");
     let updatedAtSpan = document.getElementById("updatedAt");
-    if(!updatedAtSpan) {
+    if(!updatedAtSpan && metaContainer) {
       updatedAtSpan = document.createElement("span");
       updatedAtSpan.id = "updatedAt";
       metaContainer.appendChild(updatedAtSpan);
     }
-    updatedAtSpan.textContent = p.scraped_at ? relativeTime(p.scraped_at) : "Latest prices";
+    if (updatedAtSpan) updatedAtSpan.textContent = p.scraped_at ? relativeTime(p.scraped_at) : "Latest prices";
 
-    // Add price block container details
     const priceBlock = document.querySelector(".price-block");
     let oldPriceSpan = document.getElementById("oldPrice");
     let priceChangeSpan = document.getElementById("priceChange");
-    if(!oldPriceSpan) {
+    if(!oldPriceSpan && priceBlock) {
       oldPriceSpan = document.createElement("span");
       oldPriceSpan.id = "oldPrice";
       oldPriceSpan.className = "old-price";
       priceBlock.appendChild(oldPriceSpan);
     }
-    if(!priceChangeSpan) {
+    if(!priceChangeSpan && priceBlock) {
       priceChangeSpan = document.createElement("span");
       priceChangeSpan.id = "priceChange";
       priceChangeSpan.className = "price-change stable";
@@ -1404,9 +1336,10 @@
     if(!badge) {
       badge = document.createElement("span");
       badge.className = "best-badge";
-      document.querySelector(".product-image-panel").appendChild(badge);
+      const panel = document.querySelector(".product-image-panel");
+      if (panel) panel.appendChild(badge);
     }
-    badge.textContent = bestPrice != null ? `Best: ${formatPKR(bestPrice)}` : "Best Price";
+    if (badge) badge.textContent = bestPrice != null ? `Best: ${formatPKR(bestPrice)}` : "Best Price";
 
     renderProductGallery(p, offers);
 
@@ -1420,33 +1353,39 @@
     if (p.category && !specs.category) specs.category = p.category;
 
     const specsEntries = Object.entries(specs);
-    $("specsGrid").innerHTML = specsEntries.length
-      ? specsEntries.map(([key, value]) => `
-          <div class="spec-row">
-            <span class="spec-key">${escapeHtml(key.replace(/_/g, " "))}</span>
-            <span class="spec-value">${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}</span>
-          </div>
-        `).join("")
-      : `<div style="color:var(--color-ink-soft);font-size:13px;">No additional specifications available.</div>`;
+    const specsGrid = $("specsGrid");
+    if (specsGrid) {
+      specsGrid.innerHTML = specsEntries.length
+        ? specsEntries.map(([key, value]) => `
+            <div class="spec-row">
+              <span class="spec-key">${escapeHtml(key.replace(/_/g, " "))}</span>
+              <span class="spec-value">${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}</span>
+            </div>
+          `).join("")
+        : `<div style="color:var(--color-ink-soft);font-size:13px;">No additional specifications available.</div>`;
+    }
 
-    $("offersGrid").innerHTML = offers.length
-      ? offers.map((o, index) => `
-          <a class="offer-row" href="${escapeHtml(CFG.API_BASE_URL + "/out/" + o.id)}" target="_blank" rel="noopener noreferrer sponsored">
-            <span class="store-name">
-              <span class="store-dot" style="background:${escapeHtml(o.storeColor || "#0B6E4F")}"></span>
-              ${escapeHtml(o.store || "Store")}
-              ${index === 0 ? `<small style="color:var(--color-brand);font-weight:700;">Lowest</small>` : ""}
-            </span>
-            <span class="offer-stock ${o.in_stock === false ? "out" : ""}">
-              ${o.in_stock === false ? "Out of stock" : "In stock"}
-            </span>
-            <span class="offer-price">${formatPKR(o.price)}</span>
-            <span class="visit-btn">View Deal →</span>
-          </a>
-        `).join("")
-      : `<div style="color:var(--color-ink-soft);font-size:13px;">No current store offers found.</div>`;
+    const offersGrid = $("offersGrid");
+    if (offersGrid) {
+      offersGrid.innerHTML = offers.length
+        ? offers.map((o, index) => `
+            <a class="offer-row" href="${escapeHtml(CFG.API_BASE_URL + "/out/" + o.id)}" target="_blank" rel="noopener noreferrer sponsored">
+              <span class="store-name">
+                <span class="store-dot" style="background:${escapeHtml(o.storeColor || "#0B6E4F")}"></span>
+                ${escapeHtml(o.store || "Store")}
+                ${index === 0 ? `<small style="color:var(--color-brand);font-weight:700;">Lowest</small>` : ""}
+              </span>
+              <span class="offer-stock ${o.in_stock === false ? "out" : ""}">
+                ${o.in_stock === false ? "Out of stock" : "In stock"}
+              </span>
+              <span class="offer-price">${formatPKR(o.price)}</span>
+              <span class="visit-btn">View Deal →</span>
+            </a>
+          `).join("")
+        : `<div style="color:var(--color-ink-soft);font-size:13px;">No current store offers found.</div>`;
+    }
 
-    $("statCurrent").textContent = formatPKR(bestPrice);
+    if ($("statCurrent")) $("statCurrent").textContent = formatPKR(bestPrice);
 
     const history = extractPriceHistory();
     if (history.length) {
@@ -1455,10 +1394,10 @@
       const highest = Math.max(...prices);
       const latestPoint = history[history.length - 1];
 
-      $("statCurrent").textContent = formatPKR(bestPrice);
-      $("statLowest").textContent = formatPKR(lowest);
-      $("statHighest").textContent = formatPKR(highest);
-      $("statPoints").textContent = prices.length.toLocaleString("en-PK");
+      if ($("statCurrent")) $("statCurrent").textContent = formatPKR(bestPrice);
+      if ($("statLowest")) $("statLowest").textContent = formatPKR(lowest);
+      if ($("statHighest")) $("statHighest").textContent = formatPKR(highest);
+      if ($("statPoints")) $("statPoints").textContent = prices.length.toLocaleString("en-PK");
 
       setStatFooter("statCurrentDate", "Was on", findHistoryDate(history, bestPrice, latestPoint.date));
       setStatFooter("statLowestDate", "Was on", findHistoryDate(history, lowest));
@@ -1470,39 +1409,47 @@
       const change = latest - first;
       const changeEl = $("priceChange");
 
-      if (change < 0) {
-        changeEl.className = "price-change down";
-        changeEl.textContent = `↓ ${formatPKR(Math.abs(change))} since tracking`;
-        $("oldPrice").textContent = formatPKR(first);
-      } else if (change > 0) {
-        changeEl.className = "price-change up";
-        changeEl.textContent = `↑ ${formatPKR(change)} since tracking`;
-        $("oldPrice").textContent = formatPKR(first);
-      } else {
-        changeEl.className = "price-change stable";
-        changeEl.textContent = "Stable since tracking";
-        $("oldPrice").textContent = "";
+      if (changeEl) {
+        if (change < 0) {
+          changeEl.className = "price-change down";
+          changeEl.textContent = `↓ ${formatPKR(Math.abs(change))} since tracking`;
+          if ($("oldPrice")) $("oldPrice").textContent = formatPKR(first);
+        } else if (change > 0) {
+          changeEl.className = "price-change up";
+          changeEl.textContent = `↑ ${formatPKR(change)} since tracking`;
+          if ($("oldPrice")) $("oldPrice").textContent = formatPKR(first);
+        } else {
+          changeEl.className = "price-change stable";
+          changeEl.textContent = "Stable since tracking";
+          if ($("oldPrice")) $("oldPrice").textContent = "";
+        }
       }
     } else {
-      $("statCurrent").textContent = formatPKR(bestPrice);
-      $("statLowest").textContent = "N/A";
-      $("statHighest").textContent = "N/A";
-      $("statPoints").textContent = "0";
+      if ($("statCurrent")) $("statCurrent").textContent = formatPKR(bestPrice);
+      if ($("statLowest")) $("statLowest").textContent = "N/A";
+      if ($("statHighest")) $("statHighest").textContent = "N/A";
+      if ($("statPoints")) $("statPoints").textContent = "0";
       setStatFooter("statCurrentDate", "Checked", p.scraped_at);
       setStatFooter("statLowestDate", "Was on", null);
       setStatFooter("statHighestDate", "Was on", null);
       setStatFooter("statPointsDate", "Latest", p.scraped_at);
-      $("priceChange").className = "price-change stable";
-      $("priceChange").textContent = "No history yet";
+      const changeEl = $("priceChange");
+      if (changeEl) {
+        changeEl.className = "price-change stable";
+        changeEl.textContent = "No history yet";
+      }
     }
 
     const metaTitle = p.title ? `${p.title} Price in Pakistan | Compare Stores` : "Product Price Comparison";
     document.title = metaTitle;
-    document.querySelector('link[rel="canonical"]').setAttribute("href", location.href);
-    $("metaDescription").setAttribute(
-      "content",
-      `${p.title || "Product"} price comparison in Pakistan. Compare current offers, store prices and price history.`
-    );
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) canonicalLink.setAttribute("href", location.href);
+    if ($("metaDescription")) {
+      $("metaDescription").setAttribute(
+        "content",
+        `${p.title || "Product"} price comparison in Pakistan. Compare current offers, store prices and price history.`
+      );
+    }
 
     let jsonLd = document.getElementById("productJsonLd");
     if (!jsonLd) {
@@ -1528,14 +1475,17 @@
 
     drawChart();
 
-    $("chartControls").querySelectorAll(".range-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        state.range = btn.dataset.range;
-        $("chartControls").querySelectorAll(".range-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        drawChart();
+    const chartControls = $("chartControls");
+    if (chartControls) {
+      chartControls.querySelectorAll(".range-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.range = btn.dataset.range;
+          chartControls.querySelectorAll(".range-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          drawChart();
+        });
       });
-    });
+    }
   }
 
   function normalizeTrendQuery(query) {
@@ -1726,19 +1676,27 @@
         fetchTrendingProducts();
       });
 
-      $("targetBtn").addEventListener("click", openAlertModal);
-      $("submitAlert").addEventListener("click", submitAlert);
+      const targetBtn = $("targetBtn");
+      if (targetBtn) targetBtn.addEventListener("click", openAlertModal);
+      const submitAlertBtn = $("submitAlert");
+      if (submitAlertBtn) submitAlertBtn.addEventListener("click", submitAlert);
 
-      $("closeModal").addEventListener("click", () => {
-        $("alertModal").classList.remove("active");
-        document.body.classList.remove("modal-open");
-      });
-      $("alertModal").addEventListener("click", e => {
-        if (e.target === $("alertModal")) {
+      const closeModal = $("closeModal");
+      if (closeModal) {
+        closeModal.addEventListener("click", () => {
           $("alertModal").classList.remove("active");
           document.body.classList.remove("modal-open");
-        }
-      });
+        });
+      }
+      const alertModal = $("alertModal");
+      if (alertModal) {
+        alertModal.addEventListener("click", e => {
+          if (e.target === alertModal) {
+            alertModal.classList.remove("active");
+            document.body.classList.remove("modal-open");
+          }
+        });
+      }
     } catch (e) {
       console.error(e);
       $("productPage").style.display = "none";
