@@ -14,7 +14,8 @@
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
 
-  <style>:root {
+  <style>
+    :root {
       --color-bg:#FAF7F0;
       --color-surface:#FFFFFF;
       --color-ink:#17231D;
@@ -760,7 +761,7 @@
       .toast-container { left:16px; right:16px; bottom:16px; }
       .toast { min-width:0; width:100%; }
     }
-    </style>
+  </style>
 </head>
 
 <body>
@@ -779,7 +780,6 @@
 </header>
 
 <main>
-  <!-- ⭐ CLS-Safe Persistent Product Layout Skeleton (Visible instantly, zero layout shifting) -->
   <div id="productPage" class="page">
     <div class="breadcrumb">
       <a href="/">Compare Prices</a>
@@ -794,6 +794,7 @@
             <img id="productImage" class="product-image" alt="" loading="eager" style="display:none;">
           </div>
           <div id="productGalleryThumbs" class="product-gallery-thumbs"></div>
+          <div id="galleryCount" class="gallery-count"></div>
         </div>
       </div>
 
@@ -805,10 +806,13 @@
           <span id="rating" class="skeleton-box" style="width:80px; height:16px;">&nbsp;</span>
           <span>•</span>
           <span id="offerCount" class="skeleton-box" style="width:90px; height:16px;">&nbsp;</span>
+          <span id="updatedAt"></span>
         </div>
 
         <div class="price-block">
           <span id="currentPrice" class="current-price skeleton-box" style="width:140px; height:38px;">&nbsp;</span>
+          <span id="oldPrice" class="old-price"></span>
+          <span id="priceChange" class="price-change stable"></span>
         </div>
 
         <div class="hero-actions">
@@ -823,6 +827,91 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- Hardcoded sections to permanently eliminate CLS and missing elements -->
+    <section class="section" id="chartSection">
+      <div class="section-heading">
+        <div>
+          <h2>Price History</h2>
+          <p>See how this product's price has changed over time.</p>
+        </div>
+        <div class="chart-controls" id="chartControls">
+          <button class="range-btn" data-range="7">7D</button>
+          <button class="range-btn active" data-range="30">30D</button>
+          <button class="range-btn" data-range="90">90D</button>
+          <button class="range-btn" data-range="all">All</button>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <svg id="priceChart" viewBox="0 0 1000 330" preserveAspectRatio="none" aria-label="Interactive price history chart"></svg>
+        <div id="chartTooltip" class="chart-tooltip"></div>
+        <div id="chartEmpty" class="chart-empty" style="display:none;">Not enough price history is available yet.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <div>
+          <h2>Compare Store Prices</h2>
+          <p>Current offers sorted from lowest to highest price.</p>
+        </div>
+      </div>
+      <div id="offersGrid" class="offers-grid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <div>
+          <h2>Price Snapshot</h2>
+          <p>Useful indicators based on the available price history.</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Current best</span>
+          <span id="statCurrent" class="stat-value">N/A</span>
+          <span id="statCurrentDate" class="stat-footer">Was on: —</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Lowest recorded</span>
+          <span id="statLowest" class="stat-value">N/A</span>
+          <span id="statLowestDate" class="stat-footer">Was on: —</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Highest recorded</span>
+          <span id="statHighest" class="stat-value">N/A</span>
+          <span id="statHighestDate" class="stat-footer">Was on: —</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">History points</span>
+          <span id="statPoints" class="stat-value">0</span>
+          <span id="statPointsDate" class="stat-footer">Latest: —</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="specsSection">
+      <div class="section-heading">
+        <div>
+          <h2>Specifications</h2>
+          <p>Product information supplied by the comparison backend.</p>
+        </div>
+      </div>
+      <div id="specsGrid" class="specs-grid"></div>
+    </section>
+
+    <section class="section trending-section" id="trendingSection">
+      <div class="section-heading">
+        <div>
+          <h2>Trending Searches</h2>
+          <p>Popular products people are searching for right now.</p>
+        </div>
+        <span class="trending-live"><span></span> Live trends</span>
+      </div>
+      <div id="trendingSearches" class="trending-searches"></div>
+      <div id="trendingProducts" class="trending-products"></div>
     </section>
   </div>
 
@@ -916,11 +1005,11 @@
   function normalizeProduct(raw, requestedId) {
     if (!raw) return null;
     const p = raw.product || raw.data || raw;
-    if (p && (String(p.id) === String(requestedId) || !p.id)) {
+    if (p) {
       if (!p.id) p.id = requestedId;
       return p;
     }
-    return p;
+    return null;
   }
 
   async function fetchProduct(productId) {
@@ -942,7 +1031,6 @@
       if (cached) return cached;
     } catch (e) {}
 
-    // Fallback: If backend returns product directly or via alternative route structure
     try {
       const res = await fetch(`${CFG.API_BASE_URL}/api/products?id=${encodeURIComponent(productId)}`, {
         headers: { "Accept": "application/json" }
@@ -1212,11 +1300,13 @@
   function renderProductGallery(product, offers = []) {
     const image = $("productImage");
     const thumbs = $("productGalleryThumbs");
+    const count = $("galleryCount");
     const images = getProductImages(product, offers);
 
     if (!images.length) {
       if (image) image.style.display = "none";
       if (thumbs) thumbs.innerHTML = "";
+      if (count) count.textContent = "";
       return;
     }
 
@@ -1255,6 +1345,7 @@
       });
     }
 
+    if (count) count.textContent = images.length > 1 ? `${images.length} images from available stores` : "1 product image";
     setMainImage(0);
   }
 
@@ -1321,29 +1412,13 @@
       $("shareBtn").addEventListener("click", shareProduct);
     }
 
-    const metaContainer = document.querySelector(".product-meta");
-    let updatedAtSpan = document.getElementById("updatedAt");
-    if(!updatedAtSpan && metaContainer) {
-      updatedAtSpan = document.createElement("span");
-      updatedAtSpan.id = "updatedAt";
-      metaContainer.appendChild(updatedAtSpan);
-    }
+    const updatedAtSpan = $("updatedAt");
     if (updatedAtSpan) updatedAtSpan.textContent = p.scraped_at ? relativeTime(p.scraped_at) : "Latest prices";
 
-    const priceBlock = document.querySelector(".price-block");
-    let oldPriceSpan = document.getElementById("oldPrice");
-    let priceChangeSpan = document.getElementById("priceChange");
-    if(!oldPriceSpan && priceBlock) {
-      oldPriceSpan = document.createElement("span");
-      oldPriceSpan.id = "oldPrice";
-      oldPriceSpan.className = "old-price";
-      priceBlock.appendChild(oldPriceSpan);
-    }
-    if(!priceChangeSpan && priceBlock) {
-      priceChangeSpan = document.createElement("span");
-      priceChangeSpan.id = "priceChange";
-      priceChangeSpan.className = "price-change stable";
-      priceBlock.appendChild(priceChangeSpan);
+    if ($("oldPrice")) $("oldPrice").textContent = "";
+    if ($("priceChange")) {
+      $("priceChange").className = "price-change stable";
+      $("priceChange").textContent = "Stable since tracking";
     }
 
     let badge = document.querySelector(".best-badge");
