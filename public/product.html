@@ -1531,8 +1531,13 @@
 
     const metaTitle = p.title ? `${p.title} Price in Pakistan | Compare Stores` : "Product Price Comparison";
     document.title = metaTitle;
-    const canonicalLink = document.querySelector('link[rel="canonical"]');
-    if (canonicalLink) canonicalLink.setAttribute("href", location.href);
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement("link");
+      canonicalLink.setAttribute("rel", "canonical");
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute("href", window.location.href.split('#')[0]);
     if ($("metaDescription")) {
       $("metaDescription").setAttribute(
         "content",
