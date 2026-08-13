@@ -1,1133 +1,1193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0, viewport-fit=cover"
->
-
-<title>Top Price Drops &amp; Deals — Sasta.pk</title>
-
-<link rel="canonical" href="">
-
-<link
-  rel="preconnect"
-  href="https://fonts.googleapis.com"
-  crossorigin
->
-
-<link
-  rel="preconnect"
-  href="https://fonts.gstatic.com"
-  crossorigin
->
-
-<link
-  href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
-  rel="stylesheet"
->
-
-<style id="dynamicThemeStyles">
-
-/* =========================================================
-   ROOT
-   ========================================================= */
-
-:root {
-  --color-bg: #F7F5EF;
-  --color-surface: #FFFFFF;
-  --color-ink: #17231D;
-  --color-ink-soft: #6B7A70;
-  --color-brand: #0B6E4F;
-  --color-brand-dark: #094F39;
-  --color-line: #E7E1D2;
-  --color-accent: #E8A33D;
-  --color-danger: #C24B3F;
-
-  --radius-lg: 14px;
-  --radius-sm: 8px;
-
-  --font-body: "Inter", sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
-}
-
-
-/* =========================================================
-   RESET
-   ========================================================= */
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-body);
-  font-size: 14px;
-  overflow-x: hidden;
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--font-display);
-  margin: 0;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-button,
-select {
-  font: inherit;
-}
-
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
-header {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-line);
-  padding: 16px 24px;
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Top Price Drops &amp; Deals — Sasta.pk</title>
+
+  <!--
+    IMPORTANT:
+    Keep exactly ONE canonical element.
+    JavaScript below only updates this element.
+  -->
+  <link
+    id="pageCanonical"
+    rel="canonical"
+    href="/deals"
+  >
+
+  <style>
+    :root {
+      --color-bg: #F7F5EF;
+      --color-surface: #FFFFFF;
+      --color-ink: #17231D;
+      --color-ink-soft: #6B7A70;
+      --color-brand: #0B6E4F;
+      --color-brand-dark: #094F39;
+      --color-line: #E7E1D2;
+      --color-accent: #E8A33D;
+      --color-danger: #C24B3F;
+
+      --radius-lg: 14px;
+      --radius-sm: 8px;
+
+      /*
+       * System-first typography prevents Google Fonts from becoming
+       * a render-blocking dependency.
+       */
+      --font-body:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      --font-display:
+        "Space Grotesk",
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        sans-serif;
+
+      --deal-cols: 3;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--color-bg);
+      color: var(--color-ink);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.45;
+      text-rendering: optimizeLegibility;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 1.2;
+    }
 
-  position: sticky;
-  top: 0;
-  z-index: 100;
+    /* =========================================================
+       HEADER
+       ========================================================= */
 
-  min-height: 57px;
-}
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
 
-.header-container {
-  max-width: 1200px;
-  margin: 0 auto;
+      min-height: 62px;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-line);
 
-  min-height: 24px;
-}
-
-.logo {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 20px;
-  color: var(--color-ink);
-
-  white-space: nowrap;
-}
+      padding:
+        15px
+        max(20px, calc((100vw - 1200px) / 2 + 20px));
 
-.logo .dot {
-  color: var(--color-brand);
-}
+      contain: layout paint;
+    }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+    .header-container {
+      width: 100%;
+      max-width: 1200px;
+      min-height: 32px;
 
-  font-weight: 500;
-  font-size: 13.5px;
+      margin: 0 auto;
 
-  min-height: 24px;
-}
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
 
-.nav-links a {
-  color: var(--color-ink-soft);
-}
+    .logo {
+      flex: 0 0 auto;
 
-.nav-links a.active,
-.nav-links a:hover {
-  color: var(--color-brand);
-}
-
-
-/* =========================================================
-   MAIN
-   ========================================================= */
-
-.main-container {
-  max-width: 1200px;
-  margin: 32px auto;
-  padding: 0 20px;
-}
-
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
 
-/* =========================================================
-   HERO
-   ========================================================= */
+      color: var(--color-ink);
+      white-space: nowrap;
+    }
 
-.deals-hero {
-  background:
-    linear-gradient(
-      135deg,
-      var(--color-brand-dark),
-      var(--color-brand)
-    );
+    .logo .dot {
+      color: var(--color-brand);
+    }
 
-  color: #fff;
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
 
-  border-radius: var(--radius-lg);
+      font-size: 13.5px;
+      font-weight: 600;
 
-  padding: 36px 32px;
-  margin-bottom: 24px;
+      white-space: nowrap;
+    }
 
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    .nav-links a {
+      color: var(--color-ink-soft);
+    }
 
-  box-shadow: 0 10px 25px rgba(11, 110, 79, 0.15);
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--color-brand);
+    }
 
-  /*
-   * Explicit minimum height prevents layout movement when
-   * dynamic settings/API text is inserted.
-   */
-  min-height: 130px;
-}
+    /* =========================================================
+       MAIN
+       ========================================================= */
 
-.deals-hero h1 {
-  font-size: 26px;
-  margin-bottom: 8px;
+    .main-container {
+      width: 100%;
+      max-width: 1200px;
 
-  /*
-   * Reserve enough vertical space for mobile wrapping.
-   */
-  min-height: 32px;
-}
+      margin: 28px auto 0;
+      padding: 0 20px;
 
-.deals-hero p {
-  color: rgba(255,255,255,0.85);
-  font-size: 14px;
-  max-width: 600px;
-  line-height: 1.5;
-  margin: 0;
+      min-height: 900px;
+    }
 
-  /*
-   * Keep the hero stable while settings load.
-   */
-  min-height: 21px;
-}
+    /* =========================================================
+       HERO
+       ========================================================= */
 
-.hero-badge-box {
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(4px);
+    .deals-hero {
+      min-height: 132px;
 
-  padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.2);
+      gap: 24px;
 
-  text-align: center;
+      padding: 30px 32px;
+      margin-bottom: 20px;
 
-  min-width: 120px;
-  min-height: 60px;
+      color: #fff;
 
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+      background:
+        linear-gradient(
+          135deg,
+          var(--color-brand-dark),
+          var(--color-brand)
+        );
 
-.hero-badge-box .num {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-accent);
+      border-radius: var(--radius-lg);
 
-  /*
-   * Number changes from "--" to actual total without
-   * changing the element height.
-   */
-  min-height: 24px;
-  line-height: 24px;
-}
+      box-shadow:
+        0 8px 22px rgba(11, 110, 79, 0.12);
 
-.hero-badge-box .lbl {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255,255,255,0.8);
+      contain: layout paint;
+    }
 
-  min-height: 14px;
-  line-height: 14px;
-}
+    .hero-copy {
+      min-width: 0;
+    }
 
+    .deals-hero h1 {
+      font-size: clamp(22px, 2.2vw, 27px);
+      margin-bottom: 7px;
+    }
 
-/* =========================================================
-   FILTER BAR
-   ========================================================= */
+    .deals-hero p {
+      max-width: 650px;
+      margin: 0;
 
-.filter-bar {
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
+      color: rgba(255,255,255,0.86);
 
-  border-radius: var(--radius-lg);
+      font-size: 14px;
+      line-height: 1.55;
+    }
 
-  padding: 14px 20px;
+    .hero-badge-box {
+      flex: 0 0 135px;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+      min-height: 74px;
 
-  gap: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
 
-  margin-bottom: 24px;
+      padding: 10px 15px;
 
-  flex-wrap: wrap;
+      background: rgba(255,255,255,0.11);
 
-  /*
-   * Prevent filter bar height jumping when controls load.
-   */
-  min-height: 60px;
-}
+      border:
+        1px solid rgba(255,255,255,0.2);
 
-.filter-group {
-  display: flex;
-  align-items: center;
+      border-radius: 10px;
 
-  gap: 8px;
+      text-align: center;
 
-  flex-wrap: wrap;
-}
+      contain: layout;
+    }
 
-.filter-btn {
-  padding: 6px 14px;
+    .hero-badge-box .num {
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.1;
 
-  font-size: 12.5px;
-  font-weight: 500;
+      color: var(--color-accent);
 
-  border-radius: 999px;
+      min-height: 24px;
+    }
 
-  background: var(--color-bg);
-  color: var(--color-ink-soft);
+    .hero-badge-box .lbl {
+      margin-top: 4px;
 
-  border: 1px solid var(--color-line);
+      font-size: 10.5px;
+      line-height: 1.25;
 
-  cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
 
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease;
-}
+      color: rgba(255,255,255,0.78);
+    }
 
-.filter-btn.active,
-.filter-btn:hover {
-  background: var(--color-brand);
-  color: #fff;
-  border-color: var(--color-brand);
-}
+    /* =========================================================
+       FILTER BAR
+       ========================================================= */
 
-.sort-select {
-  padding: 6px 12px;
+    .filter-bar {
+      min-height: 62px;
 
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-  background: var(--color-surface);
-  color: var(--color-ink);
+      gap: 14px;
 
-  font-family: inherit;
-  font-size: 12.5px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
 
-  outline: none;
-  cursor: pointer;
+      background: var(--color-surface);
 
-  min-height: 32px;
-}
+      border:
+        1px solid var(--color-line);
 
+      border-radius: var(--radius-lg);
 
-/* =========================================================
-   RESULTS GRID
-   ========================================================= */
+      contain: layout;
+    }
 
-.results {
-  display: grid;
+    .filter-group {
+      min-height: 36px;
 
-  grid-template-columns:
-    repeat(auto-fill, minmax(260px, 1fr));
+      display: flex;
+      align-items: center;
 
-  gap: 20px;
+      gap: 7px;
 
-  /*
-   * Keeps initial viewport stable.
-   */
-  min-height: 400px;
-}
+      flex-wrap: wrap;
+    }
 
+    .filter-label {
+      flex: 0 0 auto;
 
-/* =========================================================
-   DEAL CARD
-   ========================================================= */
+      margin-right: 2px;
 
-.card {
-  background: var(--color-surface);
+      font-size: 11px;
+      font-weight: 700;
 
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
+      text-transform: uppercase;
+      letter-spacing: .035em;
 
-  overflow: hidden;
+      color: var(--color-ink-soft);
+    }
 
-  display: flex;
-  flex-direction: column;
+    .filter-btn {
+      min-height: 32px;
 
-  position: relative;
+      padding: 6px 12px;
 
-  /*
-   * Important CLS protection.
-   */
-  min-height: 380px;
+      border:
+        1px solid var(--color-line);
 
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
+      border-radius: 999px;
 
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-}
+      background: var(--color-bg);
+      color: var(--color-ink-soft);
 
+      font-size: 12px;
+      font-weight: 600;
 
-/* =========================================================
-   CARD BADGES
-   ========================================================= */
+      cursor: pointer;
 
-.card-header-banner {
-  position: absolute;
+      transition:
+        background .15s ease,
+        color .15s ease,
+        border-color .15s ease;
+    }
 
-  top: 12px;
-  left: 12px;
-  right: 12px;
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: var(--color-brand);
+      border-color: var(--color-brand);
+      color: #fff;
+    }
 
-  display: flex;
-  justify-content: space-between;
+    .sort-select {
+      min-height: 34px;
 
-  z-index: 2;
+      padding: 6px 30px 6px 11px;
 
-  pointer-events: none;
+      border:
+        1px solid var(--color-line);
 
-  min-height: 24px;
-}
+      border-radius: var(--radius-sm);
 
-.best-ribbon {
-  background: var(--color-ink);
-  color: #fff;
+      background: var(--color-surface);
+      color: var(--color-ink);
 
-  font-size: 11px;
-  font-weight: 700;
+      font-size: 12px;
+      font-weight: 500;
 
-  padding: 3px 8px;
+      cursor: pointer;
+      outline: none;
+    }
 
-  border-radius: 999px;
+    .sort-select:focus {
+      border-color: var(--color-brand);
+    }
 
-  min-height: 20px;
-}
+    /* =========================================================
+       RESULTS GRID
+       ========================================================= */
 
-.match-badge {
-  background: var(--color-brand);
-  color: #fff;
+    .results {
+      display: grid;
 
-  font-size: 11px;
-  font-weight: 700;
+      grid-template-columns:
+        repeat(
+          var(--deal-cols),
+          minmax(0, 1fr)
+        );
 
-  padding: 3px 8px;
+      gap: 18px;
 
-  border-radius: 999px;
+      /*
+       * Reserve space so first paint doesn't collapse/re-expand.
+       */
+      min-height: 400px;
 
-  min-height: 20px;
-}
+      align-items: stretch;
+    }
 
+    /* =========================================================
+       DEAL CARD
+       ========================================================= */
 
-/* =========================================================
-   PRODUCT IMAGE
-   ========================================================= */
+    .card {
+      position: relative;
 
-.card-image {
-  height: 180px;
+      display: flex;
+      flex-direction: column;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+      min-width: 0;
+      min-height: 398px;
 
-  background: #fff;
+      overflow: hidden;
 
-  padding: 16px;
+      background: var(--color-surface);
 
-  position: relative;
+      border:
+        1px solid var(--color-line);
 
-  /*
-   * Explicit dimensions prevent image-induced CLS.
-   */
-  width: 100%;
+      border-radius: var(--radius-lg);
 
-  flex: 0 0 180px;
-}
+      contain: layout paint;
 
-.card-image img {
-  display: block;
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease;
+    }
 
-  width: auto;
-  height: auto;
+    @media (hover:hover) {
+      .card:hover {
+        transform: translateY(-2px);
 
-  max-height: 100%;
-  max-width: 100%;
+        box-shadow:
+          0 7px 20px rgba(0,0,0,.06);
+      }
+    }
 
-  object-fit: contain;
-}
+    .card-header-banner {
+      position: absolute;
 
-.product-image-link {
-  display: block;
+      top: 11px;
+      left: 11px;
+      right: 11px;
 
-  width: 100%;
+      z-index: 3;
 
-  /*
-   * Keeps image wrapper stable.
-   */
-  min-height: 180px;
-}
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
 
+      gap: 8px;
 
-/* =========================================================
-   CARD BODY
-   ========================================================= */
+      pointer-events: none;
+    }
 
-.card-body {
-  padding: 16px;
+    .best-ribbon,
+    .match-badge {
+      min-height: 22px;
 
-  display: flex;
-  flex-direction: column;
+      display: inline-flex;
+      align-items: center;
 
-  flex: 1;
+      padding: 3px 8px;
 
-  min-height: 198px;
-}
+      border-radius: 999px;
 
-.meta-container {
-  display: flex;
+      font-size: 10px;
+      line-height: 1.2;
+      font-weight: 700;
 
-  justify-content: space-between;
-  align-items: center;
+      white-space: nowrap;
+    }
 
-  margin-bottom: 6px;
+    .best-ribbon {
+      background: var(--color-ink);
+      color: #fff;
+    }
 
-  min-height: 20px;
+    .match-badge {
+      background: var(--color-brand);
+      color: #fff;
+    }
 
-  gap: 8px;
-}
+    /* =========================================================
+       IMAGE AREA
+       ========================================================= */
 
-.category-pill {
-  font-size: 11px;
+    .product-image-link {
+      display: block;
+      flex: 0 0 auto;
+    }
 
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+    .card-image {
+      /*
+       * Fixed structural dimensions eliminate image-driven CLS.
+       */
+      width: 100%;
+      height: 180px;
 
-  color: var(--color-ink-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-  font-weight: 600;
+      padding: 17px;
 
-  white-space: nowrap;
-}
+      background: #fff;
 
-.card-title {
-  font-size: 14px;
+      overflow: hidden;
+      position: relative;
 
-  font-weight: 600;
+      contain: strict;
+    }
 
-  line-height: 1.4;
+    .card-image img {
+      width: 200px;
+      height: 150px;
 
-  color: var(--color-ink);
+      max-width: 100%;
+      max-height: 150px;
 
-  margin-bottom: 10px;
+      object-fit: contain;
 
-  display: -webkit-box;
+      /*
+       * Prevent broken image icon from changing layout.
+       */
+      aspect-ratio: 4 / 3;
+    }
 
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+    .image-placeholder {
+      width: 100%;
+      height: 150px;
 
-  overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-  /*
-   * Exactly two text lines reserved.
-   */
-  min-height: 40px;
-}
+      font-size: 34px;
+      color: var(--color-ink-soft);
+    }
 
-.card-divider {
-  border: none;
+    /* =========================================================
+       CARD BODY
+       ========================================================= */
 
-  border-top: 1px solid var(--color-line);
+    .card-body {
+      min-width: 0;
 
-  margin: 12px 0;
-}
+      flex: 1;
 
+      display: flex;
+      flex-direction: column;
 
-/* =========================================================
-   OFFERS
-   ========================================================= */
+      padding: 15px 16px 16px;
+    }
 
-.offers-section {
-  display: flex;
-  flex-direction: column;
+    .meta-container {
+      min-height: 21px;
 
-  gap: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-  margin-top: auto;
-}
+      gap: 8px;
 
-.offers-heading {
-  font-size: 11px;
+      margin-bottom: 6px;
+    }
 
-  text-transform: uppercase;
+    .category-pill {
+      min-width: 0;
 
-  color: var(--color-ink-soft);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
-  font-weight: 600;
+      font-size: 10.5px;
+      font-weight: 700;
 
-  display: flex;
+      color: var(--color-ink-soft);
 
-  justify-content: space-between;
+      text-transform: uppercase;
+      letter-spacing: .035em;
+    }
 
-  min-height: 14px;
-}
+    .saving {
+      flex: 0 0 auto;
 
-.offer-row-link {
-  display: flex;
+      color: var(--color-brand);
 
-  align-items: center;
+      font-size: 11px;
+      font-weight: 700;
 
-  justify-content: space-between;
+      white-space: nowrap;
+    }
 
-  padding: 6px 8px;
+    .card-title {
+      min-height: 40px;
+      max-height: 40px;
 
-  background: var(--color-bg);
+      overflow: hidden;
 
-  border-radius: var(--radius-sm);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
 
-  border: 1px solid transparent;
+      margin-bottom: 8px;
 
-  transition: border-color 0.15s ease;
+      color: var(--color-ink);
 
-  min-height: 34px;
-}
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.42;
+    }
 
-.offer-row-link:hover {
-  border-color: var(--color-brand);
-}
+    .original-price {
+      min-height: 20px;
 
-.store-badge {
-  display: inline-block;
+      margin: 3px 0 8px;
 
-  font-size: 11px;
+      color: var(--color-ink-soft);
 
-  font-weight: 700;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
 
-  color: #fff;
+    .original-price-value {
+      text-decoration: line-through;
+    }
 
-  padding: 2px 6px;
+    .card-divider {
+      width: 100%;
 
-  border-radius: 4px;
+      border: 0;
+      border-top: 1px solid var(--color-line);
 
-  min-height: 18px;
-}
+      margin: 5px 0 10px;
+    }
 
-.offer-price {
-  font-family: var(--font-display);
+    /* =========================================================
+       OFFER
+       ========================================================= */
 
-  font-weight: 700;
+    .offers-section {
+      margin-top: auto;
 
-  font-size: 13.5px;
+      display: flex;
+      flex-direction: column;
 
-  color: var(--color-ink);
+      gap: 6px;
+    }
 
-  white-space: nowrap;
-}
+    .offers-heading {
+      min-height: 18px;
 
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-/* =========================================================
-   SKELETON
-   ========================================================= */
+      color: var(--color-ink-soft);
 
-.skeleton {
-  background:
-    linear-gradient(
-      90deg,
-      #f0eef5 25%,
-      #e2dfec 50%,
-      #f0eef5 75%
-    );
+      font-size: 10px;
+      font-weight: 700;
 
-  background-size: 200% 100%;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
 
-  animation: shimmer 1.5s infinite;
+    .offer-row-link {
+      min-height: 38px;
 
-  border-radius: 6px;
-}
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
+      gap: 10px;
 
-  100% {
-    background-position: -200% 0;
-  }
-}
+      padding: 6px 8px;
 
+      background: var(--color-bg);
 
-/* =========================================================
-   STATE
-   ========================================================= */
+      border:
+        1px solid transparent;
 
-.state-panel {
-  grid-column: 1 / -1;
+      border-radius: var(--radius-sm);
 
-  text-align: center;
+      transition:
+        border-color .15s ease,
+        background .15s ease;
+    }
 
-  padding: 60px 20px;
+    .offer-row-link:hover {
+      border-color: var(--color-brand);
+    }
 
-  background: var(--color-surface);
+    .store-info-left {
+      min-width: 0;
 
-  border: 1px solid var(--color-line);
+      display: flex;
+      align-items: center;
+    }
 
-  border-radius: var(--radius-lg);
+    .store-badge {
+      max-width: 130px;
 
-  min-height: 180px;
-}
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
-.state-panel h3 {
-  font-size: 18px;
+      padding: 3px 7px;
 
-  margin-bottom: 6px;
-}
+      border-radius: 4px;
 
-.state-panel p {
-  color: var(--color-ink-soft);
+      color: #fff;
 
-  font-size: 13.5px;
-}
+      font-size: 10px;
+      line-height: 1.2;
+      font-weight: 700;
+    }
 
+    .offer-price-right {
+      flex: 0 0 auto;
+    }
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
+    .offer-price {
+      color: var(--color-ink);
 
-footer {
-  margin-top: 60px;
+      font-family: var(--font-display);
 
-  background: var(--color-surface);
+      font-size: 13.5px;
+      font-weight: 700;
 
-  border-top: 1px solid var(--color-line);
+      white-space: nowrap;
+    }
 
-  padding: 24px 20px;
+    /* =========================================================
+       SKELETON
+       ========================================================= */
 
-  min-height: 74px;
-}
+    .skeleton {
+      background:
+        linear-gradient(
+          90deg,
+          #f0eef5 25%,
+          #e2dfec 50%,
+          #f0eef5 75%
+        );
 
-.footer-container {
-  max-width: 1200px;
+      background-size: 200% 100%;
 
-  margin: 0 auto;
+      animation:
+        shimmer 1.4s ease-in-out infinite;
 
-  display: flex;
+      border-radius: 6px;
+    }
 
-  justify-content: space-between;
-  align-items: center;
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
 
-  color: var(--color-ink-soft);
-
-  font-size: 13px;
-
-  min-height: 26px;
-}
-
-.footer-links {
-  display: flex;
-
-  gap: 16px;
-
-  min-height: 20px;
-}
-
-.footer-links a:hover {
-  color: var(--color-brand);
-}
-
-
-/* =========================================================
-   MOBILE CLS OPTIMIZATION
-   ========================================================= */
-
-@media (max-width: 768px) {
-
-  /*
-   * DO NOT change desktop layout.
-   *
-   * Mobile always gets one stable column.
-   */
-  .results {
-    grid-template-columns: minmax(0, 1fr) !important;
-
-    gap: 14px;
-
-    min-height: 400px;
-  }
-
-
-  /* -------------------------------------------------------
-     HEADER
-     ------------------------------------------------------- */
-
-  header {
-    padding:
-      12px
-      max(14px, env(safe-area-inset-right))
-      12px
-      max(14px, env(safe-area-inset-left));
-
-    min-height: 52px;
-  }
-
-  .header-container {
-    min-height: 27px;
-  }
-
-  .logo {
-    font-size: 19px;
-  }
-
-  .nav-links {
-    gap: 10px;
-
-    font-size: 12px;
-
-    min-height: 24px;
-  }
-
-
-  /* -------------------------------------------------------
-     MAIN
-     ------------------------------------------------------- */
-
-  .main-container {
-    margin: 18px auto;
-
-    padding:
-      0
-      max(12px, env(safe-area-inset-right))
-      0
-      max(12px, env(safe-area-inset-left));
-  }
-
-
-  /* -------------------------------------------------------
-     HERO
-     *
-     * Fixed/minimum geometry is important here because
-     * title/subtitle/total are populated dynamically.
-     * ------------------------------------------------------- */
-
-  .deals-hero {
-    flex-direction: column;
-
-    align-items: stretch;
-
-    justify-content: flex-start;
-
-    gap: 14px;
-
-    padding: 22px 18px;
-
-    margin-bottom: 16px;
+      100% {
+        background-position: -200% 0;
+      }
+    }
 
     /*
-     * Stable mobile height.
+     * Skeleton cards have exactly the same structural dimensions
+     * as real cards.
      */
-    min-height: 220px;
-  }
+    .skeleton-card {
+      min-height: 398px;
+    }
 
-  .deals-hero h1 {
-    font-size: 22px;
+    .skeleton-image {
+      width: 100%;
+      height: 180px;
+      border-radius: 0;
+    }
 
-    line-height: 1.25;
+    .skeleton-body {
+      padding: 15px 16px;
+    }
+
+    /* =========================================================
+       EMPTY / ERROR
+       ========================================================= */
+
+    .state-panel {
+      grid-column: 1 / -1;
+
+      min-height: 300px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      padding: 40px 20px;
+
+      background: var(--color-surface);
+
+      border:
+        1px solid var(--color-line);
+
+      border-radius: var(--radius-lg);
+
+      text-align: center;
+    }
+
+    .state-panel h3 {
+      margin-bottom: 6px;
+
+      font-size: 18px;
+    }
+
+    .state-panel p {
+      margin: 0;
+
+      color: var(--color-ink-soft);
+
+      font-size: 13px;
+    }
+
+    /* =========================================================
+       SENTINEL
+       ========================================================= */
+
+    .products-sentinel {
+      min-height: 42px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      margin: 24px 0 0;
+
+      color: var(--color-ink-soft);
+
+      font-size: 12px;
+    }
+
+    .sentinel-text {
+      min-height: 20px;
+    }
+
+    /* =========================================================
+       FOOTER
+       ========================================================= */
+
+    footer {
+      min-height: 92px;
+
+      margin-top: 55px;
+
+      padding:
+        25px
+        max(20px, calc((100vw - 1200px) / 2 + 20px));
+
+      background: var(--color-surface);
+
+      border-top:
+        1px solid var(--color-line);
+    }
+
+    .footer-container {
+      width: 100%;
+      max-width: 1200px;
+
+      min-height: 42px;
+
+      margin: 0 auto;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 18px;
+
+      color: var(--color-ink-soft);
+
+      font-size: 12.5px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .footer-links a:hover {
+      color: var(--color-brand);
+    }
+
+    /* =========================================================
+       TABLET
+       ========================================================= */
+
+    @media (max-width: 900px) {
+
+      :root {
+        --deal-cols: 2;
+      }
+
+      .main-container {
+        padding: 0 16px;
+      }
+
+      .results {
+        gap: 15px;
+      }
+
+      .deals-hero {
+        padding: 26px 24px;
+      }
+    }
+
+    /* =========================================================
+       MOBILE
+       ========================================================= */
+
+    @media (max-width: 640px) {
+
+      :root {
+        --deal-cols: 2;
+      }
+
+      header {
+        position: relative;
+
+        padding:
+          13px
+          14px;
+      }
+
+      .header-container {
+        min-height: 34px;
+
+        gap: 12px;
+      }
+
+      .logo {
+        font-size: 18px;
+      }
+
+      .nav-links {
+        gap: 11px;
+        font-size: 12px;
+      }
+
+      .main-container {
+        margin-top: 16px;
+        padding: 0 11px;
+
+        min-height: 800px;
+      }
+
+      .deals-hero {
+        min-height: 0;
+
+        flex-direction: column;
+        align-items: stretch;
+
+        gap: 14px;
+
+        padding: 21px 17px;
+
+        margin-bottom: 14px;
+      }
+
+      .deals-hero h1 {
+        font-size: 21px;
+      }
+
+      .deals-hero p {
+        font-size: 12.5px;
+      }
+
+      .hero-badge-box {
+        width: 100%;
+        min-height: 62px;
+
+        flex-direction: row;
+        justify-content: center;
+
+        gap: 10px;
+      }
+
+      .hero-badge-box .num {
+        font-size: 19px;
+      }
+
+      .filter-bar {
+        min-height: 0;
+
+        align-items: stretch;
+        flex-direction: column;
+
+        padding: 11px;
+
+        margin-bottom: 14px;
+
+        gap: 9px;
+      }
+
+      .filter-group {
+        min-height: 34px;
+      }
+
+      .filter-btn {
+        min-height: 31px;
+
+        padding:
+          5px 10px;
+
+        font-size: 11px;
+      }
+
+      .sort-select {
+        width: 100%;
+        min-height: 34px;
+      }
+
+      .results {
+        gap: 10px;
+      }
+
+      .card {
+        min-height: 370px;
+
+        border-radius: 11px;
+      }
+
+      .card-image {
+        height: 148px;
+        padding: 11px;
+      }
+
+      .card-image img {
+        width: 150px;
+        height: 125px;
+        max-height: 125px;
+      }
+
+      .image-placeholder {
+        height: 125px;
+      }
+
+      .card-body {
+        padding: 12px;
+      }
+
+      .meta-container {
+        align-items: flex-start;
+      }
+
+      .category-pill {
+        font-size: 9.5px;
+      }
+
+      .saving {
+        font-size: 9.5px;
+      }
+
+      .card-title {
+        min-height: 38px;
+        max-height: 38px;
+
+        font-size: 12px;
+      }
+
+      .original-price {
+        font-size: 10px;
+      }
+
+      .offers-heading {
+        font-size: 9px;
+      }
+
+      .store-badge {
+        max-width: 72px;
+
+        font-size: 8.5px;
+      }
+
+      .offer-price {
+        font-size: 11px;
+      }
+
+      .offer-row-link {
+        min-height: 34px;
+        padding: 5px 6px;
+      }
+
+      .products-sentinel {
+        margin-top: 18px;
+      }
+
+      footer {
+        margin-top: 40px;
+        padding: 22px 15px;
+      }
+
+      .footer-container {
+        flex-direction: column;
+        justify-content: center;
+
+        text-align: center;
+      }
+
+      .footer-links {
+        justify-content: center;
+      }
+    }
 
     /*
-     * Reserve approximately two lines.
+     * Small phones:
+     * Keep two columns, but reduce card density further.
      */
-    min-height: 55px;
+    @media (max-width: 390px) {
 
-    margin-bottom: 8px;
-  }
+      .nav-links {
+        gap: 8px;
+      }
 
-  .deals-hero p {
-    font-size: 13px;
+      .nav-links a:nth-child(2) {
+        display: none;
+      }
 
-    line-height: 1.45;
+      .results {
+        gap: 8px;
+      }
+
+      .card-image {
+        height: 138px;
+      }
+
+      .card-image img {
+        width: 135px;
+        height: 115px;
+      }
+
+      .card-body {
+        padding: 10px;
+      }
+
+      .card-title {
+        font-size: 11.5px;
+      }
+
+      .saving {
+        display: none;
+      }
+    }
 
     /*
-     * Reserve space for approximately three lines.
+     * Respect reduced motion.
      */
-    min-height: 57px;
-
-    max-width: none;
-  }
-
-  .hero-badge-box {
-    width: 100%;
-
-    min-width: 0;
-
-    min-height: 56px;
-
-    height: 56px;
-
-    padding: 8px 14px;
-
-    display: flex;
-
-    flex-direction: row;
-
-    justify-content: center;
-
-    align-items: center;
-
-    gap: 10px;
-  }
-
-  .hero-badge-box .num {
-    min-height: 24px;
-
-    line-height: 24px;
-  }
-
-  .hero-badge-box .lbl {
-    min-height: 14px;
-
-    line-height: 14px;
-  }
-
-
-  /* -------------------------------------------------------
-     FILTER BAR
-     ------------------------------------------------------- */
-
-  .filter-bar {
-    padding: 12px;
-
-    margin-bottom: 16px;
-
-    /*
-     * Prevent dynamic wrapping from changing the viewport.
-     */
-    min-height: 126px;
-
-    align-items: flex-start;
-
-    justify-content: flex-start;
-
-    gap: 12px;
-  }
-
-  .filter-group {
-    width: 100%;
-
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 6px;
-  }
-
-  .filter-group > span {
-    width: 100%;
-
-    min-height: 16px;
-  }
-
-  .filter-btn {
-    min-height: 32px;
-
-    padding: 6px 11px;
-
-    font-size: 11.5px;
-  }
-
-  .sort-select {
-    min-height: 34px;
-
-    width: 100%;
-  }
-
-
-  /* -------------------------------------------------------
-     MOBILE CARD
-     ------------------------------------------------------- */
-
-  .card {
-    width: 100%;
-
-    /*
-     * Fixed geometry prevents image/text replacement CLS.
-     */
-    min-height: 410px;
-
-    height: auto;
-  }
-
-  .card-image {
-    height: 190px;
-
-    flex-basis: 190px;
-
-    min-height: 190px;
-
-    max-height: 190px;
-
-    padding: 18px;
-  }
-
-  .product-image-link {
-    min-height: 190px;
-
-    height: 190px;
-  }
-
-  .card-image img {
-    width: auto;
-
-    height: auto;
-
-    max-width: 100%;
-
-    max-height: 154px;
-
-    object-fit: contain;
-  }
-
-  .card-body {
-    min-height: 218px;
-
-    padding: 14px;
-  }
-
-  .card-title {
-    min-height: 40px;
-  }
-
-
-  /* -------------------------------------------------------
-     FOOTER
-     ------------------------------------------------------- */
-
-  footer {
-    margin-top: 40px;
-
-    padding:
-      20px
-      max(14px, env(safe-area-inset-right))
-      20px
-      max(14px, env(safe-area-inset-left));
-
-    min-height: 128px;
-  }
-
-  .footer-container {
-    flex-direction: column;
-
-    justify-content: center;
-
-    gap: 12px;
-
-    text-align: center;
-
-    min-height: 82px;
-  }
-
-  .footer-links {
-    justify-content: center;
-
-    flex-wrap: wrap;
-
-    gap: 8px 14px;
-
-    min-height: 40px;
-  }
-}
-
-
-/* =========================================================
-   VERY SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 380px) {
-
-  .deals-hero {
-    min-height: 235px;
-  }
-
-  .deals-hero h1 {
-    font-size: 20px;
-  }
-
-  .filter-bar {
-    min-height: 138px;
-  }
-
-  .card-image {
-    height: 180px;
-
-    flex-basis: 180px;
-
-    min-height: 180px;
-
-    max-height: 180px;
-  }
-
-  .product-image-link {
-    height: 180px;
-
-    min-height: 180px;
-  }
-
-}
-
-
-/* =========================================================
-   REDUCE MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-
-    scroll-behavior: auto !important;
-
-    transition-duration: 0.01ms !important;
-  }
-
-}
-
-</style>
+    @media (prefers-reduced-motion: reduce) {
+
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -1135,20 +1195,30 @@ footer {
 <header>
   <div class="header-container">
 
-    <a href="/" class="logo" id="logoSlot">
+    <a
+      href="/"
+      class="logo"
+      id="logoSlot"
+      aria-label="Sasta.pk home"
+    >
       Sasta<span class="dot">.pk</span>
     </a>
 
-    <nav class="nav-links" aria-label="Main navigation">
-
-      <a href="/">
-        Home
+    <nav
+      class="nav-links"
+      aria-label="Main navigation"
+    >
+      <a href="/">Home</a>
+      <a href="/" aria-label="Compare product prices">
+        Compare Prices
       </a>
-
-      <a href="/deals" class="active">
+      <a
+        href="/deals"
+        class="active"
+        aria-current="page"
+      >
         🔥 Top Deals
       </a>
-
     </nav>
 
   </div>
@@ -1157,9 +1227,7 @@ footer {
 
 <main class="main-container">
 
-  <!-- =====================================================
-       HERO
-       ===================================================== -->
+  <!-- HERO -->
 
   <section class="deals-hero">
 
@@ -1171,18 +1239,19 @@ footer {
 
       <p id="heroSubtitle">
         We automatically track price changes around the clock.
-        Grab these products now while stores offer their lowest
-        historical rates.
+        Grab these products while stores offer lower prices.
       </p>
 
     </div>
 
-    <div class="hero-badge-box">
+    <div
+      class="hero-badge-box"
+      aria-label="Active deals"
+    >
 
       <div
         class="num"
         id="heroTotalDeals"
-        aria-live="polite"
       >
         --
       </div>
@@ -1196,9 +1265,7 @@ footer {
   </section>
 
 
-  <!-- =====================================================
-       FILTERS
-       ===================================================== -->
+  <!-- FILTERS -->
 
   <section
     class="filter-bar"
@@ -1207,14 +1274,7 @@ footer {
 
     <div class="filter-group">
 
-      <span
-        style="
-          font-size:12px;
-          font-weight:600;
-          color:var(--color-ink-soft);
-          text-transform:uppercase;
-        "
-      >
+      <span class="filter-label">
         Filter:
       </span>
 
@@ -1247,23 +1307,18 @@ footer {
 
     <div class="filter-group">
 
-      <span
-        style="
-          font-size:12px;
-          font-weight:600;
-          color:var(--color-ink-soft);
-          text-transform:uppercase;
-        "
+      <label
+        class="filter-label"
+        for="sortDealsSelect"
       >
-        Sort By:
-      </span>
+        Sort:
+      </label>
 
       <select
         class="sort-select"
         id="sortDealsSelect"
         aria-label="Sort deals"
       >
-
         <option value="drop_desc">
           Biggest Price Cut (Rs)
         </option>
@@ -1275,7 +1330,6 @@ footer {
         <option value="price_asc">
           Lowest Current Price
         </option>
-
       </select>
 
     </div>
@@ -1283,241 +1337,86 @@ footer {
   </section>
 
 
-  <!-- =====================================================
-       RESULTS
-       ===================================================== -->
+  <!--
+    IMPORTANT:
+    Skeleton geometry matches real cards.
+    This is one of the main CLS improvements.
+  -->
 
   <section
     class="results"
     id="results"
     aria-live="polite"
+    aria-busy="true"
   >
 
-    <!--
-      Skeleton geometry intentionally matches the real card.
-      This minimizes CLS while the first API request runs.
-    -->
-
-    <div class="card">
-
-      <div
-        class="card-image skeleton"
-        aria-hidden="true"
-      ></div>
-
-      <div class="card-body">
-
-        <div
-          class="skeleton"
-          style="
-            height:14px;
-            width:60%;
-            margin-bottom:10px;
-          "
-          aria-hidden="true"
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:40px;
-            width:90%;
-            margin-bottom:15px;
-          "
-          aria-hidden="true"
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:34px;
-            width:100%;
-          "
-          aria-hidden="true"
-        ></div>
-
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
-
     </div>
 
-
-    <div class="card">
-
-      <div
-        class="card-image skeleton"
-        aria-hidden="true"
-      ></div>
-
-      <div class="card-body">
-
-        <div
-          class="skeleton"
-          style="
-            height:14px;
-            width:60%;
-            margin-bottom:10px;
-          "
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:40px;
-            width:90%;
-            margin-bottom:15px;
-          "
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:34px;
-            width:100%;
-          "
-        ></div>
-
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
-
     </div>
 
-
-    <div class="card">
-
-      <div
-        class="card-image skeleton"
-        aria-hidden="true"
-      ></div>
-
-      <div class="card-body">
-
-        <div
-          class="skeleton"
-          style="
-            height:14px;
-            width:60%;
-            margin-bottom:10px;
-          "
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:40px;
-            width:90%;
-            margin-bottom:15px;
-          "
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:34px;
-            width:100%;
-          "
-        ></div>
-
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
-
     </div>
 
-
-    <div class="card">
-
-      <div
-        class="card-image skeleton"
-        aria-hidden="true"
-      ></div>
-
-      <div class="card-body">
-
-        <div
-          class="skeleton"
-          style="
-            height:14px;
-            width:60%;
-            margin-bottom:10px;
-          "
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:40px;
-            width:90%;
-            margin-bottom:15px;
-          "
-        ></div>
-
-        <div
-          class="skeleton"
-          style="
-            height:34px;
-            width:100%;
-          "
-        ></div>
-
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
-
     </div>
 
   </section>
 
 
-  <!-- =====================================================
-       INFINITE SCROLL SENTINEL
-       ===================================================== -->
-
   <div
     id="productsSentinel"
-    style="
-      height:20px;
-      min-height:20px;
-      text-align:center;
-      margin:30px 0;
-      color:var(--color-ink-soft);
-    "
+    class="products-sentinel"
     aria-hidden="true"
   >
-    Loading more deals...
+    <span class="sentinel-text" id="sentinelText">
+      Loading more deals...
+    </span>
   </div>
 
 </main>
 
-
-<!-- =======================================================
-     FOOTER
-     ======================================================= -->
 
 <footer id="footerSlot">
 
   <div class="footer-container">
 
     <div class="footer-links">
-
-      <a href="/">
-        Home
-      </a>
-
-      <a href="/">
-        Compare Prices
-      </a>
-
-      <a href="/deals">
-        Top Deals
-      </a>
-
-      <a href="#">
-        About Us
-      </a>
-
-      <a href="#">
-        Privacy Policy
-      </a>
-
-      <a href="#">
-        Terms of Service
-      </a>
-
+      <a href="/">Home</a>
+      <a href="/">Compare Prices</a>
+      <a href="/deals">Top Deals</a>
+      <a href="#">About Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
     </div>
 
     <div>
@@ -1530,115 +1429,80 @@ footer {
 
 
 <script>
-
 (function () {
-
   "use strict";
 
+  const CFG =
+    window.APP_CONFIG || {
+      API_BASE_URL: ""
+    };
 
-  /* =======================================================
-     CONFIG
-     ======================================================= */
+  const results =
+    document.getElementById("results");
 
-  const CFG = window.APP_CONFIG || {
-    API_BASE_URL: ""
-  };
+  const sentinel =
+    document.getElementById("productsSentinel");
 
-
-  /* =======================================================
-     DOM
-     ======================================================= */
-
-  const results = document.getElementById("results");
+  const sentinelText =
+    document.getElementById("sentinelText");
 
   const heroTotalDeals =
     document.getElementById("heroTotalDeals");
 
-  const heroSubtitle =
-    document.getElementById("heroSubtitle");
-
-  const productsSentinel =
-    document.getElementById("productsSentinel");
-
-  const sortDealsSelect =
-    document.getElementById("sortDealsSelect");
-
-
-  /* =======================================================
-     STATE
-     ======================================================= */
-
   let cachedDeals = [];
 
   let currentFilter = "all";
-
   let currentSort = "drop_desc";
 
   let settings = null;
 
+  let offset = 0;
+  let isLoading = false;
+  let hasMore = true;
+
   let observer = null;
 
 
-  /* =======================================================
-     ESCAPE HTML
-     ======================================================= */
+  /* =========================================================
+     HELPERS
+     ========================================================= */
 
   function escapeHtml(value) {
-
     return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
-
   }
 
 
-  /* =======================================================
-     SAFE URL
-     ======================================================= */
-
   function safeUrl(value) {
-
-    if (!value) return "";
-
     try {
-
       const url = new URL(
-        String(value),
+        String(value || ""),
         window.location.origin
       );
 
+      /*
+       * Only allow http/https URLs.
+       */
       if (
-        url.protocol === "http:" ||
-        url.protocol === "https:"
+        url.protocol !== "http:" &&
+        url.protocol !== "https:"
       ) {
-        return url.href;
+        return "";
       }
 
-    } catch (e) {}
-
-    return "";
-
+      return url.href;
+    } catch (e) {
+      return "";
+    }
   }
 
 
-  /* =======================================================
-     PRICE FORMAT
-     ======================================================= */
-
-  function formatPKR(n) {
-
-    if (
-      n === null ||
-      n === undefined ||
-      n === ""
-    ) {
-      return "N/A";
-    }
-
-    const number = Number(n);
+  function formatPKR(value) {
+    const number = Number(value);
 
     if (!Number.isFinite(number)) {
       return "N/A";
@@ -1646,66 +1510,169 @@ footer {
 
     return "Rs " +
       number.toLocaleString("en-PK");
-
   }
 
 
-  /* =======================================================
-     LOAD SETTINGS
-     ======================================================= */
+  /* =========================================================
+     CANONICAL
+     =========================================================
+
+     Exactly ONE canonical element exists in the document.
+
+     Do not create another one dynamically.
+     Do not include query parameters.
+     Do not include hash.
+     ========================================================= */
+
+  function setCanonical() {
+
+    const canonical =
+      document.getElementById("pageCanonical");
+
+    if (!canonical) return;
+
+    const canonicalUrl =
+      new URL(
+        "/deals",
+        window.location.origin
+      ).href;
+
+    canonical.setAttribute(
+      "href",
+      canonicalUrl
+    );
+  }
+
+
+  /* =========================================================
+     CUSTOM HEAD
+     =========================================================
+
+     Prevent admin customHead from creating:
+       - second canonical
+       - duplicate viewport
+       - duplicate title
+
+     This directly addresses the multiple-canonical problem.
+     ========================================================= */
+
+  function appendSafeCustomHead(html) {
+
+    if (!html || typeof html !== "string") {
+      return;
+    }
+
+    const temp =
+      document.createElement("div");
+
+    temp.innerHTML = html;
+
+    const nodes =
+      Array.from(temp.childNodes);
+
+    for (const node of nodes) {
+
+      if (
+        node.nodeType !== Node.ELEMENT_NODE
+      ) {
+        continue;
+      }
+
+      const tag =
+        node.tagName.toLowerCase();
+
+      /*
+       * Never allow customHead to create
+       * another canonical.
+       */
+      if (
+        tag === "link" &&
+        (
+          node.getAttribute("rel") || ""
+        ).toLowerCase() === "canonical"
+      ) {
+        continue;
+      }
+
+      /*
+       * Do not inject another viewport.
+       */
+      if (
+        tag === "meta" &&
+        (
+          node.getAttribute("name") || ""
+        ).toLowerCase() === "viewport"
+      ) {
+        continue;
+      }
+
+      /*
+       * Do not inject another title.
+       */
+      if (tag === "title") {
+        continue;
+      }
+
+      document.head.appendChild(node);
+    }
+  }
+
+
+  /* =========================================================
+     SETTINGS
+     ========================================================= */
 
   async function loadSettings() {
 
     try {
 
-      const res = await fetch(
-        `${CFG.API_BASE_URL}/api/settings`,
-        {
-          headers: {
-            "Accept": "application/json"
-          }
-        }
-      );
+      const response =
+        await fetch(
+          `${CFG.API_BASE_URL}/api/settings`,
+          {
+            headers: {
+              "Accept": "application/json"
+            },
 
-      if (!res.ok) {
+            /*
+             * Settings are not product data.
+             * Revalidation is preferable to an old cached theme.
+             */
+            cache: "no-cache"
+          }
+        );
+
+      if (!response.ok) {
         throw new Error(
-          `Settings request failed: ${res.status}`
+          `Settings HTTP ${response.status}`
         );
       }
 
-      settings = await res.json();
+      settings =
+        await response.json();
 
       applySettings(settings);
 
-    } catch (err) {
+    } catch (error) {
 
       console.warn(
-        "Unable to load settings:",
-        err.message
+        "Settings could not be loaded:",
+        error.message
       );
 
       settings = {
         theme: {},
         cardFeatures: {}
       };
-
     }
-
   }
 
-
-  /* =======================================================
-     APPLY SETTINGS
-     ======================================================= */
 
   function applySettings(data) {
 
     if (!data) return;
 
-
-    /* -------------------------------------------------------
-       Logo
-       ------------------------------------------------------- */
+    /* ---------- Logo ---------- */
 
     const logoSlot =
       document.getElementById("logoSlot");
@@ -1713,35 +1680,50 @@ footer {
     if (logoSlot) {
 
       const rawLogo =
-        data.logoText || "Sasta.pk";
+        String(
+          data.logoText ||
+          "Sasta.pk"
+        );
 
       const dot =
         rawLogo.indexOf(".");
 
+      let name;
+      let tld;
+
       if (dot > 0) {
 
-        const name =
+        name =
           rawLogo.slice(0, dot);
 
-        const tld =
+        tld =
           rawLogo.slice(dot);
-
-        logoSlot.innerHTML =
-          `${escapeHtml(name)}<span class="dot">${escapeHtml(tld)}</span>`;
 
       } else {
 
-        logoSlot.innerHTML =
-          escapeHtml(rawLogo);
+        name =
+          rawLogo;
 
+        tld =
+          "";
       }
 
+      logoSlot.innerHTML =
+        escapeHtml(name) +
+        (
+          tld
+            ? `<span class="dot">${escapeHtml(tld)}</span>`
+            : ""
+        );
     }
 
 
-    /* -------------------------------------------------------
-       Hero subtitle
-       ------------------------------------------------------- */
+    /* ---------- Hero subtitle ---------- */
+
+    const heroSubtitle =
+      document.getElementById(
+        "heroSubtitle"
+      );
 
     if (
       heroSubtitle &&
@@ -1749,182 +1731,155 @@ footer {
     ) {
 
       heroSubtitle.textContent =
-        data.heroSubtitle;
-
+        String(data.heroSubtitle);
     }
 
 
-    /* -------------------------------------------------------
-       Footer
-       ------------------------------------------------------- */
+    /* ---------- Theme ---------- */
 
-    const footerSlot =
-      document.getElementById("footerSlot");
+    const theme =
+      data.theme || {};
+
+    const root =
+      document.documentElement.style;
+
+    if (theme.brandColor) {
+
+      root.setProperty(
+        "--color-brand",
+        theme.brandColor
+      );
+    }
+
+    if (theme.accentColor) {
+
+      root.setProperty(
+        "--color-accent",
+        theme.accentColor
+      );
+    }
+
+    if (theme.brandDark) {
+
+      root.setProperty(
+        "--color-brand-dark",
+        theme.brandDark
+      );
+    }
+
+    /*
+     * Theme fonts remain supported,
+     * but there is NO external Google Fonts
+     * request on initial page load.
+     */
+    if (theme.fontBody) {
+
+      root.setProperty(
+        "--font-body",
+        `"${String(theme.fontBody)}",
+         Inter,
+         ui-sans-serif,
+         system-ui,
+         sans-serif`
+      );
+    }
+
+    if (theme.fontDisplay) {
+
+      root.setProperty(
+        "--font-display",
+        `"${String(theme.fontDisplay)}",
+         Inter,
+         ui-sans-serif,
+         system-ui,
+         sans-serif`
+      );
+    }
+
+
+    /* ---------- Grid ---------- */
+
+    const cols =
+      Number(data.dealsColCount);
 
     if (
-      footerSlot &&
-      data.footerText
+      Number.isInteger(cols) &&
+      cols >= 1 &&
+      cols <= 6
     ) {
+
+      /*
+       * Only change the CSS variable.
+       * Do NOT inject a style attribute on every request.
+       */
+      root.setProperty(
+        "--deal-cols",
+        String(cols)
+      );
+    }
+
+
+    /* ---------- Footer ---------- */
+
+    const footerSlot =
+      document.getElementById(
+        "footerSlot"
+      );
+
+    if (footerSlot) {
+
+      const footerText =
+        data.footerText ||
+        "Powered by Sasta.pk Engine";
 
       footerSlot.innerHTML = `
         <div class="footer-container">
 
           <div class="footer-links">
-
             <a href="/">Home</a>
-
             <a href="/">Compare Prices</a>
-
             <a href="/deals">Top Deals</a>
-
             <a href="#">About Us</a>
-
             <a href="#">Privacy Policy</a>
-
             <a href="#">Terms of Service</a>
-
           </div>
 
           <div>
-            ${escapeHtml(data.footerText)}
+            ${escapeHtml(footerText)}
           </div>
 
         </div>
       `;
-
     }
 
 
-    /* -------------------------------------------------------
-       Custom head
-       ------------------------------------------------------- */
+    /* ---------- Custom head ---------- */
 
     if (data.customHead) {
 
-      const tempDiv =
-        document.createElement("div");
-
-      tempDiv.innerHTML =
-        data.customHead;
-
-      while (tempDiv.firstChild) {
-
-        document.head.appendChild(
-          tempDiv.firstChild
-        );
-
-      }
-
+      appendSafeCustomHead(
+        data.customHead
+      );
     }
 
 
-    /* -------------------------------------------------------
-       Theme
-       ------------------------------------------------------- */
-
-    const theme =
-      data.theme || {};
-
-    const brandColor =
-      theme.brandColor || "#0B6E4F";
-
-    const accentColor =
-      theme.accentColor || "#E8A33D";
-
-    const fontBody =
-      theme.fontBody || "Inter";
-
-    const fontDisplay =
-      theme.fontDisplay || "Space Grotesk";
-
-
-    const rootStyle =
-      document.documentElement.style;
-
-    rootStyle.setProperty(
-      "--color-brand",
-      brandColor
-    );
-
-    rootStyle.setProperty(
-      "--color-accent",
-      accentColor
-    );
-
-    rootStyle.setProperty(
-      "--font-body",
-      `"${fontBody}", sans-serif`
-    );
-
-    rootStyle.setProperty(
-      "--font-display",
-      `"${fontDisplay}", sans-serif`
-    );
-
-
-    /* -------------------------------------------------------
-       Desktop column count
-       
-       IMPORTANT:
-       Never dynamically alter mobile grid.
-       This was one of the potential CLS sources.
-       ------------------------------------------------------- */
-
-    const cols =
-      Number(data.dealsColCount || 0);
-
-    const resultsEl =
-      document.getElementById("results");
-
-    if (resultsEl) {
-
-      const isMobile =
-        window.matchMedia(
-          "(max-width: 768px)"
-        ).matches;
-
-      if (isMobile) {
-
-        /*
-         * CSS already forces one column.
-         * Do not inject an inline grid value.
-         */
-
-        resultsEl.style.removeProperty(
-          "grid-template-columns"
-        );
-
-      } else if (cols > 0) {
-
-        resultsEl.style.setProperty(
-          "grid-template-columns",
-          `repeat(${cols}, minmax(0, 1fr))`,
-          "important"
-        );
-
-      } else {
-
-        resultsEl.style.setProperty(
-          "grid-template-columns",
-          "repeat(auto-fill, minmax(260px, 1fr))",
-          "important"
-        );
-
-      }
-
-    }
-
+    /*
+     * Re-assert canonical after customHead.
+     * Still only ONE canonical exists.
+     */
+    setCanonical();
   }
 
 
-  /* =======================================================
-     DEAL CARD MARKUP
-     ======================================================= */
+  /* =========================================================
+     CARD RENDERING
+     ========================================================= */
 
   function renderDealCardsMarkup(items) {
 
     const cf =
-      settings && settings.cardFeatures
+      settings &&
+      settings.cardFeatures
         ? settings.cardFeatures
         : {};
 
@@ -1943,32 +1898,101 @@ footer {
           ? p.offers[0]
           : {};
 
-      const titleText =
-        p.title || "Product Deal";
+      const id =
+        escapeHtml(p.id);
 
-      const productId =
-        p.id != null
-          ? String(p.id)
-          : "";
+      const title =
+        escapeHtml(
+          p.title ||
+          "Product Deal"
+        );
 
-      const imageUrl =
+      const image =
         safeUrl(p.image);
 
       const offerUrl =
-        safeUrl(offer.url);
+        safeUrl(
+          `${CFG.API_BASE_URL}/out/${encodeURIComponent(p.id)}`
+        );
+
+      const storeColor =
+        escapeHtml(
+          offer.storeColor ||
+          "#0B6E4F"
+        );
+
+      const store =
+        escapeHtml(
+          offer.store ||
+          "Store"
+        );
+
+      const category =
+        escapeHtml(
+          p.category ||
+          "Mobile"
+        );
 
       const discount =
         Number(p.discount_pct);
 
-      const priceDrop =
-        Number(p.price_drop);
+      const discountMarkup =
+        Number.isFinite(discount) &&
+        discount > 0
+          ? `
+              <div
+                class="match-badge"
+                aria-label="${discount}% off"
+              >
+                ${discount}% OFF
+              </div>
+            `
+          : "";
+
+
+      const imageMarkup =
+        showImage
+          ? `
+            <a
+              class="product-image-link"
+              href="/product?id=${encodeURIComponent(p.id)}"
+              aria-label="View ${title}"
+            >
+              <div class="card-image">
+
+                ${
+                  image
+                    ? `
+                      <img
+                        src="${escapeHtml(image)}"
+                        alt="${title}"
+                        width="200"
+                        height="150"
+                        loading="lazy"
+                        decoding="async"
+                        fetchpriority="low"
+                      >
+                    `
+                    : `
+                      <div
+                        class="image-placeholder"
+                        aria-hidden="true"
+                      >
+                        📱
+                      </div>
+                    `
+                }
+
+              </div>
+            </a>
+          `
+          : "";
 
 
       return `
-
         <article
           class="card"
-          data-product-id="${escapeHtml(productId)}"
+          data-product-id="${id}"
         >
 
           <div class="card-header-banner">
@@ -1977,68 +2001,12 @@ footer {
               Deal: ${formatPKR(p.min_price)}
             </div>
 
-            ${
-              Number.isFinite(discount) &&
-              discount > 0
-                ? `
-                  <div
-                    class="match-badge"
-                    style="background:var(--color-brand);"
-                  >
-                    ${escapeHtml(discount)}% OFF
-                  </div>
-                `
-                : ""
-            }
+            ${discountMarkup}
 
           </div>
 
 
-          ${
-            showImage
-              ? `
-
-                <a
-                  class="product-image-link"
-                  href="/product?id=${encodeURIComponent(productId)}"
-                  data-product-id="${escapeHtml(productId)}"
-                  aria-label="View ${escapeHtml(titleText)}"
-                >
-
-                  <div class="card-image">
-
-                    ${
-                      imageUrl
-                        ? `
-
-                          <img
-                            src="${escapeHtml(imageUrl)}"
-                            alt="${escapeHtml(titleText)}"
-                            width="200"
-                            height="150"
-                            loading="lazy"
-                            decoding="async"
-                            onerror="this.style.visibility='hidden';"
-                          >
-
-                        `
-                        : `
-                          <span
-                            style="font-size:36px"
-                            aria-hidden="true"
-                          >
-                            📱
-                          </span>
-                        `
-                    }
-
-                  </div>
-
-                </a>
-
-              `
-              : ""
-          }
+          ${imageMarkup}
 
 
           <div class="card-body">
@@ -2046,26 +2014,12 @@ footer {
             <div class="meta-container">
 
               <span class="category-pill">
-                ${escapeHtml(p.category || "Mobile")}
+                ${category}
               </span>
 
-              ${
-                Number.isFinite(priceDrop) &&
-                priceDrop > 0
-                  ? `
-                    <span
-                      style="
-                        color:var(--color-brand);
-                        font-weight:700;
-                        font-size:11.5px;
-                        white-space:nowrap;
-                      "
-                    >
-                      ↓ Save ${formatPKR(priceDrop)}
-                    </span>
-                  `
-                  : ""
-              }
+              <span class="saving">
+                ↓ Save ${formatPKR(p.price_drop)}
+              </span>
 
             </div>
 
@@ -2075,29 +2029,20 @@ footer {
                 ? `
                   <div
                     class="card-title"
-                    title="${escapeHtml(titleText)}"
+                    title="${title}"
                   >
-                    ${escapeHtml(titleText)}
+                    ${title}
                   </div>
                 `
                 : ""
             }
 
 
-            <div
-              style="
-                margin:8px 0;
-                min-height:18px;
-                font-size:12px;
-                color:var(--color-ink-soft);
-              "
-            >
+            <div class="original-price">
 
               Original:
 
-              <span
-                style="text-decoration:line-through;"
-              >
+              <span class="original-price-value">
                 ${formatPKR(p.old_price)}
               </span>
 
@@ -2110,50 +2055,32 @@ footer {
             <div class="offers-section">
 
               <div class="offers-heading">
-
-                <span>
-                  Store
-                </span>
-
-                <span>
-                  Deal Price
-                </span>
-
+                <span>Store</span>
+                <span>Deal Price</span>
               </div>
 
 
               ${
                 offerUrl
                   ? `
-
                     <a
                       href="${escapeHtml(offerUrl)}"
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener noreferrer sponsored"
                       class="offer-row-link"
+                      aria-label="View ${store} deal"
                     >
 
                       <div class="store-info-left">
 
                         <span
                           class="store-badge"
-                          style="
-                            background:${
-                              escapeHtml(
-                                offer.storeColor ||
-                                "#0B6E4F"
-                              )
-                            };
-                          "
+                          style="background:${storeColor}"
                         >
-                          ${escapeHtml(
-                            offer.store ||
-                            "Store"
-                          )}
+                          ${store}
                         </span>
 
                       </div>
-
 
                       <div class="offer-price-right">
 
@@ -2164,26 +2091,23 @@ footer {
                       </div>
 
                     </a>
-
                   `
                   : `
-                    <div
-                      class="offer-row-link"
-                      aria-label="Deal price unavailable"
-                    >
-                      <span>
-                        ${escapeHtml(
-                          offer.store ||
-                          "Store"
-                        )}
-                      </span>
+                    <div class="offer-row-link">
+                      <div class="store-info-left">
+                        <span
+                          class="store-badge"
+                          style="background:${storeColor}"
+                        >
+                          ${store}
+                        </span>
+                      </div>
 
-                      <span class="offer-price">
-                        ${formatPKR(
-                          offer.price ??
-                          p.min_price
-                        )}
-                      </span>
+                      <div class="offer-price-right">
+                        <span class="offer-price">
+                          ${formatPKR(offer.price)}
+                        </span>
+                      </div>
                     </div>
                   `
               }
@@ -2193,73 +2117,66 @@ footer {
           </div>
 
         </article>
-
       `;
-
     }).join("");
-
   }
 
 
-  /* =======================================================
+  /* =========================================================
      FILTER + SORT
-     ======================================================= */
+     ========================================================= */
 
   function applyFiltersAndSort() {
 
     let list =
-      [...cachedDeals];
+      cachedDeals.slice();
 
 
-    /* -------------------------------------------------------
-       Filter
-       ------------------------------------------------------- */
-
-    if (currentFilter === "huge") {
+    if (
+      currentFilter === "huge"
+    ) {
 
       list =
         list.filter(
           p =>
             Number(p.discount_pct) >= 10
         );
-
     }
 
 
-    if (currentFilter === "medium") {
+    if (
+      currentFilter === "medium"
+    ) {
 
       list =
         list.filter(
           p =>
             Number(p.discount_pct) >= 5
         );
-
     }
 
 
-    /* -------------------------------------------------------
-       Sort
-       ------------------------------------------------------- */
-
     list.sort((a, b) => {
 
-      if (currentSort === "pct_desc") {
+      if (
+        currentSort === "pct_desc"
+      ) {
 
         return (
           (Number(b.discount_pct) || 0) -
           (Number(a.discount_pct) || 0)
         );
-
       }
 
 
-      if (currentSort === "price_asc") {
+      if (
+        currentSort === "price_asc"
+      ) {
 
         return (
           (Number(a.min_price) || 0) -
           (Number(b.min_price) || 0)
         );
-
       }
 
 
@@ -2267,18 +2184,12 @@ footer {
         (Number(b.price_drop) || 0) -
         (Number(a.price_drop) || 0)
       );
-
     });
 
 
-    /* -------------------------------------------------------
-       Empty state
-       ------------------------------------------------------- */
-
-    if (list.length === 0) {
+    if (!list.length) {
 
       results.innerHTML = `
-
         <div class="state-panel">
 
           <h3>
@@ -2290,113 +2201,135 @@ footer {
           </p>
 
         </div>
-
       `;
 
-      return;
+      results.setAttribute(
+        "aria-busy",
+        "false"
+      );
 
+      return;
     }
 
-
-    /* -------------------------------------------------------
-       Render
-       ------------------------------------------------------- */
 
     results.innerHTML =
       renderDealCardsMarkup(list);
 
+    results.setAttribute(
+      "aria-busy",
+      "false"
+    );
   }
 
 
-  /* =======================================================
-     FILTER BUTTONS
-     ======================================================= */
+  /* =========================================================
+     FILTER EVENTS
+     ========================================================= */
 
   document
     .querySelectorAll(".filter-btn")
-    .forEach(btn => {
+    .forEach((button) => {
 
-      btn.addEventListener(
+      button.addEventListener(
         "click",
         () => {
 
           document
-            .querySelectorAll(".filter-btn")
-            .forEach(b =>
-              b.classList.remove("active")
+            .querySelectorAll(
+              ".filter-btn"
+            )
+            .forEach(
+              b =>
+                b.classList.remove(
+                  "active"
+                )
             );
 
-          btn.classList.add("active");
+          button.classList.add(
+            "active"
+          );
 
           currentFilter =
-            btn.dataset.filter || "all";
+            button.dataset.filter ||
+            "all";
 
           applyFiltersAndSort();
-
         }
       );
-
     });
 
 
-  /* =======================================================
-     SORT
-     ======================================================= */
-
-  if (sortDealsSelect) {
-
-    sortDealsSelect.addEventListener(
+  document
+    .getElementById(
+      "sortDealsSelect"
+    )
+    ?.addEventListener(
       "change",
-      event => {
+      (event) => {
 
         currentSort =
-          event.target.value;
+          event.target.value ||
+          "drop_desc";
 
         applyFiltersAndSort();
-
       }
     );
 
+
+  /* =========================================================
+     DEAL API
+     ========================================================= */
+
+  async function fetchDeals(
+    limit,
+    requestedOffset
+  ) {
+
+    const url =
+      `${CFG.API_BASE_URL}/api/deals` +
+      `?limit=${encodeURIComponent(limit)}` +
+      `&offset=${encodeURIComponent(requestedOffset)}`;
+
+    const response =
+      await fetch(
+        url,
+        {
+          headers: {
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Deals API HTTP ${response.status}`
+      );
+    }
+
+    return response.json();
   }
 
 
-  /* =======================================================
+  /* =========================================================
      INFINITE SCROLL
-     ======================================================= */
+     ========================================================= */
 
-  function setupInfiniteScroll({
-    containerSelector,
-    sentinelId
-  }) {
+  function setupInfiniteScroll() {
 
-    let offset = 0;
-
-    let isLoading = false;
-
-    let hasMore = true;
+    if (!sentinel) return;
 
 
-    const sentinel =
-      document.getElementById(
-        sentinelId
-      );
-
-    if (!sentinel) {
-      return null;
-    }
-
-
-    /*
-     * Disconnect any previous observer.
-     */
     if (observer) {
+
       observer.disconnect();
     }
 
 
     observer =
       new IntersectionObserver(
-        async entries => {
+        async (entries) => {
 
           if (
             !entries[0].isIntersecting ||
@@ -2409,47 +2342,29 @@ footer {
 
           isLoading = true;
 
+          sentinelText.textContent =
+            "Loading more deals...";
+
 
           try {
 
             const pageSize =
               settings &&
               settings.productsPerPage
-                ? Number(
-                    settings.productsPerPage
+                ? Math.max(
+                    1,
+                    Number(
+                      settings.productsPerPage
+                    )
                   )
                 : 12;
 
 
-            const url =
-              `${CFG.API_BASE_URL}/api/deals` +
-              `?limit=${encodeURIComponent(pageSize)}` +
-              `&offset=${encodeURIComponent(offset)}`;
-
-
-            const res =
-              await fetch(
-                url,
-                {
-                  headers: {
-                    "Accept":
-                      "application/json"
-                  }
-                }
-              );
-
-
-            if (!res.ok) {
-
-              throw new Error(
-                `Deals request failed: ${res.status}`
-              );
-
-            }
-
-
             const data =
-              await res.json();
+              await fetchDeals(
+                pageSize,
+                offset
+              );
 
 
             const items =
@@ -2458,33 +2373,31 @@ footer {
                 : [];
 
 
-            /* ------------------------------------------------
-               Total
-               ------------------------------------------------ */
-
             if (
               data.total !== undefined &&
               heroTotalDeals
             ) {
 
               heroTotalDeals.textContent =
-                Number(data.total)
-                  .toLocaleString("en-PK");
-
+                Number(
+                  data.total
+                ).toLocaleString(
+                  "en-PK"
+                );
             }
 
 
-            /* ------------------------------------------------
-               No deals
-               ------------------------------------------------ */
-
+            /*
+             * First request with no results.
+             */
             if (
               offset === 0 &&
               items.length === 0
             ) {
 
-              results.innerHTML = `
+              cachedDeals = [];
 
+              results.innerHTML = `
                 <div class="state-panel">
 
                   <h3>
@@ -2496,175 +2409,327 @@ footer {
                   </p>
 
                 </div>
-
               `;
-
-              sentinel.style.display =
-                "none";
 
               hasMore = false;
 
-              return;
+              sentinelText.textContent =
+                "";
 
+              return;
             }
 
 
-            /* ------------------------------------------------
-               Pagination
-               ------------------------------------------------ */
+            /*
+             * Remove duplicates by product ID.
+             * This prevents repeated cards when
+             * pagination data overlaps.
+             */
+            const existingIds =
+              new Set(
+                cachedDeals.map(
+                  p =>
+                    String(p.id)
+                )
+              );
 
+
+            const newItems =
+              items.filter(
+                p =>
+                  p &&
+                  p.id !== undefined &&
+                  !existingIds.has(
+                    String(p.id)
+                  )
+              );
+
+
+            if (newItems.length) {
+
+              cachedDeals.push(
+                ...newItems
+              );
+
+              applyFiltersAndSort();
+            }
+
+
+            /*
+             * Correct pagination logic:
+             * advance by the actual API page size,
+             * not by the number surviving filters.
+             */
+            offset += items.length;
+
+
+            /*
+             * If API returned less than requested,
+             * we've reached the end.
+             */
             if (
               items.length < pageSize
             ) {
 
               hasMore = false;
 
-              sentinel.style.display =
-                "none";
-
+              sentinelText.textContent =
+                "";
             }
 
 
-            /* ------------------------------------------------
-               Append new products
-               ------------------------------------------------ */
+            /*
+             * If API somehow returns only duplicates,
+             * don't repeatedly hammer the endpoint.
+             */
+            if (
+              items.length > 0 &&
+              newItems.length === 0
+            ) {
 
-            if (items.length > 0) {
+              if (
+                items.length < pageSize
+              ) {
 
-              cachedDeals.push(
-                ...items
-              );
-
-
-              applyFiltersAndSort();
-
-
-              /*
-               * Use actual returned count rather
-               * than assuming pageSize.
-               */
-              offset += items.length;
-
+                hasMore = false;
+              }
             }
 
-          } catch (err) {
+          } catch (error) {
 
             console.error(
               "Failed to load deals:",
-              err
+              error
             );
+
+            sentinelText.textContent =
+              "Unable to load more deals. Scroll again to retry.";
 
           } finally {
 
             isLoading = false;
-
           }
-
         },
         {
           /*
-           * Load slightly before reaching bottom,
-           * but don't aggressively trigger many pages.
+           * Load before the user reaches
+           * the bottom, but not excessively early.
            */
           rootMargin: "250px 0px"
         }
       );
 
 
-    observer.observe(sentinel);
-
-
-    return {
-
-      reset() {
-
-        offset = 0;
-
-        isLoading = false;
-
-        hasMore = true;
-
-        sentinel.style.display =
-          "";
-
-      }
-
-    };
-
+    observer.observe(
+      sentinel
+    );
   }
 
 
-  /* =======================================================
+  /* =========================================================
+     IMAGE ERROR HANDLING
+     ========================================================= */
+
+  results.addEventListener(
+    "error",
+    (event) => {
+
+      const image =
+        event.target;
+
+      if (
+        image &&
+        image.tagName === "IMG"
+      ) {
+
+        const placeholder =
+          document.createElement(
+            "div"
+          );
+
+        placeholder.className =
+          "image-placeholder";
+
+        placeholder.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+        placeholder.textContent =
+          "📱";
+
+        image.replaceWith(
+          placeholder
+        );
+      }
+    },
+    true
+  );
+
+
+  /* =========================================================
      INITIALIZATION
-     ======================================================= */
+     ========================================================= */
 
   async function initDealsPage() {
 
     /*
-     * Canonical URL.
+     * Canonical is established immediately.
      */
-    let canonicalLink =
-      document.querySelector(
-        'link[rel="canonical"]'
-      );
-
-
-    if (!canonicalLink) {
-
-      canonicalLink =
-        document.createElement("link");
-
-      canonicalLink.setAttribute(
-        "rel",
-        "canonical"
-      );
-
-      document.head.appendChild(
-        canonicalLink
-      );
-
-    }
-
-
-    canonicalLink.setAttribute(
-      "href",
-      window.location.href
-        .split("#")[0]
-    );
+    setCanonical();
 
 
     /*
-     * Load settings before starting
-     * the first API request so the page
-     * knows the correct page size.
+     * Load settings before starting infinite
+     * scroll so page-size/grid configuration
+     * is available before API rendering.
      */
     await loadSettings();
 
 
     /*
-     * Initialize infinite scrolling.
+     * Reassert canonical after customHead.
      */
-    setupInfiniteScroll({
+    setCanonical();
 
-      containerSelector:
-        "#results",
 
-      sentinelId:
-        "productsSentinel"
+    setupInfiniteScroll();
 
-    });
 
+    /*
+     * The IntersectionObserver normally starts
+     * the first request automatically.
+     *
+     * However, if the page is tall enough that the
+     * sentinel is not visible, explicitly fetch
+     * the first page.
+     */
+    if (
+      sentinel &&
+      sentinel.getBoundingClientRect().top <
+        window.innerHeight + 250
+    ) {
+
+      /*
+       * Trigger observer naturally.
+       */
+      sentinel.dispatchEvent(
+        new Event("deals-init")
+      );
+
+      /*
+       * Direct first load because a synthetic
+       * intersection event is not reliable.
+       */
+      const pageSize =
+        settings &&
+        settings.productsPerPage
+          ? Math.max(
+              1,
+              Number(
+                settings.productsPerPage
+              )
+            )
+          : 12;
+
+
+      try {
+
+        isLoading = true;
+
+        const data =
+          await fetchDeals(
+            pageSize,
+            0
+          );
+
+        const items =
+          Array.isArray(data.products)
+            ? data.products
+            : [];
+
+
+        if (
+          data.total !== undefined &&
+          heroTotalDeals
+        ) {
+
+          heroTotalDeals.textContent =
+            Number(
+              data.total
+            ).toLocaleString(
+              "en-PK"
+            );
+        }
+
+
+        if (!items.length) {
+
+          results.innerHTML = `
+            <div class="state-panel">
+              <h3>No Deals Found</h3>
+              <p>
+                Check back later for price drops.
+              </p>
+            </div>
+          `;
+
+          hasMore = false;
+
+          sentinelText.textContent =
+            "";
+
+        } else {
+
+          cachedDeals =
+            items.slice();
+
+          offset =
+            items.length;
+
+          applyFiltersAndSort();
+
+          if (
+            items.length < pageSize
+          ) {
+
+            hasMore = false;
+
+            sentinelText.textContent =
+              "";
+          }
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Initial deals load failed:",
+          error
+        );
+
+        results.innerHTML = `
+          <div class="state-panel">
+            <h3>Unable to Load Deals</h3>
+            <p>
+              Please refresh the page and try again.
+            </p>
+          </div>
+        `;
+
+        sentinelText.textContent =
+          "";
+
+      } finally {
+
+        isLoading = false;
+      }
+    }
   }
 
-
-  /* =======================================================
-     START
-     ======================================================= */
 
   initDealsPage();
 
 })();
-
 </script>
 
 </body>
