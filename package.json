@@ -14,7 +14,6 @@
     "affiliate:worklist": "node scripts/affiliate-worklist.js"
   },
   "dependencies": {
-    "@ampproject/toolbox-optimizer": "2.10.1",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "pg": "^8.12.0",
