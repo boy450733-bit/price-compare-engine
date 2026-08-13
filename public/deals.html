@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
 
   <title>Top Price Drops &amp; Deals — Sasta.pk</title>
 
-  <meta name="description" content="Find verified price drops and the latest deals from stores across Pakistan.">
-
-  <link rel="canonical" href="">
-
-  <!-- Faster Google Fonts connection -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
+  <!--
+    IMPORTANT:
+    Keep exactly ONE canonical element.
+    JavaScript below only updates this element.
+  -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
+    id="pageCanonical"
+    rel="canonical"
+    href="/deals"
+  >
 
-  <style id="dynamicThemeStyles">
+  <style>
     :root {
       --color-bg: #F7F5EF;
       --color-surface: #FFFFFF;
@@ -35,14 +36,27 @@
       --radius-lg: 14px;
       --radius-sm: 8px;
 
-      --font-body: "Inter", sans-serif;
-      --font-display: "Space Grotesk", sans-serif;
-
       /*
-       * 0 = automatic responsive grid.
-       * >0 = configured fixed column count from settings.
+       * System-first typography prevents Google Fonts from becoming
+       * a render-blocking dependency.
        */
-      --deal-columns: 0;
+      --font-body:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      --font-display:
+        "Space Grotesk",
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        sans-serif;
+
+      --deal-cols: 3;
     }
 
     *,
@@ -52,11 +66,13 @@
     }
 
     html {
+      min-height: 100%;
       scroll-behavior: smooth;
     }
 
     body {
       margin: 0;
+      min-height: 100vh;
       background: var(--color-bg);
       color: var(--color-ink);
       font-family: var(--font-body);
@@ -65,16 +81,9 @@
       text-rendering: optimizeLegibility;
     }
 
-    h1,
-    h2,
-    h3 {
-      font-family: var(--font-display);
-      margin: 0;
-    }
-
-    a {
-      text-decoration: none;
-      color: inherit;
+    img {
+      display: block;
+      max-width: 100%;
     }
 
     button,
@@ -82,39 +91,62 @@
       font: inherit;
     }
 
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 1.2;
+    }
+
     /* =========================================================
        HEADER
        ========================================================= */
 
     header {
-      background: var(--color-surface);
-      border-bottom: 1px solid var(--color-line);
-      padding: 16px 24px;
-
       position: sticky;
       top: 0;
       z-index: 100;
 
-      min-height: 61px;
+      min-height: 62px;
+
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-line);
+
+      padding:
+        15px
+        max(20px, calc((100vw - 1200px) / 2 + 20px));
+
+      contain: layout paint;
     }
 
     .header-container {
+      width: 100%;
       max-width: 1200px;
+      min-height: 32px;
+
       margin: 0 auto;
 
       display: flex;
       align-items: center;
       justify-content: space-between;
-
-      min-height: 28px;
+      gap: 24px;
     }
 
     .logo {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 20px;
-      color: var(--color-ink);
+      flex: 0 0 auto;
 
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
+
+      color: var(--color-ink);
       white-space: nowrap;
     }
 
@@ -124,18 +156,21 @@
 
     .nav-links {
       display: flex;
-      gap: 16px;
+      align-items: center;
+      gap: 18px;
 
-      font-weight: 500;
       font-size: 13.5px;
+      font-weight: 600;
+
+      white-space: nowrap;
     }
 
     .nav-links a {
       color: var(--color-ink-soft);
     }
 
-    .nav-links a.active,
-    .nav-links a:hover {
+    .nav-links a:hover,
+    .nav-links a.active {
       color: var(--color-brand);
     }
 
@@ -144,9 +179,13 @@
        ========================================================= */
 
     .main-container {
+      width: 100%;
       max-width: 1200px;
-      margin: 32px auto;
+
+      margin: 28px auto 0;
       padding: 0 20px;
+
+      min-height: 900px;
     }
 
     /* =========================================================
@@ -154,109 +193,98 @@
        ========================================================= */
 
     .deals-hero {
-      background:
-        linear-gradient(135deg,
-          var(--color-brand-dark),
-          var(--color-brand));
-
-      color: #fff;
-
-      border-radius: var(--radius-lg);
-
-      padding: 36px 32px;
-      margin-bottom: 24px;
+      min-height: 132px;
 
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
 
       gap: 24px;
 
-      box-shadow:
-        0 10px 25px rgba(11, 110, 79, 0.15);
+      padding: 30px 32px;
+      margin-bottom: 20px;
 
-      /*
-       * Reserve enough space before settings/API content arrives.
-       */
-      min-height: 130px;
+      color: #fff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--color-brand-dark),
+          var(--color-brand)
+        );
+
+      border-radius: var(--radius-lg);
+
+      box-shadow:
+        0 8px 22px rgba(11, 110, 79, 0.12);
+
+      contain: layout paint;
     }
 
-    .deals-hero-content {
+    .hero-copy {
       min-width: 0;
-      flex: 1;
     }
 
     .deals-hero h1 {
-      font-size: 26px;
-      line-height: 1.2;
-      margin-bottom: 8px;
+      font-size: clamp(22px, 2.2vw, 27px);
+      margin-bottom: 7px;
     }
 
     .deals-hero p {
-      color: rgba(255, 255, 255, 0.85);
-
-      font-size: 14px;
-      line-height: 1.5;
-
-      max-width: 600px;
-
+      max-width: 650px;
       margin: 0;
 
-      /*
-       * Prevent subtitle replacement from moving the badge.
-       */
-      min-height: 42px;
+      color: rgba(255,255,255,0.86);
+
+      font-size: 14px;
+      line-height: 1.55;
     }
 
     .hero-badge-box {
-      background: rgba(255, 255, 255, 0.12);
+      flex: 0 0 135px;
 
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      min-height: 74px;
 
-      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      padding: 10px 15px;
+
+      background: rgba(255,255,255,0.11);
+
+      border:
+        1px solid rgba(255,255,255,0.2);
 
       border-radius: 10px;
 
-      border: 1px solid rgba(255, 255, 255, 0.2);
-
       text-align: center;
 
-      min-width: 120px;
-      min-height: 61px;
-
-      flex-shrink: 0;
+      contain: layout;
     }
 
     .hero-badge-box .num {
       font-family: var(--font-display);
-
-      font-size: 20px;
+      font-size: 21px;
       font-weight: 700;
+      line-height: 1.1;
 
       color: var(--color-accent);
 
-      /*
-       * Prevent "--" -> "54" from changing layout.
-       */
-      min-width: 70px;
-      min-height: 25px;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      min-height: 24px;
     }
 
     .hero-badge-box .lbl {
-      font-size: 11px;
+      margin-top: 4px;
+
+      font-size: 10.5px;
+      line-height: 1.25;
 
       text-transform: uppercase;
+      letter-spacing: 0.045em;
 
-      letter-spacing: 0.05em;
-
-      color: rgba(255, 255, 255, 0.8);
-
-      white-space: nowrap;
+      color: rgba(255,255,255,0.78);
     }
 
     /* =========================================================
@@ -264,96 +292,105 @@
        ========================================================= */
 
     .filter-bar {
-      background: var(--color-surface);
-
-      border: 1px solid var(--color-line);
-      border-radius: var(--radius-lg);
-
-      padding: 14px 20px;
+      min-height: 62px;
 
       display: flex;
       align-items: center;
       justify-content: space-between;
 
-      gap: 12px;
+      gap: 14px;
 
-      margin-bottom: 24px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
 
-      flex-wrap: wrap;
+      background: var(--color-surface);
 
-      min-height: 60px;
+      border:
+        1px solid var(--color-line);
+
+      border-radius: var(--radius-lg);
+
+      contain: layout;
     }
 
     .filter-group {
+      min-height: 36px;
+
       display: flex;
       align-items: center;
 
-      gap: 8px;
+      gap: 7px;
 
       flex-wrap: wrap;
     }
 
     .filter-label {
-      font-size: 12px;
-      font-weight: 600;
+      flex: 0 0 auto;
 
-      color: var(--color-ink-soft);
+      margin-right: 2px;
+
+      font-size: 11px;
+      font-weight: 700;
 
       text-transform: uppercase;
+      letter-spacing: .035em;
 
-      white-space: nowrap;
+      color: var(--color-ink-soft);
     }
 
     .filter-btn {
-      padding: 6px 14px;
+      min-height: 32px;
 
-      font-size: 12.5px;
-      font-weight: 500;
+      padding: 6px 12px;
+
+      border:
+        1px solid var(--color-line);
 
       border-radius: 999px;
 
       background: var(--color-bg);
       color: var(--color-ink-soft);
 
-      border: 1px solid var(--color-line);
+      font-size: 12px;
+      font-weight: 600;
 
       cursor: pointer;
 
       transition:
-        background 0.2s ease,
-        color 0.2s ease,
-        border-color 0.2s ease;
+        background .15s ease,
+        color .15s ease,
+        border-color .15s ease;
     }
 
-    .filter-btn.active,
-    .filter-btn:hover {
+    .filter-btn:hover,
+    .filter-btn.active {
       background: var(--color-brand);
-      color: #fff;
-
       border-color: var(--color-brand);
-    }
-
-    .filter-btn:focus-visible,
-    .sort-select:focus-visible {
-      outline: 2px solid var(--color-accent);
-      outline-offset: 2px;
+      color: #fff;
     }
 
     .sort-select {
-      padding: 6px 12px;
+      min-height: 34px;
 
-      border: 1px solid var(--color-line);
+      padding: 6px 30px 6px 11px;
+
+      border:
+        1px solid var(--color-line);
+
       border-radius: var(--radius-sm);
 
       background: var(--color-surface);
       color: var(--color-ink);
 
-      font-family: inherit;
-      font-size: 12.5px;
-
-      outline: none;
+      font-size: 12px;
+      font-weight: 500;
 
       cursor: pointer;
+      outline: none;
+    }
+
+    .sort-select:focus {
+      border-color: var(--color-brand);
     }
 
     /* =========================================================
@@ -363,17 +400,16 @@
     .results {
       display: grid;
 
-      /*
-       * Default layout remains responsive.
-       */
       grid-template-columns:
-        repeat(auto-fill,
-          minmax(260px, 1fr));
+        repeat(
+          var(--deal-cols),
+          minmax(0, 1fr)
+        );
 
-      gap: 20px;
+      gap: 18px;
 
       /*
-       * Prevent page collapse before first API response.
+       * Reserve space so first paint doesn't collapse/re-expand.
        */
       min-height: 400px;
 
@@ -381,133 +417,144 @@
     }
 
     /* =========================================================
-       PRODUCT CARD
+       DEAL CARD
        ========================================================= */
 
     .card {
-      background: var(--color-surface);
-
-      border: 1px solid var(--color-line);
-
-      border-radius: var(--radius-lg);
-
-      overflow: hidden;
+      position: relative;
 
       display: flex;
       flex-direction: column;
 
-      position: relative;
+      min-width: 0;
+      min-height: 398px;
 
-      /*
-       * Keeps skeleton and real card geometry aligned.
-       */
-      min-height: 380px;
-      height: 100%;
+      overflow: hidden;
+
+      background: var(--color-surface);
+
+      border:
+        1px solid var(--color-line);
+
+      border-radius: var(--radius-lg);
+
+      contain: layout paint;
 
       transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
+        transform .18s ease,
+        box-shadow .18s ease;
     }
 
-    .card:hover {
-      transform: translateY(-3px);
+    @media (hover:hover) {
+      .card:hover {
+        transform: translateY(-2px);
 
-      box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.06);
+        box-shadow:
+          0 7px 20px rgba(0,0,0,.06);
+      }
     }
 
     .card-header-banner {
       position: absolute;
 
-      top: 12px;
-      left: 12px;
-      right: 12px;
+      top: 11px;
+      left: 11px;
+      right: 11px;
+
+      z-index: 3;
 
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
 
       gap: 8px;
 
-      z-index: 2;
-
       pointer-events: none;
+    }
+
+    .best-ribbon,
+    .match-badge {
+      min-height: 22px;
+
+      display: inline-flex;
+      align-items: center;
+
+      padding: 3px 8px;
+
+      border-radius: 999px;
+
+      font-size: 10px;
+      line-height: 1.2;
+      font-weight: 700;
+
+      white-space: nowrap;
     }
 
     .best-ribbon {
       background: var(--color-ink);
       color: #fff;
-
-      font-size: 11px;
-      font-weight: 700;
-
-      padding: 3px 8px;
-
-      border-radius: 999px;
-
-      white-space: nowrap;
     }
 
     .match-badge {
       background: var(--color-brand);
       color: #fff;
-
-      font-size: 11px;
-      font-weight: 700;
-
-      padding: 3px 8px;
-
-      border-radius: 999px;
-
-      white-space: nowrap;
     }
 
     /* =========================================================
-       PRODUCT IMAGE
+       IMAGE AREA
        ========================================================= */
 
     .product-image-link {
       display: block;
+      flex: 0 0 auto;
     }
 
     .card-image {
+      /*
+       * Fixed structural dimensions eliminate image-driven CLS.
+       */
+      width: 100%;
       height: 180px;
 
       display: flex;
       align-items: center;
       justify-content: center;
 
+      padding: 17px;
+
       background: #fff;
 
-      padding: 16px;
-
+      overflow: hidden;
       position: relative;
 
-      /*
-       * Prevent image loading from affecting card height.
-       */
-      flex-shrink: 0;
+      contain: strict;
     }
 
     .card-image img {
-      display: block;
+      width: 200px;
+      height: 150px;
 
-      width: auto;
-      height: auto;
-
-      max-height: 150px;
       max-width: 100%;
-
-      /*
-       * Stable image rendering.
-       */
-      aspect-ratio: 4 / 3;
+      max-height: 150px;
 
       object-fit: contain;
 
       /*
-       * Avoid image decoding blocking the main thread.
+       * Prevent broken image icon from changing layout.
        */
-      decoding: async;
+      aspect-ratio: 4 / 3;
+    }
+
+    .image-placeholder {
+      width: 100%;
+      height: 150px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 34px;
+      color: var(--color-ink-soft);
     }
 
     /* =========================================================
@@ -515,88 +562,83 @@
        ========================================================= */
 
     .card-body {
-      padding: 16px;
+      min-width: 0;
+
+      flex: 1;
 
       display: flex;
       flex-direction: column;
 
-      flex: 1;
-
-      min-width: 0;
+      padding: 15px 16px 16px;
     }
 
     .meta-container {
-      display: flex;
+      min-height: 21px;
 
-      justify-content: space-between;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
 
       gap: 8px;
 
       margin-bottom: 6px;
-
-      min-height: 20px;
     }
 
     .category-pill {
-      font-size: 11px;
-
-      text-transform: uppercase;
-
-      letter-spacing: 0.03em;
-
-      color: var(--color-ink-soft);
-
-      font-weight: 600;
-
-      white-space: nowrap;
+      min-width: 0;
 
       overflow: hidden;
       text-overflow: ellipsis;
-    }
+      white-space: nowrap;
 
-    .saving-text {
-      color: var(--color-brand);
-
+      font-size: 10.5px;
       font-weight: 700;
 
-      font-size: 11.5px;
+      color: var(--color-ink-soft);
+
+      text-transform: uppercase;
+      letter-spacing: .035em;
+    }
+
+    .saving {
+      flex: 0 0 auto;
+
+      color: var(--color-brand);
+
+      font-size: 11px;
+      font-weight: 700;
 
       white-space: nowrap;
     }
 
     .card-title {
-      font-size: 14px;
-
-      font-weight: 600;
-
-      line-height: 1.4;
-
-      color: var(--color-ink);
-
-      margin-bottom: 10px;
-
-      display: -webkit-box;
-
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      min-height: 40px;
+      max-height: 40px;
 
       overflow: hidden;
 
-      /*
-       * Reserve two lines.
-       */
-      min-height: 40px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+
+      margin-bottom: 8px;
+
+      color: var(--color-ink);
+
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.42;
     }
 
     .original-price {
-      margin: 8px 0;
+      min-height: 20px;
 
-      font-size: 12px;
+      margin: 3px 0 8px;
 
       color: var(--color-ink-soft);
 
-      min-height: 18px;
+      font-size: 11.5px;
+      line-height: 1.5;
     }
 
     .original-price-value {
@@ -604,45 +646,47 @@
     }
 
     .card-divider {
-      border: none;
+      width: 100%;
 
+      border: 0;
       border-top: 1px solid var(--color-line);
 
-      margin: 12px 0;
+      margin: 5px 0 10px;
     }
 
     /* =========================================================
-       OFFERS
+       OFFER
        ========================================================= */
 
     .offers-section {
+      margin-top: auto;
+
       display: flex;
       flex-direction: column;
 
       gap: 6px;
-
-      margin-top: auto;
     }
 
     .offers-heading {
-      font-size: 11px;
+      min-height: 18px;
 
-      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
       color: var(--color-ink-soft);
 
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
 
-      display: flex;
-
-      justify-content: space-between;
-
-      min-height: 16px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
     }
 
     .offer-row-link {
-      display: flex;
+      min-height: 38px;
 
+      display: flex;
       align-items: center;
       justify-content: space-between;
 
@@ -652,13 +696,14 @@
 
       background: var(--color-bg);
 
+      border:
+        1px solid transparent;
+
       border-radius: var(--radius-sm);
 
-      border: 1px solid transparent;
-
-      transition: border-color 0.15s ease;
-
-      min-height: 34px;
+      transition:
+        border-color .15s ease,
+        background .15s ease;
     }
 
     .offer-row-link:hover {
@@ -667,42 +712,40 @@
 
     .store-info-left {
       min-width: 0;
+
+      display: flex;
+      align-items: center;
     }
 
     .store-badge {
-      display: inline-block;
+      max-width: 130px;
 
-      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
-      font-weight: 700;
-
-      color: #fff;
-
-      padding: 2px 6px;
+      padding: 3px 7px;
 
       border-radius: 4px;
 
-      max-width: 150px;
+      color: #fff;
 
-      overflow: hidden;
-
-      text-overflow: ellipsis;
-
-      white-space: nowrap;
+      font-size: 10px;
+      line-height: 1.2;
+      font-weight: 700;
     }
 
     .offer-price-right {
-      flex-shrink: 0;
+      flex: 0 0 auto;
     }
 
     .offer-price {
+      color: var(--color-ink);
+
       font-family: var(--font-display);
 
-      font-weight: 700;
-
       font-size: 13.5px;
-
-      color: var(--color-ink);
+      font-weight: 700;
 
       white-space: nowrap;
     }
@@ -713,14 +756,17 @@
 
     .skeleton {
       background:
-        linear-gradient(90deg,
+        linear-gradient(
+          90deg,
           #f0eef5 25%,
           #e2dfec 50%,
-          #f0eef5 75%);
+          #f0eef5 75%
+        );
 
       background-size: 200% 100%;
 
-      animation: shimmer 1.5s infinite;
+      animation:
+        shimmer 1.4s ease-in-out infinite;
 
       border-radius: 6px;
     }
@@ -735,85 +781,84 @@
       }
     }
 
+    /*
+     * Skeleton cards have exactly the same structural dimensions
+     * as real cards.
+     */
     .skeleton-card {
-      min-height: 380px;
+      min-height: 398px;
     }
 
     .skeleton-image {
+      width: 100%;
       height: 180px;
-      width: 100%;
+      border-radius: 0;
     }
 
-    .skeleton-line {
-      height: 14px;
-      width: 60%;
-      margin-bottom: 10px;
-    }
-
-    .skeleton-title {
-      height: 18px;
-      width: 90%;
-      margin-bottom: 15px;
-    }
-
-    .skeleton-offer {
-      height: 34px;
-      width: 100%;
+    .skeleton-body {
+      padding: 15px 16px;
     }
 
     /* =========================================================
-       STATE
+       EMPTY / ERROR
        ========================================================= */
 
     .state-panel {
       grid-column: 1 / -1;
 
-      text-align: center;
-
-      padding: 60px 20px;
-
-      background: var(--color-surface);
-
-      border: 1px solid var(--color-line);
-
-      border-radius: var(--radius-lg);
-
-      min-height: 220px;
+      min-height: 300px;
 
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+
+      padding: 40px 20px;
+
+      background: var(--color-surface);
+
+      border:
+        1px solid var(--color-line);
+
+      border-radius: var(--radius-lg);
+
+      text-align: center;
     }
 
     .state-panel h3 {
-      font-size: 18px;
-
       margin-bottom: 6px;
+
+      font-size: 18px;
     }
 
     .state-panel p {
+      margin: 0;
+
       color: var(--color-ink-soft);
 
-      font-size: 13.5px;
-
-      margin: 0;
+      font-size: 13px;
     }
 
     /* =========================================================
        SENTINEL
        ========================================================= */
 
-    #productsSentinel {
-      min-height: 20px;
+    .products-sentinel {
+      min-height: 42px;
 
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-      margin: 30px 0;
+      margin: 24px 0 0;
 
       color: var(--color-ink-soft);
 
       font-size: 12px;
+    }
+
+    .sentinel-text {
+      min-height: 20px;
     }
 
     /* =========================================================
@@ -821,38 +866,43 @@
        ========================================================= */
 
     footer {
-      margin-top: 60px;
+      min-height: 92px;
+
+      margin-top: 55px;
+
+      padding:
+        25px
+        max(20px, calc((100vw - 1200px) / 2 + 20px));
 
       background: var(--color-surface);
 
-      border-top: 1px solid var(--color-line);
-
-      padding: 24px 20px;
+      border-top:
+        1px solid var(--color-line);
     }
 
     .footer-container {
+      width: 100%;
       max-width: 1200px;
+
+      min-height: 42px;
 
       margin: 0 auto;
 
       display: flex;
-
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+
+      gap: 18px;
 
       color: var(--color-ink-soft);
 
-      font-size: 13px;
-
-      min-height: 24px;
+      font-size: 12.5px;
     }
 
     .footer-links {
       display: flex;
-
-      gap: 16px;
-
       flex-wrap: wrap;
+      gap: 15px;
     }
 
     .footer-links a:hover {
@@ -860,104 +910,217 @@
     }
 
     /* =========================================================
-       TABLET / MOBILE
+       TABLET
        ========================================================= */
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
 
-      header {
-        padding: 14px 16px;
-      }
-
-      .header-container {
-        gap: 14px;
-      }
-
-      .nav-links {
-        gap: 12px;
-        font-size: 13px;
+      :root {
+        --deal-cols: 2;
       }
 
       .main-container {
-        margin: 20px auto;
-        padding: 0 14px;
+        padding: 0 16px;
+      }
+
+      .results {
+        gap: 15px;
       }
 
       .deals-hero {
-        flex-direction: column;
+        padding: 26px 24px;
+      }
+    }
 
+    /* =========================================================
+       MOBILE
+       ========================================================= */
+
+    @media (max-width: 640px) {
+
+      :root {
+        --deal-cols: 2;
+      }
+
+      header {
+        position: relative;
+
+        padding:
+          13px
+          14px;
+      }
+
+      .header-container {
+        min-height: 34px;
+
+        gap: 12px;
+      }
+
+      .logo {
+        font-size: 18px;
+      }
+
+      .nav-links {
+        gap: 11px;
+        font-size: 12px;
+      }
+
+      .main-container {
+        margin-top: 16px;
+        padding: 0 11px;
+
+        min-height: 800px;
+      }
+
+      .deals-hero {
+        min-height: 0;
+
+        flex-direction: column;
         align-items: stretch;
 
-        gap: 16px;
+        gap: 14px;
 
-        padding: 24px 20px;
+        padding: 21px 17px;
 
-        min-height: 220px;
+        margin-bottom: 14px;
       }
 
       .deals-hero h1 {
-        font-size: 23px;
+        font-size: 21px;
       }
 
       .deals-hero p {
-        min-height: 63px;
+        font-size: 12.5px;
       }
 
       .hero-badge-box {
         width: 100%;
+        min-height: 62px;
 
-        display: flex;
+        flex-direction: row;
+        justify-content: center;
 
-        justify-content: space-around;
-
-        align-items: center;
-
-        min-height: 61px;
+        gap: 10px;
       }
 
       .hero-badge-box .num {
-        min-width: 70px;
+        font-size: 19px;
       }
 
       .filter-bar {
-        align-items: stretch;
+        min-height: 0;
 
+        align-items: stretch;
         flex-direction: column;
 
-        min-height: 112px;
+        padding: 11px;
 
-        padding: 14px;
+        margin-bottom: 14px;
+
+        gap: 9px;
       }
 
       .filter-group {
-        width: 100%;
+        min-height: 34px;
       }
 
-      .filter-group:last-child {
-        justify-content: space-between;
+      .filter-btn {
+        min-height: 31px;
+
+        padding:
+          5px 10px;
+
+        font-size: 11px;
       }
 
       .sort-select {
-        flex: 1;
-        min-width: 0;
+        width: 100%;
+        min-height: 34px;
       }
 
       .results {
-        grid-template-columns:
-          repeat(auto-fill,
-            minmax(220px, 1fr));
-
-        gap: 14px;
+        gap: 10px;
       }
 
       .card {
         min-height: 370px;
+
+        border-radius: 11px;
+      }
+
+      .card-image {
+        height: 148px;
+        padding: 11px;
+      }
+
+      .card-image img {
+        width: 150px;
+        height: 125px;
+        max-height: 125px;
+      }
+
+      .image-placeholder {
+        height: 125px;
+      }
+
+      .card-body {
+        padding: 12px;
+      }
+
+      .meta-container {
+        align-items: flex-start;
+      }
+
+      .category-pill {
+        font-size: 9.5px;
+      }
+
+      .saving {
+        font-size: 9.5px;
+      }
+
+      .card-title {
+        min-height: 38px;
+        max-height: 38px;
+
+        font-size: 12px;
+      }
+
+      .original-price {
+        font-size: 10px;
+      }
+
+      .offers-heading {
+        font-size: 9px;
+      }
+
+      .store-badge {
+        max-width: 72px;
+
+        font-size: 8.5px;
+      }
+
+      .offer-price {
+        font-size: 11px;
+      }
+
+      .offer-row-link {
+        min-height: 34px;
+        padding: 5px 6px;
+      }
+
+      .products-sentinel {
+        margin-top: 18px;
+      }
+
+      footer {
+        margin-top: 40px;
+        padding: 22px 15px;
       }
 
       .footer-container {
         flex-direction: column;
-
-        gap: 12px;
+        justify-content: center;
 
         text-align: center;
       }
@@ -967,72 +1130,48 @@
       }
     }
 
-    @media (max-width: 480px) {
+    /*
+     * Small phones:
+     * Keep two columns, but reduce card density further.
+     */
+    @media (max-width: 390px) {
 
       .nav-links {
-        gap: 9px;
+        gap: 8px;
       }
 
-      .nav-links a:first-child {
+      .nav-links a:nth-child(2) {
         display: none;
       }
 
-      .deals-hero h1 {
-        font-size: 21px;
-      }
-
-      .filter-group {
-        gap: 6px;
-      }
-
-      .filter-btn {
-        padding: 6px 10px;
-        font-size: 11.5px;
-      }
-
       .results {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-      }
-
-      .card {
-        min-height: 355px;
+        gap: 8px;
       }
 
       .card-image {
-        height: 155px;
-        padding: 12px;
+        height: 138px;
       }
 
       .card-image img {
-        max-height: 130px;
+        width: 135px;
+        height: 115px;
       }
 
       .card-body {
-        padding: 12px;
+        padding: 10px;
       }
 
       .card-title {
-        font-size: 13px;
+        font-size: 11.5px;
       }
 
-      .best-ribbon,
-      .match-badge {
-        font-size: 9px;
-        padding: 3px 6px;
-      }
-
-      .saving-text {
-        font-size: 10px;
-      }
-
-      .offer-price {
-        font-size: 12px;
+      .saving {
+        display: none;
       }
     }
 
     /*
-     * Respect users who prefer reduced motion.
+     * Respect reduced motion.
      */
     @media (prefers-reduced-motion: reduce) {
 
@@ -1043,13 +1182,9 @@
       *,
       *::before,
       *::after {
-        animation-duration: 0.01ms !important;
+        animation-duration: .001ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-
-      .card:hover {
-        transform: none;
+        transition-duration: .001ms !important;
       }
     }
   </style>
@@ -1057,992 +1192,1004 @@
 
 <body>
 
-  <header>
-    <div class="header-container">
+<header>
+  <div class="header-container">
 
-      <a href="/" class="logo" id="logoSlot" aria-label="Sasta.pk Home">
-        Sasta<span class="dot">.pk</span>
+    <a
+      href="/"
+      class="logo"
+      id="logoSlot"
+      aria-label="Sasta.pk home"
+    >
+      Sasta<span class="dot">.pk</span>
+    </a>
+
+    <nav
+      class="nav-links"
+      aria-label="Main navigation"
+    >
+      <a href="/">Home</a>
+      <a href="/" aria-label="Compare product prices">
+        Compare Prices
       </a>
+      <a
+        href="/deals"
+        class="active"
+        aria-current="page"
+      >
+        🔥 Top Deals
+      </a>
+    </nav>
 
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="/">Home</a>
+  </div>
+</header>
 
-        <a href="/deals" class="active" aria-current="page">
-          🔥 Top Deals
-        </a>
-      </nav>
+
+<main class="main-container">
+
+  <!-- HERO -->
+
+  <section class="deals-hero">
+
+    <div class="hero-copy">
+
+      <h1>
+        🔥 Verified Price Drops &amp; Deals
+      </h1>
+
+      <p id="heroSubtitle">
+        We automatically track price changes around the clock.
+        Grab these products while stores offer lower prices.
+      </p>
 
     </div>
-  </header>
 
+    <div
+      class="hero-badge-box"
+      aria-label="Active deals"
+    >
 
-  <main class="main-container">
-
-    <!-- HERO -->
-    <section class="deals-hero" aria-labelledby="dealsHeading">
-
-      <div class="deals-hero-content">
-
-        <h1 id="dealsHeading">
-          🔥 Verified Price Drops &amp; Deals
-        </h1>
-
-        <p id="heroSubtitle">
-          We automatically track price changes around the clock.
-          Grab these products now while stores offer their lowest
-          historical rates.
-        </p>
-
+      <div
+        class="num"
+        id="heroTotalDeals"
+      >
+        --
       </div>
 
-
-      <div class="hero-badge-box" aria-label="Active deals">
-
-        <div class="num" id="heroTotalDeals">
-          --
-        </div>
-
-        <div class="lbl">
-          Active Deals Found
-        </div>
-
+      <div class="lbl">
+        Active Deals Found
       </div>
 
-    </section>
+    </div>
+
+  </section>
 
 
-    <!-- FILTER BAR -->
-    <section class="filter-bar" aria-label="Deal filters">
+  <!-- FILTERS -->
 
-      <div class="filter-group">
+  <section
+    class="filter-bar"
+    aria-label="Deal filters"
+  >
 
-        <span class="filter-label">
-          Filter:
-        </span>
+    <div class="filter-group">
 
-        <button type="button" class="filter-btn active" data-filter="all">
-          All Deals
-        </button>
+      <span class="filter-label">
+        Filter:
+      </span>
 
-        <button type="button" class="filter-btn" data-filter="huge">
-          Big Drops (&gt;10% Off)
-        </button>
+      <button
+        type="button"
+        class="filter-btn active"
+        data-filter="all"
+      >
+        All Deals
+      </button>
 
-        <button type="button" class="filter-btn" data-filter="medium">
-          Medium Drops (&gt;5% Off)
-        </button>
+      <button
+        type="button"
+        class="filter-btn"
+        data-filter="huge"
+      >
+        Big Drops (&gt;10% Off)
+      </button>
 
-      </div>
+      <button
+        type="button"
+        class="filter-btn"
+        data-filter="medium"
+      >
+        Medium Drops (&gt;5% Off)
+      </button>
 
-
-      <div class="filter-group">
-
-        <label class="filter-label" for="sortDealsSelect">
-          Sort By:
-        </label>
-
-        <select class="sort-select" id="sortDealsSelect" aria-label="Sort deals">
-
-          <option value="drop_desc">
-            Biggest Price Cut (Rs)
-          </option>
-
-          <option value="pct_desc">
-            Highest Discount (%)
-          </option>
-
-          <option value="price_asc">
-            Lowest Current Price
-          </option>
-
-        </select>
-
-      </div>
-
-    </section>
+    </div>
 
 
-    <!--
-    Pre-rendered skeleton cards.
+    <div class="filter-group">
 
-    Keeping exactly the same structural dimensions
-    as the real cards reduces CLS.
+      <label
+        class="filter-label"
+        for="sortDealsSelect"
+      >
+        Sort:
+      </label>
+
+      <select
+        class="sort-select"
+        id="sortDealsSelect"
+        aria-label="Sort deals"
+      >
+        <option value="drop_desc">
+          Biggest Price Cut (Rs)
+        </option>
+
+        <option value="pct_desc">
+          Highest Discount (%)
+        </option>
+
+        <option value="price_asc">
+          Lowest Current Price
+        </option>
+      </select>
+
+    </div>
+
+  </section>
+
+
+  <!--
+    IMPORTANT:
+    Skeleton geometry matches real cards.
+    This is one of the main CLS improvements.
   -->
-    <section class="results" id="results" aria-live="polite" aria-busy="true">
 
-      <div class="card skeleton-card">
-        <div class="card-image skeleton skeleton-image"></div>
+  <section
+    class="results"
+    id="results"
+    aria-live="polite"
+    aria-busy="true"
+  >
 
-        <div class="card-body">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-title"></div>
-          <div class="skeleton skeleton-offer"></div>
-        </div>
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
+    </div>
 
-
-      <div class="card skeleton-card">
-        <div class="card-image skeleton skeleton-image"></div>
-
-        <div class="card-body">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-title"></div>
-          <div class="skeleton skeleton-offer"></div>
-        </div>
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
+    </div>
 
-
-      <div class="card skeleton-card">
-        <div class="card-image skeleton skeleton-image"></div>
-
-        <div class="card-body">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-title"></div>
-          <div class="skeleton skeleton-offer"></div>
-        </div>
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
+    </div>
 
-
-      <div class="card skeleton-card">
-        <div class="card-image skeleton skeleton-image"></div>
-
-        <div class="card-body">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-title"></div>
-          <div class="skeleton skeleton-offer"></div>
-        </div>
+    <div class="card skeleton-card">
+      <div class="card-image skeleton skeleton-image"></div>
+      <div class="card-body skeleton-body">
+        <div class="skeleton" style="height:12px;width:55%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:15px;"></div>
+        <div class="skeleton" style="height:36px;width:100%;"></div>
       </div>
+    </div>
 
-    </section>
+  </section>
 
 
-    <!-- INFINITE SCROLL SENTINEL -->
-    <div id="productsSentinel" role="status" aria-live="polite">
+  <div
+    id="productsSentinel"
+    class="products-sentinel"
+    aria-hidden="true"
+  >
+    <span class="sentinel-text" id="sentinelText">
       Loading more deals...
+    </span>
+  </div>
+
+</main>
+
+
+<footer id="footerSlot">
+
+  <div class="footer-container">
+
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/">Compare Prices</a>
+      <a href="/deals">Top Deals</a>
+      <a href="#">About Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
     </div>
 
-  </main>
-
-
-  <!-- FOOTER -->
-  <footer id="footerSlot">
-
-    <div class="footer-container">
-
-      <div class="footer-links">
-
-        <a href="#">
-          About Us
-        </a>
-
-        <a href="#">
-          Privacy Policy
-        </a>
-
-        <a href="#">
-          Terms of Service
-        </a>
-
-      </div>
-
-      <div>
-        Powered by Sasta.pk Engine
-      </div>
-
+    <div>
+      Powered by Sasta.pk Engine
     </div>
 
-  </footer>
+  </div>
+
+</footer>
 
 
-  <script>
-    (function () {
+<script>
+(function () {
+  "use strict";
 
-      "use strict";
+  const CFG =
+    window.APP_CONFIG || {
+      API_BASE_URL: ""
+    };
 
+  const results =
+    document.getElementById("results");
 
-      /* =========================================================
-         CONFIG
-         ========================================================= */
+  const sentinel =
+    document.getElementById("productsSentinel");
 
-      const CFG =
-        window.APP_CONFIG || {
-          API_BASE_URL: ""
-        };
+  const sentinelText =
+    document.getElementById("sentinelText");
 
+  const heroTotalDeals =
+    document.getElementById("heroTotalDeals");
 
-      /* =========================================================
-         DOM
-         ========================================================= */
+  let cachedDeals = [];
 
-      const results =
-        document.getElementById("results");
+  let currentFilter = "all";
+  let currentSort = "drop_desc";
 
-      const sentinel =
-        document.getElementById("productsSentinel");
+  let settings = null;
 
-      const heroTotalDeals =
-        document.getElementById("heroTotalDeals");
+  let offset = 0;
+  let isLoading = false;
+  let hasMore = true;
 
-
-      /* =========================================================
-         STATE
-         ========================================================= */
-
-      let cachedDeals = [];
-
-      let currentFilter = "all";
-
-      let currentSort = "drop_desc";
-
-      let settings = null;
+  let observer = null;
 
 
-      /* =========================================================
-         HELPERS
-         ========================================================= */
+  /* =========================================================
+     HELPERS
+     ========================================================= */
 
-      function escapeHTML(value) {
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
-        if (
-          value === null ||
-          value === undefined
-        ) {
-          return "";
-        }
 
-        return String(value)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+  function safeUrl(value) {
+    try {
+      const url = new URL(
+        String(value || ""),
+        window.location.origin
+      );
+
+      /*
+       * Only allow http/https URLs.
+       */
+      if (
+        url.protocol !== "http:" &&
+        url.protocol !== "https:"
+      ) {
+        return "";
       }
 
+      return url.href;
+    } catch (e) {
+      return "";
+    }
+  }
 
-      function escapeAttribute(value) {
-        return escapeHTML(value);
+
+  function formatPKR(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+      return "N/A";
+    }
+
+    return "Rs " +
+      number.toLocaleString("en-PK");
+  }
+
+
+  /* =========================================================
+     CANONICAL
+     =========================================================
+
+     Exactly ONE canonical element exists in the document.
+
+     Do not create another one dynamically.
+     Do not include query parameters.
+     Do not include hash.
+     ========================================================= */
+
+  function setCanonical() {
+
+    const canonical =
+      document.getElementById("pageCanonical");
+
+    if (!canonical) return;
+
+    const canonicalUrl =
+      new URL(
+        "/deals",
+        window.location.origin
+      ).href;
+
+    canonical.setAttribute(
+      "href",
+      canonicalUrl
+    );
+  }
+
+
+  /* =========================================================
+     CUSTOM HEAD
+     =========================================================
+
+     Prevent admin customHead from creating:
+       - second canonical
+       - duplicate viewport
+       - duplicate title
+
+     This directly addresses the multiple-canonical problem.
+     ========================================================= */
+
+  function appendSafeCustomHead(html) {
+
+    if (!html || typeof html !== "string") {
+      return;
+    }
+
+    const temp =
+      document.createElement("div");
+
+    temp.innerHTML = html;
+
+    const nodes =
+      Array.from(temp.childNodes);
+
+    for (const node of nodes) {
+
+      if (
+        node.nodeType !== Node.ELEMENT_NODE
+      ) {
+        continue;
       }
 
+      const tag =
+        node.tagName.toLowerCase();
 
-      function formatPKR(value) {
+      /*
+       * Never allow customHead to create
+       * another canonical.
+       */
+      if (
+        tag === "link" &&
+        (
+          node.getAttribute("rel") || ""
+        ).toLowerCase() === "canonical"
+      ) {
+        continue;
+      }
 
-        if (
-          value === null ||
-          value === undefined ||
-          value === ""
-        ) {
-          return "N/A";
-        }
+      /*
+       * Do not inject another viewport.
+       */
+      if (
+        tag === "meta" &&
+        (
+          node.getAttribute("name") || ""
+        ).toLowerCase() === "viewport"
+      ) {
+        continue;
+      }
 
-        const number =
-          Number(value);
+      /*
+       * Do not inject another title.
+       */
+      if (tag === "title") {
+        continue;
+      }
 
-        if (!Number.isFinite(number)) {
-          return "N/A";
-        }
+      document.head.appendChild(node);
+    }
+  }
 
-        return (
-          "Rs " +
-          number.toLocaleString("en-PK")
+
+  /* =========================================================
+     SETTINGS
+     ========================================================= */
+
+  async function loadSettings() {
+
+    try {
+
+      const response =
+        await fetch(
+          `${CFG.API_BASE_URL}/api/settings`,
+          {
+            headers: {
+              "Accept": "application/json"
+            },
+
+            /*
+             * Settings are not product data.
+             * Revalidation is preferable to an old cached theme.
+             */
+            cache: "no-cache"
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          `Settings HTTP ${response.status}`
         );
       }
 
+      settings =
+        await response.json();
 
-      function getAPIURL(path) {
+      applySettings(settings);
 
-        const base =
-          CFG.API_BASE_URL || "";
+    } catch (error) {
 
-        return `${base}${path}`;
+      console.warn(
+        "Settings could not be loaded:",
+        error.message
+      );
+
+      settings = {
+        theme: {},
+        cardFeatures: {}
+      };
+    }
+  }
+
+
+  function applySettings(data) {
+
+    if (!data) return;
+
+    /* ---------- Logo ---------- */
+
+    const logoSlot =
+      document.getElementById("logoSlot");
+
+    if (logoSlot) {
+
+      const rawLogo =
+        String(
+          data.logoText ||
+          "Sasta.pk"
+        );
+
+      const dot =
+        rawLogo.indexOf(".");
+
+      let name;
+      let tld;
+
+      if (dot > 0) {
+
+        name =
+          rawLogo.slice(0, dot);
+
+        tld =
+          rawLogo.slice(dot);
+
+      } else {
+
+        name =
+          rawLogo;
+
+        tld =
+          "";
       }
 
-
-      /* =========================================================
-         SETTINGS
-         ========================================================= */
-
-      async function loadSettings() {
-
-        try {
-
-          const response =
-            await fetch(
-              getAPIURL("/api/settings"),
-              {
-                method: "GET",
-                credentials: "same-origin",
-                cache: "no-store"
-              }
-            );
-
-          if (!response.ok) {
-            throw new Error(
-              `Settings HTTP ${response.status}`
-            );
-          }
-
-          settings =
-            await response.json();
-
-          applySettings(settings);
-
-        } catch (err) {
-
-          console.warn(
-            "Failed to load settings:",
-            err.message
-          );
-
-          /*
-           * Safe fallback.
-           *
-           * Existing page continues working even
-           * when settings API is unavailable.
-           */
-          settings = {
-            theme: {},
-            cardFeatures: {}
-          };
-
-        }
-
-      }
+      logoSlot.innerHTML =
+        escapeHtml(name) +
+        (
+          tld
+            ? `<span class="dot">${escapeHtml(tld)}</span>`
+            : ""
+        );
+    }
 
 
-      /* =========================================================
-         APPLY SETTINGS
-         ========================================================= */
+    /* ---------- Hero subtitle ---------- */
 
-      function applySettings(data) {
+    const heroSubtitle =
+      document.getElementById(
+        "heroSubtitle"
+      );
 
-        if (!data) {
-          return;
-        }
+    if (
+      heroSubtitle &&
+      data.heroSubtitle
+    ) {
 
-
-        /*
-         * Logo
-         */
-
-        const logoSlot =
-          document.getElementById("logoSlot");
-
-        if (logoSlot) {
-
-          const logoText =
-            escapeHTML(
-              data.logoText || "Sasta"
-            );
-
-          logoSlot.innerHTML =
-            `${logoText}<span class="dot">.pk</span>`;
-
-        }
+      heroSubtitle.textContent =
+        String(data.heroSubtitle);
+    }
 
 
-        /*
-         * Hero subtitle
-         */
+    /* ---------- Theme ---------- */
 
-        const heroSubtitle =
-          document.getElementById(
-            "heroSubtitle"
-          );
+    const theme =
+      data.theme || {};
 
-        if (
-          heroSubtitle &&
-          data.heroSubtitle
-        ) {
+    const root =
+      document.documentElement.style;
 
-          heroSubtitle.textContent =
-            data.heroSubtitle;
+    if (theme.brandColor) {
 
-        }
+      root.setProperty(
+        "--color-brand",
+        theme.brandColor
+      );
+    }
+
+    if (theme.accentColor) {
+
+      root.setProperty(
+        "--color-accent",
+        theme.accentColor
+      );
+    }
+
+    if (theme.brandDark) {
+
+      root.setProperty(
+        "--color-brand-dark",
+        theme.brandDark
+      );
+    }
+
+    /*
+     * Theme fonts remain supported,
+     * but there is NO external Google Fonts
+     * request on initial page load.
+     */
+    if (theme.fontBody) {
+
+      root.setProperty(
+        "--font-body",
+        `"${String(theme.fontBody)}",
+         Inter,
+         ui-sans-serif,
+         system-ui,
+         sans-serif`
+      );
+    }
+
+    if (theme.fontDisplay) {
+
+      root.setProperty(
+        "--font-display",
+        `"${String(theme.fontDisplay)}",
+         Inter,
+         ui-sans-serif,
+         system-ui,
+         sans-serif`
+      );
+    }
 
 
-        /*
-         * Footer
-         */
+    /* ---------- Grid ---------- */
 
-        const footerSlot =
-          document.getElementById(
-            "footerSlot"
-          );
+    const cols =
+      Number(data.dealsColCount);
 
-        if (
-          footerSlot &&
-          data.footerText
-        ) {
+    if (
+      Number.isInteger(cols) &&
+      cols >= 1 &&
+      cols <= 6
+    ) {
 
-          const footerText =
-            escapeHTML(
-              data.footerText
-            );
+      /*
+       * Only change the CSS variable.
+       * Do NOT inject a style attribute on every request.
+       */
+      root.setProperty(
+        "--deal-cols",
+        String(cols)
+      );
+    }
 
-          footerSlot.innerHTML = `
+
+    /* ---------- Footer ---------- */
+
+    const footerSlot =
+      document.getElementById(
+        "footerSlot"
+      );
+
+    if (footerSlot) {
+
+      const footerText =
+        data.footerText ||
+        "Powered by Sasta.pk Engine";
+
+      footerSlot.innerHTML = `
         <div class="footer-container">
 
           <div class="footer-links">
-
-            <a href="#">
-              About Us
-            </a>
-
-            <a href="#">
-              Privacy Policy
-            </a>
-
-            <a href="#">
-              Terms of Service
-            </a>
-
+            <a href="/">Home</a>
+            <a href="/">Compare Prices</a>
+            <a href="/deals">Top Deals</a>
+            <a href="#">About Us</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
           </div>
 
           <div>
-            ${footerText}
+            ${escapeHtml(footerText)}
           </div>
 
         </div>
       `;
-
-        }
-
-
-        /*
-         * Custom head
-         */
-
-        if (data.customHead) {
-
-          const tempDiv =
-            document.createElement("div");
-
-          tempDiv.innerHTML =
-            data.customHead;
-
-          while (
-            tempDiv.firstChild
-          ) {
-
-            document.head.appendChild(
-              tempDiv.firstChild
-            );
-
-          }
-
-        }
+    }
 
 
-        /*
-         * Theme
-         */
+    /* ---------- Custom head ---------- */
 
-        const theme =
-          data.theme || {};
+    if (data.customHead) {
 
-        const brandColor =
-          theme.brandColor ||
-          "#0B6E4F";
-
-        const accentColor =
-          theme.accentColor ||
-          "#E8A33D";
-
-        const fontBody =
-          theme.fontBody ||
-          "Inter";
-
-        const fontDisplay =
-          theme.fontDisplay ||
-          "Space Grotesk";
+      appendSafeCustomHead(
+        data.customHead
+      );
+    }
 
 
-        /*
-         * Deal columns
-         */
-
-        const cols =
-          Number(data.dealsColCount || 0);
-
-        const resultsEl =
-          document.getElementById(
-            "results"
-          );
-
-        if (resultsEl) {
-
-          if (
-            Number.isInteger(cols) &&
-            cols > 0
-          ) {
-
-            resultsEl.style.setProperty(
-              "grid-template-columns",
-              `repeat(${cols}, minmax(0, 1fr))`,
-              "important"
-            );
-
-          } else {
-
-            resultsEl.style.setProperty(
-              "grid-template-columns",
-              "repeat(auto-fill, minmax(260px, 1fr))",
-              "important"
-            );
-
-          }
-
-        }
+    /*
+     * Re-assert canonical after customHead.
+     * Still only ONE canonical exists.
+     */
+    setCanonical();
+  }
 
 
-        /*
-         * Root theme variables
-         */
+  /* =========================================================
+     CARD RENDERING
+     ========================================================= */
 
-        const rootStyle =
-          document.documentElement.style;
+  function renderDealCardsMarkup(items) {
 
-        rootStyle.setProperty(
-          "--color-brand",
-          brandColor
+    const cf =
+      settings &&
+      settings.cardFeatures
+        ? settings.cardFeatures
+        : {};
+
+    const showImage =
+      cf.showImage !== false;
+
+    const showTitle =
+      cf.showTitle !== false;
+
+
+    return items.map((p) => {
+
+      const offer =
+        Array.isArray(p.offers) &&
+        p.offers.length
+          ? p.offers[0]
+          : {};
+
+      const id =
+        escapeHtml(p.id);
+
+      const title =
+        escapeHtml(
+          p.title ||
+          "Product Deal"
         );
 
-        rootStyle.setProperty(
-          "--color-accent",
-          accentColor
+      const image =
+        safeUrl(p.image);
+
+      const offerUrl =
+        safeUrl(
+          `${CFG.API_BASE_URL}/out/${encodeURIComponent(p.id)}`
         );
 
-        rootStyle.setProperty(
-          "--font-body",
-          `"${fontBody}", sans-serif`
+      const storeColor =
+        escapeHtml(
+          offer.storeColor ||
+          "#0B6E4F"
         );
 
-        rootStyle.setProperty(
-          "--font-display",
-          `"${fontDisplay}", sans-serif`
+      const store =
+        escapeHtml(
+          offer.store ||
+          "Store"
         );
 
-      }
+      const category =
+        escapeHtml(
+          p.category ||
+          "Mobile"
+        );
 
+      const discount =
+        Number(p.discount_pct);
 
-      /* =========================================================
-         CARD RENDERING
-         ========================================================= */
-
-      function renderDealCardsMarkup(items) {
-
-        const cf =
-          settings &&
-            settings.cardFeatures
-            ? settings.cardFeatures
-            : {};
-
-
-        const showImage =
-          cf.showImage !== false;
-
-        const showTitle =
-          cf.showTitle !== false;
-
-
-        return items
-          .map((p, index) => {
-
-            const offer =
-              Array.isArray(p.offers) &&
-                p.offers.length
-                ? p.offers[0]
-                : {};
-
-
-            const titleText =
-              p.title ||
-              "Product Deal";
-
-
-            const safeTitle =
-              escapeHTML(
-                titleText
-              );
-
-
-            const productId =
-              encodeURIComponent(
-                p.id
-              );
-
-
-            const imageURL =
-              p.image
-                ? escapeAttribute(p.image)
-                : "";
-
-
-            /*
-             * First visible image:
-             * eager + high priority.
-             *
-             * Remaining images:
-             * lazy.
-             */
-
-            const imageLoading =
-              index < 2
-                ? "eager"
-                : "lazy";
-
-
-            const imagePriority =
-              index === 0
-                ? "high"
-                : "auto";
-
-
-            const storeName =
-              escapeHTML(
-                offer.store ||
-                "Store"
-              );
-
-
-            const storeColor =
-              escapeAttribute(
-                offer.storeColor ||
-                "#0B6E4F"
-              );
-
-
-            const category =
-              escapeHTML(
-                p.category ||
-                "Mobile"
-              );
-
-
-            const discount =
-              Number(
-                p.discount_pct
-              );
-
-
-            const discountBadge =
-              Number.isFinite(discount) &&
-                discount > 0
-                ? `
+      const discountMarkup =
+        Number.isFinite(discount) &&
+        discount > 0
+          ? `
               <div
                 class="match-badge"
-                style="background:var(--color-brand);"
+                aria-label="${discount}% off"
               >
-                ${escapeHTML(
-                  discount.toFixed(
-                    discount % 1
-                      ? 1
-                      : 0
-                  )
-                )}% OFF
+                ${discount}% OFF
               </div>
             `
-                : "";
+          : "";
 
 
-            const imageMarkup =
-              showImage
-                ? `
-              <a
-                class="product-image-link"
-                href="/product?id=${productId}"
-                data-product-id="${productId}"
-                aria-label="View ${safeTitle}"
-              >
+      const imageMarkup =
+        showImage
+          ? `
+            <a
+              class="product-image-link"
+              href="/product?id=${encodeURIComponent(p.id)}"
+              aria-label="View ${title}"
+            >
+              <div class="card-image">
 
-                <div class="card-image">
-
-                  ${imageURL
-                  ? `
-                        <img
-                          src="${imageURL}"
-                          alt="${safeTitle}"
-                          width="200"
-                          height="150"
-                          loading="${imageLoading}"
-                          fetchpriority="${imagePriority}"
-                          decoding="async"
-                          onerror="this.style.display='none'"
-                        >
-                      `
-                  : `
-                        <span
-                          aria-hidden="true"
-                          style="font-size:36px"
-                        >
-                          📱
-                        </span>
-                      `
+                ${
+                  image
+                    ? `
+                      <img
+                        src="${escapeHtml(image)}"
+                        alt="${title}"
+                        width="200"
+                        height="150"
+                        loading="lazy"
+                        decoding="async"
+                        fetchpriority="low"
+                      >
+                    `
+                    : `
+                      <div
+                        class="image-placeholder"
+                        aria-hidden="true"
+                      >
+                        📱
+                      </div>
+                    `
                 }
 
-                </div>
-
-              </a>
-            `
-                : "";
-
-
-            const offerMarkup =
-              offer.id
-                ? `
-              <a
-                href="${getAPIURL(
-                  `/out/${encodeURIComponent(
-                    offer.id
-                  )}`
-                )}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="offer-row-link"
-                aria-label="Buy ${safeTitle} from ${storeName}"
-              >
-
-                <div class="store-info-left">
-
-                  <span
-                    class="store-badge"
-                    style="background:${storeColor}"
-                  >
-                    ${storeName}
-                  </span>
-
-                </div>
-
-                <div class="offer-price-right">
-
-                  <span class="offer-price">
-                    ${formatPKR(
-                  offer.price
-                )}
-                  </span>
-
-                </div>
-
-              </a>
-            `
-                : `
-              <div class="offer-row-link">
-                <span class="store-badge"
-                  style="background:#777">
-                  Store unavailable
-                </span>
               </div>
-            `;
+            </a>
+          `
+          : "";
 
 
-            return `
+      return `
+        <article
+          class="card"
+          data-product-id="${id}"
+        >
 
-          <article
-            class="card"
-            data-product-id="${escapeAttribute(p.id)}"
-          >
+          <div class="card-header-banner">
 
-            <div class="card-header-banner">
+            <div class="best-ribbon">
+              Deal: ${formatPKR(p.min_price)}
+            </div>
 
-              <div class="best-ribbon">
-                Deal:
-                ${formatPKR(p.min_price)}
-              </div>
+            ${discountMarkup}
 
-              ${discountBadge}
+          </div>
+
+
+          ${imageMarkup}
+
+
+          <div class="card-body">
+
+            <div class="meta-container">
+
+              <span class="category-pill">
+                ${category}
+              </span>
+
+              <span class="saving">
+                ↓ Save ${formatPKR(p.price_drop)}
+              </span>
 
             </div>
 
 
-            ${imageMarkup}
+            ${
+              showTitle
+                ? `
+                  <div
+                    class="card-title"
+                    title="${title}"
+                  >
+                    ${title}
+                  </div>
+                `
+                : ""
+            }
 
 
-            <div class="card-body">
+            <div class="original-price">
 
-              <div class="meta-container">
+              Original:
 
-                <span class="category-pill">
-                  ${category}
-                </span>
+              <span class="original-price-value">
+                ${formatPKR(p.old_price)}
+              </span>
 
-                <span class="saving-text">
-                  ↓ Save
-                  ${formatPKR(p.price_drop)}
-                </span>
+            </div>
 
+
+            <hr class="card-divider">
+
+
+            <div class="offers-section">
+
+              <div class="offers-heading">
+                <span>Store</span>
+                <span>Deal Price</span>
               </div>
 
 
-              ${showTitle
-                ? `
-                    <div
-                      class="card-title"
-                      title="${safeTitle}"
+              ${
+                offerUrl
+                  ? `
+                    <a
+                      href="${escapeHtml(offerUrl)}"
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      class="offer-row-link"
+                      aria-label="View ${store} deal"
                     >
-                      ${safeTitle}
+
+                      <div class="store-info-left">
+
+                        <span
+                          class="store-badge"
+                          style="background:${storeColor}"
+                        >
+                          ${store}
+                        </span>
+
+                      </div>
+
+                      <div class="offer-price-right">
+
+                        <span class="offer-price">
+                          ${formatPKR(offer.price)}
+                        </span>
+
+                      </div>
+
+                    </a>
+                  `
+                  : `
+                    <div class="offer-row-link">
+                      <div class="store-info-left">
+                        <span
+                          class="store-badge"
+                          style="background:${storeColor}"
+                        >
+                          ${store}
+                        </span>
+                      </div>
+
+                      <div class="offer-price-right">
+                        <span class="offer-price">
+                          ${formatPKR(offer.price)}
+                        </span>
+                      </div>
                     </div>
                   `
-                : ""
               }
-
-
-              <div class="original-price">
-
-                Original:
-
-                <span class="original-price-value">
-                  ${formatPKR(
-                p.old_price
-              )}
-                </span>
-
-              </div>
-
-
-              <hr class="card-divider">
-
-
-              <div class="offers-section">
-
-                <div class="offers-heading">
-
-                  <span>
-                    Store
-                  </span>
-
-                  <span>
-                    Deal Price
-                  </span>
-
-                </div>
-
-                ${offerMarkup}
-
-              </div>
 
             </div>
 
-          </article>
+          </div>
 
-        `;
+        </article>
+      `;
+    }).join("");
+  }
 
-          })
-          .join("");
 
+  /* =========================================================
+     FILTER + SORT
+     ========================================================= */
+
+  function applyFiltersAndSort() {
+
+    let list =
+      cachedDeals.slice();
+
+
+    if (
+      currentFilter === "huge"
+    ) {
+
+      list =
+        list.filter(
+          p =>
+            Number(p.discount_pct) >= 10
+        );
+    }
+
+
+    if (
+      currentFilter === "medium"
+    ) {
+
+      list =
+        list.filter(
+          p =>
+            Number(p.discount_pct) >= 5
+        );
+    }
+
+
+    list.sort((a, b) => {
+
+      if (
+        currentSort === "pct_desc"
+      ) {
+
+        return (
+          (Number(b.discount_pct) || 0) -
+          (Number(a.discount_pct) || 0)
+        );
       }
 
 
-      /* =========================================================
-         FILTER + SORT
-         ========================================================= */
+      if (
+        currentSort === "price_asc"
+      ) {
 
-      function applyFiltersAndSort() {
-
-        let list =
-          [...cachedDeals];
-
-
-        /*
-         * Filters
-         */
-
-        if (
-          currentFilter === "huge"
-        ) {
-
-          list =
-            list.filter(
-              p =>
-                Number(
-                  p.discount_pct
-                ) >= 10
-            );
-
-        }
-
-
-        if (
-          currentFilter === "medium"
-        ) {
-
-          list =
-            list.filter(
-              p =>
-                Number(
-                  p.discount_pct
-                ) >= 5
-            );
-
-        }
-
-
-        /*
-         * Sorting
-         */
-
-        list.sort(
-          (a, b) => {
-
-            if (
-              currentSort ===
-              "pct_desc"
-            ) {
-
-              return (
-                (Number(
-                  b.discount_pct
-                ) || 0) -
-                (Number(
-                  a.discount_pct
-                ) || 0)
-              );
-
-            }
-
-
-            if (
-              currentSort ===
-              "price_asc"
-            ) {
-
-              return (
-                (Number(
-                  a.min_price
-                ) || 0) -
-                (Number(
-                  b.min_price
-                ) || 0)
-              );
-
-            }
-
-
-            return (
-              (Number(
-                b.price_drop
-              ) || 0) -
-              (Number(
-                a.price_drop
-              ) || 0)
-            );
-
-          }
+        return (
+          (Number(a.min_price) || 0) -
+          (Number(b.min_price) || 0)
         );
+      }
 
 
-        /*
-         * No matching products.
-         *
-         * This replaces the entire grid rather than
-         * leaving blank card rows.
-         */
+      return (
+        (Number(b.price_drop) || 0) -
+        (Number(a.price_drop) || 0)
+      );
+    });
 
-        if (
-          list.length === 0
-        ) {
 
-          results.innerHTML = `
+    if (!list.length) {
 
+      results.innerHTML = `
         <div class="state-panel">
 
           <h3>
@@ -2054,270 +2201,203 @@
           </p>
 
         </div>
-
       `;
 
-          results.setAttribute(
-            "aria-busy",
-            "false"
-          );
+      results.setAttribute(
+        "aria-busy",
+        "false"
+      );
 
-          return;
-
-        }
-
-
-        /*
-         * Render cards
-         */
-
-        results.innerHTML =
-          renderDealCardsMarkup(
-            list
-          );
+      return;
+    }
 
 
-        results.setAttribute(
-          "aria-busy",
-          "false"
-        );
+    results.innerHTML =
+      renderDealCardsMarkup(list);
 
-      }
-
-
-      /* =========================================================
-         FILTER EVENTS
-         ========================================================= */
-
-      document
-        .querySelectorAll(
-          ".filter-btn"
-        )
-        .forEach(btn => {
-
-          btn.addEventListener(
-            "click",
-            event => {
-
-              const target =
-                event.currentTarget;
+    results.setAttribute(
+      "aria-busy",
+      "false"
+    );
+  }
 
 
-              document
-                .querySelectorAll(
-                  ".filter-btn"
+  /* =========================================================
+     FILTER EVENTS
+     ========================================================= */
+
+  document
+    .querySelectorAll(".filter-btn")
+    .forEach((button) => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          document
+            .querySelectorAll(
+              ".filter-btn"
+            )
+            .forEach(
+              b =>
+                b.classList.remove(
+                  "active"
                 )
-                .forEach(
-                  button =>
-                    button.classList.remove(
-                      "active"
+            );
+
+          button.classList.add(
+            "active"
+          );
+
+          currentFilter =
+            button.dataset.filter ||
+            "all";
+
+          applyFiltersAndSort();
+        }
+      );
+    });
+
+
+  document
+    .getElementById(
+      "sortDealsSelect"
+    )
+    ?.addEventListener(
+      "change",
+      (event) => {
+
+        currentSort =
+          event.target.value ||
+          "drop_desc";
+
+        applyFiltersAndSort();
+      }
+    );
+
+
+  /* =========================================================
+     DEAL API
+     ========================================================= */
+
+  async function fetchDeals(
+    limit,
+    requestedOffset
+  ) {
+
+    const url =
+      `${CFG.API_BASE_URL}/api/deals` +
+      `?limit=${encodeURIComponent(limit)}` +
+      `&offset=${encodeURIComponent(requestedOffset)}`;
+
+    const response =
+      await fetch(
+        url,
+        {
+          headers: {
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Deals API HTTP ${response.status}`
+      );
+    }
+
+    return response.json();
+  }
+
+
+  /* =========================================================
+     INFINITE SCROLL
+     ========================================================= */
+
+  function setupInfiniteScroll() {
+
+    if (!sentinel) return;
+
+
+    if (observer) {
+
+      observer.disconnect();
+    }
+
+
+    observer =
+      new IntersectionObserver(
+        async (entries) => {
+
+          if (
+            !entries[0].isIntersecting ||
+            isLoading ||
+            !hasMore
+          ) {
+            return;
+          }
+
+
+          isLoading = true;
+
+          sentinelText.textContent =
+            "Loading more deals...";
+
+
+          try {
+
+            const pageSize =
+              settings &&
+              settings.productsPerPage
+                ? Math.max(
+                    1,
+                    Number(
+                      settings.productsPerPage
                     )
-                );
+                  )
+                : 12;
 
 
-              target.classList.add(
-                "active"
+            const data =
+              await fetchDeals(
+                pageSize,
+                offset
               );
 
 
-              currentFilter =
-                target.dataset.filter ||
-                "all";
+            const items =
+              Array.isArray(data.products)
+                ? data.products
+                : [];
 
 
-              applyFiltersAndSort();
+            if (
+              data.total !== undefined &&
+              heroTotalDeals
+            ) {
 
+              heroTotalDeals.textContent =
+                Number(
+                  data.total
+                ).toLocaleString(
+                  "en-PK"
+                );
             }
-          );
-
-        });
 
 
-      /* =========================================================
-         SORT EVENT
-         ========================================================= */
+            /*
+             * First request with no results.
+             */
+            if (
+              offset === 0 &&
+              items.length === 0
+            ) {
 
-      document
-        .getElementById(
-          "sortDealsSelect"
-        )
-        ?.addEventListener(
-          "change",
-          event => {
+              cachedDeals = [];
 
-            currentSort =
-              event.target.value ||
-              "drop_desc";
-
-            applyFiltersAndSort();
-
-          }
-        );
-
-
-      /* =========================================================
-         INFINITE SCROLL
-         ========================================================= */
-
-      function setupInfiniteScroll({
-        containerSelector,
-        sentinelId
-      }) {
-
-        /*
-         * containerSelector is retained for compatibility
-         * with the existing implementation.
-         */
-        void containerSelector;
-
-
-        let offset = 0;
-
-        let isLoading = false;
-
-        let hasMore = true;
-
-
-        const scrollSentinel =
-          document.getElementById(
-            sentinelId
-          );
-
-
-        if (!scrollSentinel) {
-          return;
-        }
-
-
-        /*
-         * Prevent duplicate observers if initialization
-         * is ever called more than once.
-         */
-
-        if (
-          scrollSentinel.dataset.observing ===
-          "true"
-        ) {
-          return;
-        }
-
-
-        scrollSentinel.dataset.observing =
-          "true";
-
-
-        const observer =
-          new IntersectionObserver(
-            async entries => {
-
-              const entry =
-                entries[0];
-
-
-              if (
-                !entry.isIntersecting ||
-                isLoading ||
-                !hasMore
-              ) {
-                return;
-              }
-
-
-              isLoading = true;
-
-
-              try {
-
-                const pageSize =
-                  settings &&
-                    settings.productsPerPage
-                    ? Number(
-                      settings.productsPerPage
-                    )
-                    : 12;
-
-
-                const safePageSize =
-                  Number.isFinite(
-                    pageSize
-                  ) &&
-                    pageSize > 0
-                    ? Math.min(
-                      pageSize,
-                      100
-                    )
-                    : 12;
-
-
-                const url =
-                  `${getAPIURL(
-                    "/api/deals"
-                  )}?limit=${safePageSize}&offset=${offset}`;
-
-
-                const response =
-                  await fetch(
-                    url,
-                    {
-                      method: "GET",
-                      credentials: "same-origin",
-                      cache: "no-store"
-                    }
-                  );
-
-
-                if (!response.ok) {
-
-                  throw new Error(
-                    `Deals HTTP ${response.status}`
-                  );
-
-                }
-
-
-                const data =
-                  await response.json();
-
-
-                const items =
-                  Array.isArray(
-                    data.products
-                  )
-                    ? data.products
-                    : [];
-
-
-                /*
-                 * Total deal count
-                 */
-
-                if (
-                  data.total !==
-                  undefined &&
-                  heroTotalDeals
-                ) {
-
-                  heroTotalDeals.textContent =
-                    Number(
-                      data.total
-                    ).toLocaleString(
-                      "en-PK"
-                    );
-
-                }
-
-
-                /*
-                 * First request returned nothing
-                 */
-
-                if (
-                  offset === 0 &&
-                  items.length === 0
-                ) {
-
-                  results.innerHTML = `
-
+              results.innerHTML = `
                 <div class="state-panel">
 
                   <h3>
@@ -2329,221 +2409,328 @@
                   </p>
 
                 </div>
-
               `;
 
+              hasMore = false;
 
-                  results.setAttribute(
-                    "aria-busy",
-                    "false"
-                  );
+              sentinelText.textContent =
+                "";
 
-
-                  scrollSentinel.style.display =
-                    "none";
-
-
-                  hasMore = false;
-
-                  return;
-
-                }
-
-
-                /*
-                 * Append newly received products.
-                 */
-
-                if (
-                  items.length > 0
-                ) {
-
-                  cachedDeals.push(
-                    ...items
-                  );
-
-                  applyFiltersAndSort();
-
-                  /*
-                   * Important:
-                   *
-                   * Offset advances by actual page size,
-                   * not filtered result count.
-                   */
-                  offset +=
-                    safePageSize;
-
-                }
-
-
-                /*
-                 * Last page
-                 */
-
-                if (
-                  items.length <
-                  safePageSize
-                ) {
-
-                  hasMore = false;
-
-                  scrollSentinel.style.display =
-                    "none";
-
-                }
-
-
-              } catch (err) {
-
-                console.error(
-                  "Failed to load deals:",
-                  err
-                );
-
-
-                /*
-                 * Do not destroy existing products
-                 * if a later page fails.
-                 */
-
-                if (
-                  offset === 0 &&
-                  cachedDeals.length === 0
-                ) {
-
-                  results.innerHTML = `
-
-                <div class="state-panel">
-
-                  <h3>
-                    Unable to Load Deals
-                  </h3>
-
-                  <p>
-                    Please refresh the page and try again.
-                  </p>
-
-                </div>
-
-              `;
-
-                  results.setAttribute(
-                    "aria-busy",
-                    "false"
-                  );
-
-                }
-
-              } finally {
-
-                isLoading = false;
-
-              }
-
-            },
-
-            {
-              /*
-               * Reduced from 300px.
-               *
-               * Still loads before the user reaches
-               * the bottom, but avoids unnecessarily
-               * aggressive API calls.
-               */
-              rootMargin:
-                "150px 0px"
+              return;
             }
 
-          );
+
+            /*
+             * Remove duplicates by product ID.
+             * This prevents repeated cards when
+             * pagination data overlaps.
+             */
+            const existingIds =
+              new Set(
+                cachedDeals.map(
+                  p =>
+                    String(p.id)
+                )
+              );
 
 
-        observer.observe(
-          scrollSentinel
-        );
-
-      }
-
-
-      /* =========================================================
-         INITIALIZE
-         ========================================================= */
-
-      async function initDealsPage() {
-
-        /*
-         * Canonical URL
-         */
-
-        let canonicalLink =
-          document.querySelector(
-            'link[rel="canonical"]'
-          );
+            const newItems =
+              items.filter(
+                p =>
+                  p &&
+                  p.id !== undefined &&
+                  !existingIds.has(
+                    String(p.id)
+                  )
+              );
 
 
-        if (!canonicalLink) {
+            if (newItems.length) {
 
-          canonicalLink =
-            document.createElement(
-              "link"
+              cachedDeals.push(
+                ...newItems
+              );
+
+              applyFiltersAndSort();
+            }
+
+
+            /*
+             * Correct pagination logic:
+             * advance by the actual API page size,
+             * not by the number surviving filters.
+             */
+            offset += items.length;
+
+
+            /*
+             * If API returned less than requested,
+             * we've reached the end.
+             */
+            if (
+              items.length < pageSize
+            ) {
+
+              hasMore = false;
+
+              sentinelText.textContent =
+                "";
+            }
+
+
+            /*
+             * If API somehow returns only duplicates,
+             * don't repeatedly hammer the endpoint.
+             */
+            if (
+              items.length > 0 &&
+              newItems.length === 0
+            ) {
+
+              if (
+                items.length < pageSize
+              ) {
+
+                hasMore = false;
+              }
+            }
+
+          } catch (error) {
+
+            console.error(
+              "Failed to load deals:",
+              error
             );
 
-          canonicalLink.setAttribute(
-            "rel",
-            "canonical"
+            sentinelText.textContent =
+              "Unable to load more deals. Scroll again to retry.";
+
+          } finally {
+
+            isLoading = false;
+          }
+        },
+        {
+          /*
+           * Load before the user reaches
+           * the bottom, but not excessively early.
+           */
+          rootMargin: "250px 0px"
+        }
+      );
+
+
+    observer.observe(
+      sentinel
+    );
+  }
+
+
+  /* =========================================================
+     IMAGE ERROR HANDLING
+     ========================================================= */
+
+  results.addEventListener(
+    "error",
+    (event) => {
+
+      const image =
+        event.target;
+
+      if (
+        image &&
+        image.tagName === "IMG"
+      ) {
+
+        const placeholder =
+          document.createElement(
+            "div"
           );
 
-          document.head.appendChild(
-            canonicalLink
+        placeholder.className =
+          "image-placeholder";
+
+        placeholder.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+        placeholder.textContent =
+          "📱";
+
+        image.replaceWith(
+          placeholder
+        );
+      }
+    },
+    true
+  );
+
+
+  /* =========================================================
+     INITIALIZATION
+     ========================================================= */
+
+  async function initDealsPage() {
+
+    /*
+     * Canonical is established immediately.
+     */
+    setCanonical();
+
+
+    /*
+     * Load settings before starting infinite
+     * scroll so page-size/grid configuration
+     * is available before API rendering.
+     */
+    await loadSettings();
+
+
+    /*
+     * Reassert canonical after customHead.
+     */
+    setCanonical();
+
+
+    setupInfiniteScroll();
+
+
+    /*
+     * The IntersectionObserver normally starts
+     * the first request automatically.
+     *
+     * However, if the page is tall enough that the
+     * sentinel is not visible, explicitly fetch
+     * the first page.
+     */
+    if (
+      sentinel &&
+      sentinel.getBoundingClientRect().top <
+        window.innerHeight + 250
+    ) {
+
+      /*
+       * Trigger observer naturally.
+       */
+      sentinel.dispatchEvent(
+        new Event("deals-init")
+      );
+
+      /*
+       * Direct first load because a synthetic
+       * intersection event is not reliable.
+       */
+      const pageSize =
+        settings &&
+        settings.productsPerPage
+          ? Math.max(
+              1,
+              Number(
+                settings.productsPerPage
+              )
+            )
+          : 12;
+
+
+      try {
+
+        isLoading = true;
+
+        const data =
+          await fetchDeals(
+            pageSize,
+            0
           );
 
+        const items =
+          Array.isArray(data.products)
+            ? data.products
+            : [];
+
+
+        if (
+          data.total !== undefined &&
+          heroTotalDeals
+        ) {
+
+          heroTotalDeals.textContent =
+            Number(
+              data.total
+            ).toLocaleString(
+              "en-PK"
+            );
         }
 
 
-        canonicalLink.setAttribute(
-          "href",
-          window.location.href
-            .split("#")[0]
+        if (!items.length) {
+
+          results.innerHTML = `
+            <div class="state-panel">
+              <h3>No Deals Found</h3>
+              <p>
+                Check back later for price drops.
+              </p>
+            </div>
+          `;
+
+          hasMore = false;
+
+          sentinelText.textContent =
+            "";
+
+        } else {
+
+          cachedDeals =
+            items.slice();
+
+          offset =
+            items.length;
+
+          applyFiltersAndSort();
+
+          if (
+            items.length < pageSize
+          ) {
+
+            hasMore = false;
+
+            sentinelText.textContent =
+              "";
+          }
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Initial deals load failed:",
+          error
         );
 
+        results.innerHTML = `
+          <div class="state-panel">
+            <h3>Unable to Load Deals</h3>
+            <p>
+              Please refresh the page and try again.
+            </p>
+          </div>
+        `;
 
-        /*
-         * IMPORTANT:
-         *
-         * Start settings request immediately,
-         * but don't unnecessarily block the
-         * initial page lifecycle.
-         */
+        sentinelText.textContent =
+          "";
 
-        const settingsPromise =
-          loadSettings();
+      } finally {
 
-
-        /*
-         * Wait for settings before starting
-         * infinite scroll so productsPerPage
-         * and other settings are available.
-         */
-
-        await settingsPromise;
-
-
-        setupInfiniteScroll({
-          containerSelector: "#results",
-          sentinelId: "productsSentinel"
-        });
-
+        isLoading = false;
       }
+    }
+  }
 
 
-      /* =========================================================
-         * START
-         * ========================================================= */
+  initDealsPage();
 
-      initDealsPage();
-
-    })();
-  </script>
+})();
+</script>
 
 </body>
-
 </html>
