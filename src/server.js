@@ -56,18 +56,50 @@ app.use(cookieParser());
 
 
 // --------------------------------------------------
-// Public directory
+// Public directory & Server-Side Rendered Routes
 // --------------------------------------------------
 
 const publicDir = path.resolve("public");
 
+// Server-side database theme & custom head injection for the deals page
+app.get('/deals', async (req, res) => {
+  try {
+    const settingResult = await pool.query('SELECT data FROM site_settings WHERE id = 1');
+    const settings = settingResult.rows[0]?.data || {};
+    const theme = settings.theme || {};
 
-// Pretty URLs
-// /products     -> /public/products.html
-// /deals        -> /public/deals.html
-// /stores       -> /public/stores.html
-// /about        -> /public/about.html
-// etc.
+    let html = fs.readFileSync(path.join(publicDir, 'deals.html'), 'utf8');
+
+    const inlineCss = `
+      :root {
+        --color-bg: ${theme.colorBg || '#F7F5EF'};
+        --color-surface: ${theme.colorSurface || '#FFFFFF'};
+        --color-ink: ${theme.colorInk || '#17231D'};
+        --color-ink-soft: ${theme.colorInkSoft || '#6B7A70'};
+        --color-brand: ${theme.brandColor || '#050842'};
+        --color-brand-dark: ${theme.brandDark || '#094F39'};
+        --color-line: ${theme.colorLine || '#E7E1D2'};
+        --color-accent: ${theme.accentColor || '#0905f5'};
+        --color-danger: ${theme.colorDanger || '#C24B3F'};
+        --font-body: "${theme.fontBody || 'Inter'}", sans-serif;
+        --font-display: "${theme.fontDisplay || 'Space Grotesk'}", sans-serif;
+        --deal-cols: ${settings.dealsColCount || 3};
+      }
+    `;
+
+    html = html.replace('/* DB_THEME_INJECT */', inlineCss);
+    html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', settings.customHead || '');
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (err) {
+    console.error("Deals page render error:", err);
+    res.sendFile(path.join(publicDir, 'deals.html'));
+  }
+});
+
+
+// Pretty URLs for remaining pages
 app.use(prettyPages(publicDir));
 
 
