@@ -125,13 +125,12 @@ app.get('/product', async (req, res) => {
 
       if (productId) {
         try {
-          // Fetch product details & history concurrently from database/pool
-          const productResult = await dbPool.query('SELECT * FROM products WHERE id = $1', [productId]);
-          if (productResult.rows.length > 0) {
-            product = productResult.rows[0];
-          }
+          const [productResult, historyResult] = await Promise.all([
+            dbPool.query('SELECT * FROM products WHERE id = $1', [productId]),
+            dbPool.query('SELECT id, product_id, price, recorded_at FROM price_history WHERE product_id = $1 ORDER BY recorded_at ASC', [productId])
+          ]);
 
-          const historyResult = await dbPool.query('SELECT * FROM product_history WHERE product_id = $1 ORDER BY recorded_at ASC', [productId]);
+          product = productResult.rows[0] || null;
           history = historyResult.rows;
         } catch (err) {
           console.error("Error pre-rendering product server-side:", err);
@@ -147,7 +146,7 @@ app.get('/product', async (req, res) => {
     }
   });
 });
-// --------------------------------------------------
+// -------------------------------------------------
 // Static assets & Pretty Pages (AFTER SSR ROUTES)
 // --------------------------------------------------
 
