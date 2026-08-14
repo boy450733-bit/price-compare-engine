@@ -62,7 +62,7 @@ export async function scrapeStoreForQuery(storeName, adapter, searchQuery) {
     const { rows: historyRows } = await query(
       `SELECT id, price FROM price_history 
        WHERE product_id = $1 
-       ORDER BY created_at DESC LIMIT 1`,
+       ORDER BY recorded_at DESC LIMIT 1`,
       [id]
     );
 
@@ -72,14 +72,14 @@ export async function scrapeStoreForQuery(storeName, adapter, searchQuery) {
       // If price is identical to the latest record, just update its timestamp
       await query(
         `UPDATE price_history 
-         SET created_at = NOW() 
+         SET recorded_at = NOW() 
          WHERE id = $1`,
         [lastEntry.id]
       );
     } else {
       // If price changed or no history exists, insert a new record
       await query(
-        `INSERT INTO price_history (product_id, price, created_at) VALUES ($1, $2, NOW())`,
+        `INSERT INTO price_history (product_id, price, recorded_at) VALUES ($1, $2, NOW())`,
         [id, product.price]
       );
     }
