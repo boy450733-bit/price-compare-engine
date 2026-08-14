@@ -112,6 +112,7 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
   });
 });
 
+
 // Server-side pre-rendered route for individual product pages
 app.get('/product', async (req, res) => {
   const productId = (req.query.id || "").trim();
@@ -152,9 +153,11 @@ app.get('/product', async (req, res) => {
                 `SELECT p.* FROM products p WHERE p.id::text != $1 ORDER BY p.scraped_at DESC LIMIT 8`,
                 [productId]
               ).catch(() => ({ rows: [] })),
+              
+              // UPDATED: Now querying from search_log
               dbPool.query(
                 `SELECT query 
-                 FROM search_history 
+                 FROM search_log 
                  WHERE query IS NOT NULL AND TRIM(query) != ''
                  GROUP BY query 
                  ORDER BY COUNT(*) DESC 
@@ -210,7 +213,7 @@ app.get('/product', async (req, res) => {
 
             trendingProducts = {
               products: trendingResult.rows,
-              // Fallback to defaults if the search_history table is completely empty
+              // Fallback to defaults if the search_log table is completely empty
               queries: dynamicQueries.length > 0 ? dynamicQueries : ["Mobiles", "Smartphones", "Latest Deals"]
             };
           }
