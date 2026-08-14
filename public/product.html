@@ -992,6 +992,42 @@
     return settings.showTrendingSection === true;
   }
 
+  // --- CLIENT-SIDE FALLBACK FETCHERS RESTORED ---
+  async function fetchProduct(productId) {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products/${encodeURIComponent(productId)}`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const p = data.product || data.data || data;
+        if (p) {
+          if (!p.id) p.id = productId;
+          return p;
+        }
+      }
+    } catch (e) {
+      console.warn("Client product fetch failed:", e);
+    }
+    return null;
+  }
+
+  async function fetchHistory(productId) {
+    try {
+      const res = await fetch(`${CFG.API_BASE_URL}/api/products/${encodeURIComponent(productId)}/history`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return Array.isArray(data.history) ? data.history : [];
+      }
+    } catch (e) {
+      console.warn("Client history fetch failed:", e);
+    }
+    return [];
+  }
+  // ----------------------------------------------
+
   function extractPriceHistory() {
     return state.history
       .map(h => ({
@@ -1614,7 +1650,7 @@
     } catch (e) {}
   }
 
-  function init() {
+  async function init() {
     const id = getProductId();
 
     if (!id) {
@@ -1622,6 +1658,12 @@
       $("errorState").style.display = "block";
       $("errorMessage").textContent = "No product ID was supplied.";
       return;
+    }
+
+    // FALLBACK: If server-side pre-render failed or data is missing, fetch it locally
+    if (!state.product) {
+      state.product = await fetchProduct(id);
+      state.history = await fetchHistory(id);
     }
 
     if (!state.product) {
@@ -1660,5 +1702,6 @@
   init();
 })();
 </script>
+
 </body>
 </html>
