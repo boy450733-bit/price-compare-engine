@@ -15,7 +15,7 @@ import adminRoutes from "./routes/admin.js";
 import settingsRoutes from "./routes/settings.js";
 import historyRoutes from "./routes/history.js";
 import alertsRoutes from "./routes/alerts.js";
-
+import { renderPage } from "./utils/pageRenderer.js";
 import { prettyPages } from "./utils/prettyPages.js";
 
 
@@ -61,174 +61,50 @@ app.use(cookieParser());
 
 const publicDir = path.resolve("public");
 
-// Server-side database theme & custom head injection for the deals page
+
+
+// Server-side injection for the deals page
 app.get('/deals', async (req, res) => {
-  try {
-    const settingResult = await pool.query('SELECT data FROM site_settings WHERE id = 1');
-    const settings = settingResult.rows[0]?.data || {};
-    const theme = settings.theme || {};
-
-    let html = fs.readFileSync(path.join(publicDir, 'deals.html'), 'utf8');
-
-    const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
-    const absoluteCanonical = new URL('/deals', baseUrl).href;
-
-    let customHeadContent = settings.customHead || '';
-    customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
-
-    const rawLogo = String(settings.logoText || "Sasta.pk");
-    const dot = rawLogo.indexOf(".");
-    let logoName = dot > 0 ? rawLogo.slice(0, dot) : rawLogo;
-    let logoTld = dot > 0 ? rawLogo.slice(dot) : "";
-    const formattedLogoHtml = `${escapeHtml(logoName)}${logoTld ? `<span class="dot">${escapeHtml(logoTld)}</span>` : ""}`;
-    const footerText = settings.footerText || "Powered by Sasta.pk Engine";
-
-    const dealCols = Number(settings.dealsColCount) || 3;
-
-    const inlineCss = `
-      :root {
-        --color-bg: ${theme.colorBg || '#F7F5EF'};
-        --color-surface: ${theme.colorSurface || '#FFFFFF'};
-        --color-ink: ${theme.colorInk || '#17231D'};
-        --color-ink-soft: ${theme.colorInkSoft || '#6B7A70'};
-        --color-brand: ${theme.brandColor || '#050842'};
-        --color-brand-dark: ${theme.brandDark || '#094F39'};
-        --color-line: ${theme.colorLine || '#E7E1D2'};
-        --color-accent: ${theme.accentColor || '#0905f5'};
-        --color-danger: ${theme.colorDanger || '#C24B3F'};
-        --font-body: "${theme.fontBody || 'Inter'}", sans-serif;
-        --font-display: "${theme.fontDisplay || 'Space Grotesk'}", sans-serif;
-        --deal-cols: ${dealCols};
-      }
-    `;
-
-    html = html.replace('/* DB_THEME_INJECT */', inlineCss);
-    html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent);
-    html = html.replace('href="/deals"', `href="${absoluteCanonical}"`);
-    html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
-    html = html.replace('<!-- DB_FOOTER_TEXT_INJECT -->', escapeHtml(footerText));
-
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-  } catch (err) {
-    console.error("Deals page render error:", err);
-    res.sendFile(path.join(publicDir, 'deals.html'));
-  }
+  await renderPage(req, res, {
+    templateName: 'deals.html',
+    routePath: '/deals',
+    extraDataFn: async (req, dbPool) => {
+      const settingResult = await dbPool.query('SELECT data FROM site_settings WHERE id = 1');
+      const settings = settingResult.rows[0]?.data || {};
+      return { colCount: Number(settings.dealsColCount) || 3 };
+    }
+  });
 });
 
-// Server-side database theme & custom head injection for the home page
+// Server-side injection for the home page
 app.get(['/', '/index', '/index.html'], async (req, res) => {
-  try {
-    const [settingsResult, storesResult, topSearchesResult] = await Promise.all([
-      pool.query('SELECT data FROM site_settings WHERE id = 1'),
-      pool.query('SELECT name, color, enabled FROM stores WHERE enabled = true'),
-      pool.query('SELECT query FROM search_log GROUP BY query ORDER BY count(*) DESC LIMIT 5')
-    ]);
+  await renderPage(req, res, {
+    templateName: 'index.html',
+    routePath: '/',
+    extraDataFn: async (req, dbPool) => {
+      const [storesResult, topSearchesResult] = await Promise.all([
+        dbPool.query('SELECT name, color, enabled FROM stores WHERE enabled = true'),
+        dbPool.query('SELECT query FROM search_log GROUP BY query ORDER BY count(*) DESC LIMIT 5').catch(() => ({ rows: [] }))
+      ]);
 
-    const settings = settingsResult.rows[0]?.data || {};
-    const theme = settings.theme || {};
-    const stores = storesResult.rows.length ? storesResult.rows : [
-      { name: "PriceOye", color: "#0052CC", enabled: true },
-      { name: "Daraz", color: "#F57224", enabled: true }
-    ];
-    
-    const urlQuery = (req.query.q || "").trim();
-    let initialQuery = urlQuery;
-    if (!initialQuery) {
-      const topQueries = topSearchesResult.rows.map(r => r.query);
-      initialQuery = topQueries.length > 0 ? topQueries[0] : "";
-    }
+      const stores = storesResult.rows.length ? storesResult.rows : [
+        { name: "PriceOye", color: "#0052CC", enabled: true },
+        { name: "Daraz", color: "#F57224", enabled: true }
+      ];
 
-    let html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
-
-    const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
-    const absoluteCanonical = new URL('/', baseUrl).href;
-
-    let customHeadContent = settings.customHead || '';
-    customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
-
-    const rawLogoText = String(settings.logoText || "Sasta.pk");
-    let namePart = rawLogoText;
-    let tldPart = "";
-
-    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
-    if (domainRegex.test(rawLogoText)) {
-      const firstDotIndex = rawLogoText.indexOf(".");
-      namePart = rawLogoText.substring(0, firstDotIndex);
-      tldPart = rawLogoText.substring(firstDotIndex);
-    } else {
-      const mid = Math.floor(rawLogoText.length / 2);
-      namePart = rawLogoText.substring(0, mid);
-      tldPart = rawLogoText.substring(mid);
-    }
-
-    const brandColor = theme.brandColor || "#0B6E4F";
-    const accentColor = theme.accentColor || "#E8A33D";
-    const formattedLogoHtml = `<span class="logo-name" style="color: ${brandColor};">${escapeHtml(namePart)}</span><span class="logo-tld" style="color: ${accentColor};">${escapeHtml(tldPart)}</span>`;
-
-    const footerText = settings.footerText || "Powered by Sasta.pk Engine";
-    const homeCols = Number(settings.homeColCount) || 3;
-
-    const inlineCss = `
-      :root {
-        --color-bg: ${theme.colorBg || '#FAF7F0'};
-        --color-surface: ${theme.colorSurface || '#FFFFFF'};
-        --color-ink: ${theme.colorInk || '#17231D'};
-        --color-ink-soft: ${theme.colorInkSoft || '#5B6B62'};
-        --color-brand: ${brandColor};
-        --color-brand-dark: ${theme.brandDark || '#094F39'};
-        --color-line: ${theme.colorLine || '#E4DDCB'};
-        --color-accent: ${accentColor};
-        --color-danger: ${theme.colorDanger || '#C24B3F'};
-        --font-body: "${theme.fontBody || 'Inter'}", sans-serif;
-        --font-display: "${theme.fontDisplay || 'Space Grotesk'}", sans-serif;
-        --home-cols: ${homeCols};
+      const urlQuery = (req.query.q || "").trim();
+      let initialQuery = urlQuery;
+      if (!initialQuery) {
+        const topQueries = topSearchesResult.rows.map(r => r.query);
+        initialQuery = topQueries.length > 0 ? topQueries[0] : "";
       }
-    `;
 
-    const serverBootstrapScript = `
-      <script>
-        window.__INITIAL_DATA__ = {
-          settings: ${JSON.stringify(settings)},
-          stores: ${JSON.stringify(stores)},
-          initialQuery: ${JSON.stringify(initialQuery)}
-        };
-      </script>
-    `;
-
-    // Match both possible tag formats seen in your files
-    html = html.replace('/* DB_THEME_INJECT */', inlineCss);
-    html = html.replace('/* Database Theme Variables Injection Point */\n    /* DB_THEME_INJECT */', inlineCss);
-    
-    html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent + serverBootstrapScript);
-    html = html.replace('href="/"', `href="${absoluteCanonical}"`);
-
-    if (html.includes('<!-- DB_LOGO_INJECT -->')) {
-      html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
-    } else {
-      html = html.replace(/<div class="logo" id="logoSlot">[\s\S]*?<\/div>/, `<div class="logo" id="logoSlot">${formattedLogoHtml}</div>`);
+      return {
+        initialData: { stores, initialQuery }
+      };
     }
-
-    html = html.replace('<!-- DB_FOOTER_TEXT_INJECT -->', escapeHtml(footerText));
-
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-  } catch (err) {
-    console.error("Home page render error:", err);
-    res.sendFile(path.join(publicDir, 'index.html'));
-  }
+  });
 });
-
-// Helper function for HTML escaping inside server.js
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 
 // --------------------------------------------------
 // Static assets & Pretty Pages (AFTER SSR ROUTES)
