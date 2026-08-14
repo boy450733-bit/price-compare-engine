@@ -70,6 +70,10 @@ app.get('/deals', async (req, res) => {
 
     let html = fs.readFileSync(path.join(publicDir, 'deals.html'), 'utf8');
 
+    // Build absolute canonical URL from settings siteUrl or fallback to request protocol/host
+    const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
+    const absoluteCanonical = new URL('/deals', baseUrl).href;
+
     const inlineCss = `
       :root {
         --color-bg: ${theme.colorBg || '#F7F5EF'};
@@ -89,6 +93,9 @@ app.get('/deals', async (req, res) => {
 
     html = html.replace('/* DB_THEME_INJECT */', inlineCss);
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', settings.customHead || '');
+    
+    // Replace the static canonical href with the dynamic absolute URL
+    html = html.replace('href="/deals"', `href="${absoluteCanonical}"`);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
@@ -97,7 +104,6 @@ app.get('/deals', async (req, res) => {
     res.sendFile(path.join(publicDir, 'deals.html'));
   }
 });
-
 
 // Pretty URLs for remaining pages
 app.use(prettyPages(publicDir));
