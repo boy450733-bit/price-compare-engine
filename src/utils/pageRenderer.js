@@ -77,15 +77,20 @@ export async function renderPage(req, res, { templateName, routePath, extraDataF
       }
     `;
 
-    // Handle initial client script bootstrap data if provided
+    // Handle initial client script bootstrap data and inject settings automatically
+    const initialPayload = {
+      ...(extraData.initialData || {}),
+      settings: extraData.initialData?.settings || settings
+    };
+
     let bootstrapScript = '';
-    if (extraData.initialData) {
-      const serialized = Object.entries(extraData.initialData).reduce((acc, [key, val]) => {
+    if (Object.keys(initialPayload).length > 0) {
+      const serialized = Object.entries(initialPayload).reduce((acc, [key, val]) => {
         acc[key] = JSON.stringify(val).replace(/</g, '\\u003c');
         return acc;
       }, {});
 
-      const assignments = Object.entries(serialized).map(([k, v]) => `\n          ${k}: ${v}`).join(',');
+      const assignments = Object.entries(serialized).map(([k, v]) => `\n        ${k}: ${v}`).join(',');
       bootstrapScript = `
       <script>
         window.__INITIAL_DATA__ = {${assignments}

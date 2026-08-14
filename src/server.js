@@ -126,33 +126,28 @@ app.get('/product', async (req, res) => {
 
       if (productId) {
         try {
-          const baseResult = await dbPool.query(
-            `SELECT p.* FROM products p WHERE p.id::text = $1 LIMIT 1`, 
-            [productId]
-          );
+          // Fetch product, history, and trending items concurrently without duplicate settings queries
+          const [baseResult, trendingResult] = await Promise.all([
+            dbPool.query(`SELECT p.* FROM products p WHERE p.id::text = $1 LIMIT 1`, [productId]),
+            dbPool.query(`SELECT p.* FROM products p WHERE p.id::text != $1 ORDER BY p.scraped_at DESC LIMIT 8`, [productId]).catch(() => ({ rows: [] }))
+          ]);
 
           if (baseResult.rows.length > 0) {
             const baseProduct = baseResult.rows[0];
 
-            const [offerResult, historyResult, trendingResult] = await Promise.all([
-              dbPool.query(
-                `SELECT p.id, p.store, p.price, p.url, p.image, p.in_stock, p.rating, p.scraped_at, s.color AS "storeColor"
-                 FROM products p
-                 JOIN stores s ON s.name = p.store
-                 WHERE p.fingerprint = $1 AND s.enabled = true
-                 ORDER BY p.price ASC NULLS LAST`,
-                [baseProduct.fingerprint]
-              ),
-              dbPool.query(
-                `SELECT id, product_id, price, recorded_at FROM price_history WHERE product_id = $1 ORDER BY recorded_at ASC`,
-                [productId]
-              ),
-              // Fallback or direct query for trending products if table/logic exists
-              dbPool.query(
-                `SELECT p.* FROM products p WHERE p.id::text != $1 ORDER BY p.scraped_at DESC LIMIT 8`,
-                [productId]
-              ).catch(() => ({ rows: [] }))
-            ]);
+            const offerResult = await dbPool.query(
+              `SELECT p.id, p.store, p.price, p.url, p.image, p.in_stock, p.rating, p.scraped_at, s.color AS "storeColor"
+               FROM products p
+               JOIN stores s ON s.name = p.store
+               WHERE p.fingerprint = $1 AND s.enabled = true
+               ORDER BY p.price ASC NULLS LAST`,
+              [baseProduct.fingerprint]
+            );
+
+            const historyResult = await dbPool.query(
+              `SELECT id, product_id, price, recorded_at FROM price_history WHERE product_id = $1 ORDER BY recorded_at ASC`,
+              [productId]
+            );
 
             const offerRows = offerResult.rows;
 
