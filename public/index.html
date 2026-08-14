@@ -10,6 +10,12 @@
 <noscript>
   <link rel="preconnect" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </noscript>
+
+<!-- Database Custom Head Inject -->
+<!-- DB_CUSTOM_HEAD_INJECT -->
+
+<link id="pageCanonical" rel="canonical" href="/">
+
 <style>
   :root {
     --color-bg: #FAF7F0; --color-surface: #FFFFFF; --color-ink: #17231D;
@@ -17,7 +23,12 @@
     --color-accent: #E8A33D; --color-accent-dark: #C4841F; --color-line: #E4DDCB;
     --color-danger: #C24B3F; --font-display: "Space Grotesk", sans-serif;
     --font-body: "Inter", sans-serif; --radius: 16px;
+    --home-cols: 3;
   }
+
+  /* Database Theme Variables Injection Point */
+  /* DB_THEME_INJECT */
+
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh; }
@@ -37,10 +48,10 @@
     min-height: 32px;
   }
   .logo-name {
-    color: var(--color-brand-dark); /* Color for the brand name */
+    color: var(--color-brand-dark);
   }
   .logo-tld {
-    color: var(--color-accent); /* Color for the TLD (.pk) */
+    color: var(--color-accent);
   }
   .header-nav { display: flex; gap: 20px; font-size: 13.5px; font-weight: 600; color: var(--color-ink-soft); flex-wrap: wrap; }
   .header-nav a:hover { color: var(--color-brand); }
@@ -67,7 +78,7 @@
     border-radius: var(--radius); 
     border: 1px solid var(--color-line); 
     box-shadow: 0 4px 12px rgba(23,35,29,0.02); 
-    min-height: 210px; /* Locks vertical height for rows */
+    min-height: 210px;
   }
   .filter-bar.visible { display: flex; }
   
@@ -77,7 +88,6 @@
   .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .filter-label { font-size: 12px; font-weight: 700; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; min-width: 70px; }
   
-  /* Store Filter Chips with Hover Effects & Dynamic Tiny Counts */
   .store-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; user-select: none; transition: all 0.2s ease; }
   .store-chip:hover { border-color: var(--color-brand); background: #F0F7F4; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(11,110,79,0.15); }
   .store-chip.off { opacity: 0.4; background: var(--color-surface); text-decoration: line-through; }
@@ -87,11 +97,9 @@
   .toggle-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--color-line); background: var(--color-bg); cursor: pointer; }
   select#sortSelect, select#trendSelect, select.filter-select { padding: 8px 12px; border: 1.5px solid var(--color-line); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); cursor: pointer; }
 
-  /* Clear All Filters Button Style */
   .clear-filters-btn { background: #fdfdfd; color: var(--color-danger); border: 1px solid rgba(194,75,63,0.3); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-left: auto; }
   .clear-filters-btn:hover { background: var(--color-danger); color: #fff; }
 
-  /* Status Line */
   .status-line { 
     max-width: 1140px; 
     margin: 20px auto 6px; 
@@ -102,18 +110,16 @@
   } 
   .status-line strong { color: var(--color-ink); }
 
-  /* Results Grid */
   .results { 
     max-width: 1140px; 
     margin: 0 auto; 
     padding: 8px 24px 80px; 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(max(310px, calc(100% / var(--home-cols) - 20px)), 1fr)); 
     gap: 24px; 
     min-height: 400px; 
   }
   
-  /* Product Card */
   .card { background: var(--color-surface); border-radius: var(--radius); border: 1px solid var(--color-line); position: relative; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 12px rgba(23, 35, 29, 0.03); }
   .card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(23, 35, 29, 0.08); }
   
@@ -239,20 +245,18 @@
 <header>
     <div class="header-container">
     <div class="logo" id="logoSlot">
-      <span class="logo-name"></span><span class="logo-tld"></span>
+      <!-- DB_LOGO_INJECT -->
     </div>
     <nav class="header-nav" aria-label="Main Navigation">
-      <a href="#">Home</a>
-      <a href="#">Compare Prices</a>
-      <a href="deals">Top Deals</a>
-      <a href="#">Contact</a>
+      <a href="/">Home</a>
+      <a href="/deals">Top Deals</a>
     </nav>
   </div>
 </header>
 
 <main>
   <section class="hero">
-    <h1 id="heroQuote">Compare prices across Pakistan's top stores.</h1>
+    <h1>Compare prices across Pakistan's top stores.</h1>
     <p id="heroSubtitle">Search once, compare instantly across Pakistan's top online stores.</p>
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Search e.g. Xiaomi Redmi 15c" autocomplete="off" aria-label="Search for a product">
@@ -342,7 +346,9 @@
       <a href="#">Terms of Service</a>
       <a href="#">Store Partner Program</a>
     </div>
-    <div id="footerTxt"></div>
+    <div>
+      <!-- DB_FOOTER_TEXT_INJECT -->
+    </div>
   </div>
 </footer>
 
@@ -363,6 +369,7 @@
 <script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "" };
+  const serverData = window.__INITIAL_DATA__ || {};
 
   const input = document.getElementById("searchInput");
   const results = document.getElementById("results");
@@ -389,9 +396,9 @@
 
   let debounceTimer = null;
   let currentQuery = "";
-  let allStores = [];
+  let allStores = serverData.stores || [];
   let excludedStores = new Set();
-  let settings = null;
+  let settings = serverData.settings || null;
   let selectedProductIdForAlert = null;
   let selectedProductTargetPrice = null;
 
@@ -546,40 +553,8 @@
   function applySettings() {
     if (!settings) return;
 
-    // 1. Extract theme colors first
-    const theme = settings.theme || {};
-    const brandColor = theme.brandColor || "#0B6E4F";
-    const accentColor = theme.accentColor || "#E8A33D";
-    const fontBody = theme.fontBody || "Inter";
-    const fontDisplay = theme.fontDisplay || "Space Grotesk";
-
-    // 2. Logo processing logic with RegEx Domain Verification & Half-Length Fallback
-    const rawLogoText = settings.logoText || "Sasta.pk";
-    let namePart = rawLogoText;
-    let tldPart = "";
-
-    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
-
-    if (domainRegex.test(rawLogoText)) {
-      const firstDotIndex = rawLogoText.indexOf(".");
-      namePart = rawLogoText.substring(0, firstDotIndex);
-      tldPart = rawLogoText.substring(firstDotIndex);
-    } else {
-      const mid = Math.floor(rawLogoText.length / 2);
-      namePart = rawLogoText.substring(0, mid);
-      tldPart = rawLogoText.substring(mid);
-    }
-
-    const logoSlot = document.getElementById("logoSlot");
-    if (logoSlot) {
-      logoSlot.innerHTML = '<span class="logo-name" style="color: ' + brandColor + ';">' + namePart + '</span>' +
-                           '<span class="logo-tld" style="color: ' + accentColor + ';">' + tldPart + '</span>';
-    }
-
     document.getElementById("heroSubtitle").textContent = settings.heroSubtitle || "";
-    document.getElementById("footerSlot").innerHTML = '<div class="footer-container"><div class="footer-links"><a href="#">About Us</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div><div>' + (settings.footerText || "") + '</div></div>';
     
-    // 3. Columns configuration on Home Page (handled as max-width aware max columns rule for mobile safety)
     const homeCols = settings.homeColCount ? Number(settings.homeColCount) : 0;
     const resultsContainer = document.getElementById("results");
     if (resultsContainer) {
@@ -588,48 +563,6 @@
       } else {
         resultsContainer.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(310px, 1fr))", "important");
       }
-    }
-
-    // 4. Apply CSS Root variables
-    const rootStyle = document.documentElement.style;
-    rootStyle.setProperty("--color-brand", brandColor);
-    rootStyle.setProperty("--color-accent", accentColor);
-    rootStyle.setProperty("--font-body", '"' + fontBody + '", sans-serif');
-    rootStyle.setProperty("--font-display", '"' + fontDisplay + '", sans-serif');
-
-    if (settings.customHead) {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = settings.customHead;
-      while (tempDiv.firstChild) {
-        document.head.appendChild(tempDiv.firstChild);
-      }
-    }
-  }
-
-  async function loadSettings() {
-    try {
-      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
-      settings = await res.json();
-    } catch (err) {
-      settings = { theme: {}, cardFeatures: {} };
-    }
-    applySettings();
-  }
-
-  async function loadStores() {
-    try {
-      const res = await fetch(`${CFG.API_BASE_URL}/api/stores`);
-      const data = await res.json();
-      allStores = data.stores || [];
-      renderStoreChips();
-    } catch (err) {
-      allStores = [
-        { name: "PriceOye", color: "#0052CC" },
-        { name: "Daraz", color: "#F57224" },
-        { name: "Flashi", color: "#4A90E2" },
-        { name: "EzeePC", color: "#27AE60" }
-      ];
-      renderStoreChips();
     }
   }
 
@@ -811,7 +744,7 @@
             <span class="store-badge" style="background:${o.storeColor || '#0B6E4F'}">${o.store}</span>
           </div>
           <div class="offer-price-right">
-            ${(showOutOfStock && o.in_stock === false) ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
+             ${(showOutOfStock && o.in_stock === false) ? `<span class="out-of-stock-tag">Out of stock</span>` : ""}
             <span class="offer-price">${formatPKR(o.price)}</span>
           </div>
         </a>
@@ -833,9 +766,9 @@
           <div class="card-image">
             ${p.image
               ? `<img src="${p.image}"
-                      alt="${titleText}"
-                      loading="lazy"
-                      onerror="this.style.display='none'">`
+                     alt="${titleText}"
+                     loading="lazy"
+                     onerror="this.style.display='none'">`
               : `<span style="font-size:36px">📱</span>`
             }
           </div>
@@ -956,14 +889,7 @@
 
   async function fetchNewSearch(query, limitOverride) {
     if (!query) {
-      try {
-        const topRes = await fetch(`${CFG.API_BASE_URL}/api/top-searches`);
-        const topData = await topRes.json();
-        const queries = topData.queries || [];
-        query = queries.length > 0 ? queries[Math.floor(Math.random() * queries.length)] : "Xiaomi Redmi";
-      } catch (e) {
-        query = "Xiaomi Redmi";
-      }
+      query = "Xiaomi Redmi";
       
       const inputEl = document.getElementById("searchInput");
       const filterBarEl = document.getElementById("filterBar");
@@ -1165,7 +1091,6 @@
     return null;
   }
 
-  // Setup infinite scroll pagination engine
   function setupInfiniteScroll({ containerSelector, sentinelId, pageSize = 12 }) {
     let offset = 0;
     let isLoading = false;
@@ -1210,93 +1135,41 @@
     observer.observe(sentinel);
   }
 
-    // Initialize lifecycle
   async function initApp() {
     const inputEl = document.getElementById("searchInput");
 
-    // ------------------------------------------------------------
-    // Get query from URL
-    // Example:
-    // https://pce.up.railway.app/?q=Xiaomi%20Redmi%20hot
-    // ------------------------------------------------------------
+    applySettings();
+    renderStoreChips();
+
     const urlParams = new URLSearchParams(window.location.search);
     const urlQuery = (urlParams.get("q") || "").trim();
+    const initialQuery = urlQuery || serverData.initialQuery || "Xiaomi Redmi";
 
-    // ------------------------------------------------------------
-    // If URL contains q, use it as the authoritative query.
-    // Otherwise use whatever is already in the search input.
-    // ------------------------------------------------------------
-    const initialQuery =
-      urlQuery ||
-      (inputEl?.value || "").trim();
-
-    // Put URL query into search box
     if (urlQuery && inputEl) {
       inputEl.value = urlQuery;
+    } else if (inputEl) {
+      inputEl.value = initialQuery;
     }
 
-    // ------------------------------------------------------------
-    // Show initial skeleton
-    // ------------------------------------------------------------
-    if (inputEl && !inputEl.value) {
+    if (inputEl) {
       document.getElementById("filterBar")?.classList.add("visible");
-
       document.getElementById("results").innerHTML =
         Array.from({ length: 6 })
           .map(() => `<div class="skeleton"></div>`)
           .join("");
     }
 
-    // ------------------------------------------------------------
-    // Load settings + stores first.
-    //
-    // IMPORTANT:
-    // Do NOT call random/top-search fallback here yet.
-    // We first determine whether a real query exists.
-    // ------------------------------------------------------------
-    await Promise.all([
-      loadSettings(),
-      loadStores()
-    ]);
-
-    // ------------------------------------------------------------
-    // Determine page size AFTER settings have loaded
-    // ------------------------------------------------------------
     const pageSize =
       settings && settings.productsPerPage
         ? Number(settings.productsPerPage)
         : 8;
 
-    // ------------------------------------------------------------
-    // CASE 1:
-    // Explicit query exists in URL/input.
-    //
-    // Example:
-    // ?q=Xiaomi Redmi hot
-    //
-    // NEVER replace this with a random trending query.
-    // ------------------------------------------------------------
     if (initialQuery) {
       await fetchNewSearch(initialQuery, pageSize);
+    } else {
+      await fetchNewSearch("", pageSize);
     }
 
-    // ------------------------------------------------------------
-    // CASE 2:
-    // No URL query and no input query.
-    //
-    // Only NOW allow your existing fallback logic to select
-    // a random/top search so the homepage isn't blank.
-    // ------------------------------------------------------------
-    else {
-      await fetchNewSearch(
-        "",
-        pageSize
-      );
-    }
-
-    // ------------------------------------------------------------
-    // Infinite scroll
-    // ------------------------------------------------------------
     setupInfiniteScroll({
       containerSelector: "#results",
       sentinelId: "productsSentinel",
