@@ -151,6 +151,10 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
     const absoluteCanonical = new URL('/', baseUrl).href;
 
+    // Clean up duplicate canonicals from customHead if present
+    let customHeadContent = settings.customHead || '';
+    customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
+
     // Format logo text with regex check and half-length fallback
     const rawLogoText = String(settings.logoText || "Sasta.pk");
     let namePart = rawLogoText;
@@ -205,7 +209,14 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     html = html.replace('/* DB_THEME_INJECT */', inlineCss);
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent + serverBootstrapScript);
     html = html.replace('href="/"', `href="${absoluteCanonical}"`);
-    html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
+
+    // Bulletproof Logo Replacement with fallback
+    if (html.includes('<!-- DB_LOGO_INJECT -->')) {
+      html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
+    } else {
+      html = html.replace(/<div class="logo" id="logoSlot">[\s\S]*?<\/div>/, `<div class="logo" id="logoSlot">${formattedLogoHtml}</div>`);
+    }
+
     html = html.replace('<!-- DB_FOOTER_TEXT_INJECT -->', escapeHtml(footerText));
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
