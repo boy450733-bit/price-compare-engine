@@ -151,10 +151,6 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
     const absoluteCanonical = new URL('/', baseUrl).href;
 
-    // Clean up duplicate canonicals from customHead if present
-    let customHeadContent = settings.customHead || '';
-    customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
-
     // Format logo text with regex check and half-length fallback
     const rawLogoText = String(settings.logoText || "Sasta.pk");
     let namePart = rawLogoText;
@@ -219,7 +215,6 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   }
 });
-
 
 // Helper function for HTML escaping inside server.js
 function escapeHtml(value) {
