@@ -93,18 +93,23 @@
     }
     .header-nav a:hover { color:var(--color-brand); }
 
-    main { flex:1; }
+    main { flex:1; min-width: 0; }
 
     .page {
       max-width:1140px;
       margin:0 auto;
       padding:28px 24px 70px;
+      min-width: 0;
     }
 
     .breadcrumb {
       font-size:12px;
       color:var(--color-ink-soft);
       margin-bottom:18px;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .breadcrumb a:hover { color:var(--color-brand); }
 
@@ -117,6 +122,7 @@
       border-radius:var(--radius);
       overflow:hidden;
       box-shadow:0 4px 14px rgba(23,35,29,.04);
+      min-width: 0;
     }
 
     .product-image-panel {
@@ -130,6 +136,7 @@
       border-right:1px solid var(--color-line);
       position:relative;
       contain: layout size;
+      min-width: 0;
     }
     .best-badge {
       position:absolute;
@@ -149,6 +156,7 @@
       display:flex;
       flex-direction:column;
       gap:14px;
+      min-width: 0;
     }
     .category-pill {
       width:max-content;
@@ -163,10 +171,11 @@
     }
     .product-title {
       font-family:var(--font-display);
-      font-size:clamp(26px,4vw,38px);
-      line-height:1.12;
+      font-size:clamp(24px,4vw,38px);
+      line-height:1.2;
       margin:0;
       letter-spacing:-.02em;
+      word-wrap: break-word;
     }
     .product-meta {
       display:flex;
@@ -191,12 +200,14 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
+      min-width: 0;
     }
     .product-main-image-wrap {
       width: 100%;
       max-width: 280px;
-      height: 280px;
-      margin: 10px; /* 10px margin added to parent skeleton/image container */
+      aspect-ratio: 1; /* Automatically scales height to width */
+      height: auto;
+      margin: 0 auto 10px; /* Centered, without side margins that cause overflow */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -262,7 +273,7 @@
 
     .current-price {
       font-family:var(--font-display);
-      font-size:clamp(28px,4vw,42px);
+      font-size:clamp(26px,4vw,42px);
       font-weight:700;
       line-height: 1.2;
     }
@@ -735,7 +746,8 @@
       .header-nav { justify-content:center; gap:12px; }
       .page { padding:20px 12px 50px; }
       .product-info { padding:22px 18px; }
-      .product-image-panel { min-height:260px; padding:20px; }
+      .product-image-panel { min-height:auto; padding:16px; }
+      .product-main-image-wrap { max-width:100%; margin:0 auto 10px; }
       .section { padding:18px 14px; }
       .chart-wrap { height:280px; min-height: 280px; }
       .offer-row { grid-template-columns:1fr auto; }
@@ -772,14 +784,14 @@
     <div class="breadcrumb">
       <a href="/">Compare Prices</a>
       <span> / </span>
-      <span id="breadcrumbTitle" class="skeleton-box" style="display:inline-block; width:120px; height:14px;">&nbsp;</span>
+      <span id="breadcrumbTitle" class="skeleton-box" style="display:inline-block; width:120px; min-height:14px;">&nbsp;</span>
     </div>
 
     <section class="product-hero">
       <div class="product-image-panel">
         <div class="product-gallery" id="productGallery">
           <div class="product-main-image-wrap skeleton-box">
-            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" style="display:none;">
+            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" fetchpriority="high" style="display:none;">
           </div>
           <div id="productGalleryThumbs" class="product-gallery-thumbs"></div>
           <div id="galleryCount" class="gallery-count"></div>
@@ -787,28 +799,28 @@
       </div>
 
       <div class="product-info">
-        <span id="productCategory" class="category-pill skeleton-box" style="width:70px; height:20px;">&nbsp;</span>
-        <h1 id="productTitle" class="product-title skeleton-box" style="width:90%; height:40px;">&nbsp;</h1>
+        <span id="productCategory" class="category-pill skeleton-box" style="width:70px; min-height:20px;">&nbsp;</span>
+        <h1 id="productTitle" class="product-title skeleton-box" style="width:90%; min-height:38px;">&nbsp;</h1>
 
         <div class="product-meta">
-          <span id="rating" class="skeleton-box" style="width:80px; height:16px;">&nbsp;</span>
+          <span id="rating" class="skeleton-box" style="width:80px; min-height:16px;">&nbsp;</span>
           <span>•</span>
-          <span id="offerCount" class="skeleton-box" style="width:90px; height:16px;">&nbsp;</span>
+          <span id="offerCount" class="skeleton-box" style="width:90px; min-height:16px;">&nbsp;</span>
           <span id="updatedAt"></span>
         </div>
 
         <div class="price-block">
-          <span id="currentPrice" class="current-price skeleton-box" style="width:140px; height:38px;">&nbsp;</span>
+          <span id="currentPrice" class="current-price skeleton-box" style="width:140px; min-height:38px;">&nbsp;</span>
           <span id="oldPrice" class="old-price"></span>
           <span id="priceChange" class="price-change stable"></span>
         </div>
 
         <div class="hero-actions">
-          <div class="skeleton-box" style="width:110px; height:38px; border-radius:9px;"></div>
-          <div class="skeleton-box" style="width:80px; height:38px; border-radius:9px;"></div>
+          <div class="skeleton-box" style="width:110px; min-height:38px; border-radius:9px;"></div>
+          <div class="skeleton-box" style="width:80px; min-height:38px; border-radius:9px;"></div>
         </div>
 
-        <div class="alert-box skeleton-box" style="opacity: 0.6;">
+        <div class="alert-box skeleton-box" style="opacity: 0.6; min-height: 64px;">
           <div>
             <strong>Want a better price?</strong>
             <span>Set a price target and we'll notify you when this product reaches it.</span>
