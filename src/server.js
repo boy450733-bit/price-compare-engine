@@ -125,13 +125,88 @@ app.get('/product', async (req, res) => {
 
       if (productId) {
         try {
-          const [productResult, historyResult] = await Promise.all([
-            dbPool.query('SELECT * FROM products WHERE id = $1', [productId]),
-            dbPool.query('SELECT id, product_id, price, recorded_at FROM price_history WHERE product_id = $1 ORDER BY recorded_at ASC', [productId])
-          ]);
+          // 1. Find the base product first
+          const baseResult = await dbPool.query(
+            `SELECT p.* FROM products p WHERE p.id::text = $1 LIMIT 1`, 
+            [productId]
+          );
 
-          product = productResult.rows[0] || null;
-          history = historyResult.rows;
+          if (baseResult.rows.length > 0) {
+            const baseProduct = baseResult.rows[0];
+
+            // 2. Fetch matching offers via fingerprint and history concurrently using Promise.all
+            const [offerResult, historyResult] = await Promise.all([
+              dbPool.query(
+                `SELECT p.id, p.store, p.price, p.url, p.image, p.in_stock, p.rating, p.scraped_at, s.color AS "storeColor"
+                 FROM products p
+                 JOIN stores s ON s.name = p.store
+                 WHERE p.fingerprint = $1 AND s.enabled = true
+                 ORDER BY p.price ASC NULLS LAST`,
+                [baseProduct.fingerprint]
+              ),
+              dbPool.query(
+                `SELECT id, product_id, price, recorded_at FROM price_history WHERE product_id = $1 ORDER BY recorded_at ASC`,
+                [productId]
+              )
+            ]);
+
+            const offerRows = offerResult.rows;
+
+            // 3. Build unique image gallery array (matching search.js logic)
+            const images = [];
+            const seenImages = new Set();
+            const addImage = (url) => {
+              if (!url || typeof url !== "string") return;
+              const clean = url.trim();
+              if (!clean || seenImages.has(clean)) return;
+              seenImages.add(clean);
+              images.push(clean);
+            };
+
+            addImage(baseProduct.image);
+            for (const offer of offerRows) {
+              addImage(offer.image);
+              if (images.length >= 8) break;
+            }
+
+            // 4. Calculate price stats
+            const validPrices = offerRows.map(o => Number(o.price)).filter(price => Number.isFinite(price) && price > 0);
+            const minPrice = validPrices.length ? Math.min(...validPrices) : null;
+            const maxPrice = validPrices.length ? Math.max(...validPrices) : null;
+
+            const ratings = offerRows.map(o => Number(o.rating)).filter(rating => Number.isFinite(rating));
+            const maxRating = ratings.length ? Math.max(...ratings) : null;
+
+            // 5. Assemble final structured product object matching client-side expectations
+            product = {
+              id: baseProduct.id,
+              fingerprint: baseProduct.fingerprint,
+              title: baseProduct.title,
+              image: baseProduct.image,
+              images,
+              brand: baseProduct.brand,
+              model: baseProduct.model,
+              category: baseProduct.category || "Mobile",
+              specs: typeof baseProduct.specs === 'string' ? JSON.parse(baseProduct.specs) : (baseProduct.specs || null),
+              min_price: minPrice,
+              max_price: maxPrice,
+              max_rating: maxRating,
+              scraped_at: baseProduct.scraped_at,
+              offers: offerRows.map(o => ({
+                id: o.id,
+                store: o.store,
+                price: o.price,
+                url: o.url,
+                image: o.image,
+                in_stock: o.in_stock,
+                rating: o.rating,
+                scraped_at: o.scraped_at,
+                storeColor: o.storeColor
+              }))
+            };
+
+            history = historyResult.rows;
+          }
         } catch (err) {
           console.error("Error pre-rendering product server-side:", err);
         }
@@ -146,7 +221,7 @@ app.get('/product', async (req, res) => {
     }
   });
 });
-// -------------------------------------------------
+//----------------------------------------------
 // Static assets & Pretty Pages (AFTER SSR ROUTES)
 // --------------------------------------------------
 
