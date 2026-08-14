@@ -1544,76 +1544,71 @@
       return;
     }
 
-    try {
-      const currentId = getProductId();
-      const params = new URLSearchParams({ limit: "8" });
-      if (currentId) params.set("excludeId", currentId);
+    // Use pre-rendered data if available from server-side initial data payload
+    let items = serverData.trendingProducts?.products || [];
+    let queries = serverData.trendingProducts?.queries || [];
 
-      const res = await fetch(`${CFG.API_BASE_URL}/api/trending-products?${params.toString()}`, {
-        headers: { "Accept": "application/json" },
-        cache: "no-store"
-      });
-      if (!res.ok) return;
+    if (!items.length) {
+      try {
+        const currentId = getProductId();
+        const params = new URLSearchParams({ limit: "8" });
+        if (currentId) params.set("excludeId", currentId);
 
-      const data = await res.json();
-      const items = Array.isArray(data.products) ? data.products : [];
-      const queries = Array.isArray(data.queries) ? data.queries : [];
-      if (!items.length) return;
-
-      chips.innerHTML = queries.map((q, i) => `
-        <button class="trend-chip ${i === 0 ? "active" : ""}" type="button" data-query="${escapeHtml(q)}">${escapeHtml(q)}</button>
-      `).join("");
-
-      grid.innerHTML = items.map((item, index) => {
-        const p = item.product || item;
-        if (!p?.id) return "";
-
-        const price = p.min_price != null ? Number(p.min_price) : null;
-        const maxPrice = p.max_price != null ? Number(p.max_price) : null;
-        const storeCount = Number(p.store_count || 0);
-        const saving = p.saving != null ? Number(p.saving) : ((maxPrice || 0) - (price || 0));
-        const query = normalizeTrendQuery(item.query || "Trending");
-        const trendDirection = p.trend_direction || "stable";
-        const bestStore = p.best_store || "Best available offer";
-        const storeColor = p.best_store_color || "#0B6E4F";
-
-        return `
-          <a class="trending-card" href="/product?id=${encodeURIComponent(p.id)}" aria-label="View ${escapeHtml(p.title || "product")}">
-            <span class="trending-rank">#${index + 1}</span>
-            <div class="trending-image-wrap">
-              ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" width="150" height="150" loading="lazy" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
-            </div>
-            <div class="trending-body">
-              <div class="trending-query">Trending: ${escapeHtml(query)}</div>
-              <div class="trending-title">${escapeHtml(p.title || "Product")}</div>
-              <div class="trending-price">${formatPKR(price)}</div>
-              <div class="trending-stats">
-                <span class="trending-stat trending-store-count">${storeCount} ${storeCount === 1 ? "store" : "stores"} offering</span>
-                ${saving > 0 ? `<span class="trending-stat trending-saving">Save ${formatPKR(saving)}</span>` : ""}
-                ${priceLineSvg(trendDirection)}
-              </div>
-              <div class="trending-offer-line">
-                <span class="trending-best-store"><span class="trending-store-dot" style="background:${escapeHtml(storeColor)}"></span>${escapeHtml(bestStore)}</span>
-                ${maxPrice != null && maxPrice > price ? `<span>up to ${formatPKR(maxPrice)}</span>` : ""}
-              </div>
-              <div class="trending-meta">
-                <span class="trending-store">${Number(item.search_count || 0).toLocaleString("en-PK")} searches</span>
-                <span class="trending-view">View →</span>
-              </div>
-            </div>
-          </a>`;
-      }).join("");
-
-      chips.querySelectorAll(".trend-chip").forEach(chip => {
-        chip.addEventListener("click", () => {
-          location.href = `/?q=${encodeURIComponent(chip.dataset.query || "")}`;
+        const res = await fetch(`${CFG.API_BASE_URL}/api/trending-products?${params.toString()}`, {
+          headers: { "Accept": "application/json" },
+          cache: "no-store"
         });
-      });
-
-      section.classList.add("loaded");
-    } catch (e) {
-      console.warn("Unable to load trending products:", e);
+        if (res.ok) {
+          const data = await res.json();
+          items = Array.isArray(data.products) ? data.products : [];
+          queries = Array.isArray(data.queries) ? data.queries : [];
+        }
+      } catch (e) {
+        console.warn("Unable to load trending products:", e);
+      }
     }
+
+    if (!items.length) return;
+
+    chips.innerHTML = queries.map((q, i) => `
+      <button class="trend-chip ${i === 0 ? "active" : ""}" type="button" data-query="${escapeHtml(q)}">${escapeHtml(q)}</button>
+    `).join("");
+
+    grid.innerHTML = items.map((item, index) => {
+      const p = item.product || item;
+      if (!p?.id) return "";
+
+      const price = p.min_price != null ? Number(p.min_price) : (p.price != null ? Number(p.price) : null);
+      const storeCount = Number(p.store_count || 1);
+      const query = normalizeTrendQuery(item.query || "Trending");
+
+      return `
+        <a class="trending-card" href="/product?id=${encodeURIComponent(p.id)}" aria-label="View ${escapeHtml(p.title || "product")}">
+          <span class="trending-rank">#${index + 1}</span>
+          <div class="trending-image-wrap">
+            ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" width="150" height="150" loading="lazy" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
+          </div>
+          <div class="trending-body">
+            <div class="trending-query">Trending: ${escapeHtml(query)}</div>
+            <div class="trending-title">${escapeHtml(p.title || "Product")}</div>
+            <div class="trending-price">${formatPKR(price)}</div>
+            <div class="trending-stats">
+              <span class="trending-stat trending-store-count">${storeCount} ${storeCount === 1 ? "store" : "stores"} offering</span>
+            </div>
+            <div class="trending-meta">
+              <span class="trending-view">View →</span>
+            </div>
+          </div>
+        </a>`;
+    }).join("");
+
+    chips.querySelectorAll(".trend-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        location.href = `/?q=${encodeURIComponent(chip.dataset.query || "")}`;
+      });
+    });
+
+    section.classList.add("loaded");
   }
 
   function openAlertModal() {

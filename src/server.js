@@ -122,10 +122,10 @@ app.get('/product', async (req, res) => {
     extraDataFn: async (req, dbPool) => {
       let product = null;
       let history = [];
+      let trendingProducts = { products: [], queries: [] };
 
       if (productId) {
         try {
-          // 1. Find the base product first
           const baseResult = await dbPool.query(
             `SELECT p.* FROM products p WHERE p.id::text = $1 LIMIT 1`, 
             [productId]
@@ -134,8 +134,7 @@ app.get('/product', async (req, res) => {
           if (baseResult.rows.length > 0) {
             const baseProduct = baseResult.rows[0];
 
-            // 2. Fetch matching offers via fingerprint and history concurrently using Promise.all
-            const [offerResult, historyResult] = await Promise.all([
+            const [offerResult, historyResult, trendingResult] = await Promise.all([
               dbPool.query(
                 `SELECT p.id, p.store, p.price, p.url, p.image, p.in_stock, p.rating, p.scraped_at, s.color AS "storeColor"
                  FROM products p
@@ -147,12 +146,16 @@ app.get('/product', async (req, res) => {
               dbPool.query(
                 `SELECT id, product_id, price, recorded_at FROM price_history WHERE product_id = $1 ORDER BY recorded_at ASC`,
                 [productId]
-              )
+              ),
+              // Fallback or direct query for trending products if table/logic exists
+              dbPool.query(
+                `SELECT p.* FROM products p WHERE p.id::text != $1 ORDER BY p.scraped_at DESC LIMIT 8`,
+                [productId]
+              ).catch(() => ({ rows: [] }))
             ]);
 
             const offerRows = offerResult.rows;
 
-            // 3. Build unique image gallery array (matching search.js logic)
             const images = [];
             const seenImages = new Set();
             const addImage = (url) => {
@@ -169,15 +172,8 @@ app.get('/product', async (req, res) => {
               if (images.length >= 8) break;
             }
 
-            // 4. Calculate price stats
             const validPrices = offerRows.map(o => Number(o.price)).filter(price => Number.isFinite(price) && price > 0);
-            const minPrice = validPrices.length ? Math.min(...validPrices) : null;
-            const maxPrice = validPrices.length ? Math.max(...validPrices) : null;
-
-            const ratings = offerRows.map(o => Number(o.rating)).filter(rating => Number.isFinite(rating));
-            const maxRating = ratings.length ? Math.max(...ratings) : null;
-
-            // 5. Assemble final structured product object matching client-side expectations
+            
             product = {
               id: baseProduct.id,
               fingerprint: baseProduct.fingerprint,
@@ -188,24 +184,20 @@ app.get('/product', async (req, res) => {
               model: baseProduct.model,
               category: baseProduct.category || "Mobile",
               specs: typeof baseProduct.specs === 'string' ? JSON.parse(baseProduct.specs) : (baseProduct.specs || null),
-              min_price: minPrice,
-              max_price: maxPrice,
-              max_rating: maxRating,
+              min_price: validPrices.length ? Math.min(...validPrices) : null,
+              max_price: validPrices.length ? Math.max(...validPrices) : null,
               scraped_at: baseProduct.scraped_at,
               offers: offerRows.map(o => ({
-                id: o.id,
-                store: o.store,
-                price: o.price,
-                url: o.url,
-                image: o.image,
-                in_stock: o.in_stock,
-                rating: o.rating,
-                scraped_at: o.scraped_at,
-                storeColor: o.storeColor
+                id: o.id, store: o.store, price: o.price, url: o.url, image: o.image,
+                in_stock: o.in_stock, rating: o.rating, scraped_at: o.scraped_at, storeColor: o.storeColor
               }))
             };
 
             history = historyResult.rows;
+            trendingProducts = {
+              products: trendingResult.rows,
+              queries: ["Mobiles", "Smartphones", "Latest Deals"]
+            };
           }
         } catch (err) {
           console.error("Error pre-rendering product server-side:", err);
@@ -215,12 +207,14 @@ app.get('/product', async (req, res) => {
       return {
         initialData: {
           product,
-          history
+          history,
+          trendingProducts
         }
       };
     }
   });
 });
+
 //----------------------------------------------
 // Static assets & Pretty Pages (AFTER SSR ROUTES)
 // --------------------------------------------------
