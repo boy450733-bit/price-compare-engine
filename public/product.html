@@ -15,16 +15,18 @@
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
 
   <style>
+    /* DB_THEME_INJECT */
+
     :root {
       --color-bg:#FAF7F0;
       --color-surface:#FFFFFF;
       --color-ink:#17231D;
-      --color-ink-soft:#5B6B62;
+      --color-ink-soft:#44524A;
       --color-brand:#0B6E4F;
       --color-brand-dark:#094F39;
       --color-accent:#E8A33D;
       --color-accent-dark:#C4841F;
-      --color-line:#E4DDCB;
+      --color-line:#D4CBC0;
       --color-danger:#C24B3F;
       --color-ok:#0B6E4F;
       --font-display:"Space Grotesk",sans-serif;
@@ -48,9 +50,7 @@
     button,input { font:inherit; }
     :focus-visible { outline:2px solid var(--color-brand); outline-offset:2px; }
 
-    body.modal-open {
-      overflow: hidden;
-    }
+    body.modal-open { overflow: hidden; }
 
     header {
       background:var(--color-surface);
@@ -181,26 +181,27 @@
       flex-wrap:wrap;
       margin-top:4px;
     }
+
     .product-gallery {
       width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
-      padding-bottom: 8px;
+      gap: 12px;
     }
     .product-main-image-wrap {
       width: 100%;
-      max-width: 320px;
-      height: 280px; /* Safe fixed presentation height */
+      max-width: 280px;
+      height: 280px;
+      margin: 10px; /* 10px margin added to parent skeleton/image container */
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       background: #f9f9f9;
       border-radius: 8px;
-      overflow: hidden; /* Clips any accidental overflowing pixels */
-      padding: 16px;
+      overflow: hidden;
+      padding: 12px;
     }
     .product-image {
       max-width: 100%;
@@ -210,8 +211,8 @@
       object-fit: contain;
       mix-blend-mode: multiply;
       background: transparent;
-      transition: transform 0.3s ease; /* Ensure it only transitions smoothly when a state changes */
-      animation: none !important;     /* Forcefully disable any lingering keyframe animations */
+      transition: none !important;
+      animation: none !important;
     }
     .image-placeholder { 
       font-size: 72px;
@@ -534,12 +535,8 @@
     .spec-key { color:var(--color-ink-soft); font-weight:600; }
     .spec-value { text-align:right; font-weight:700; word-break:break-word; }
 
-    .trending-section {
-      display: none;
-    }
-    .trending-section.loaded {
-      display: block;
-    }
+    .trending-section { display: none; }
+    .trending-section.loaded { display: block; }
     .trending-searches { display:flex; gap:7px; flex-wrap:wrap; margin:-4px 0 16px; }
     .trend-chip { border:1px solid var(--color-line); background:var(--color-bg); color:var(--color-ink-soft); border-radius:999px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; transition:.15s ease; }
     .trend-chip:hover, .trend-chip.active { color:var(--color-brand); border-color:var(--color-brand); background:#F0F7F4; }
@@ -682,14 +679,8 @@
     .toast.error { border-left-color:var(--color-danger); }
 
     @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
 
     .modal-overlay {
@@ -713,15 +704,8 @@
       padding:25px;
       box-shadow:0 16px 40px rgba(0,0,0,.18);
     }
-    .modal h3 {
-      margin:0 0 8px;
-      font-family:var(--font-display);
-    }
-    .modal p {
-      margin:0 0 16px;
-      color:var(--color-ink-soft);
-      font-size:13px;
-    }
+    .modal h3 { margin:0 0 8px; font-family:var(--font-display); }
+    .modal p { margin:0 0 16px; color:var(--color-ink-soft); font-size:13px; }
     .modal input {
       width:100%;
       padding:11px 13px;
@@ -729,11 +713,7 @@
       border-radius:8px;
       margin-bottom:10px;
     }
-    .modal-actions {
-      display:flex;
-      justify-content:flex-end;
-      gap:8px;
-    }
+    .modal-actions { display:flex; justify-content:flex-end; gap:8px; }
 
     @media (max-width:800px) {
       .product-hero { grid-template-columns:1fr; }
@@ -742,7 +722,6 @@
         border-right:0;
         border-bottom:1px solid var(--color-line);
       }
-      .product-main-image-wrap { aspect-ratio: 1; }
       .stats-grid { grid-template-columns:repeat(2,1fr); }
       .specs-grid { grid-template-columns:1fr; }
     }
@@ -754,14 +733,12 @@
       .page { padding:20px 12px 50px; }
       .product-info { padding:22px 18px; }
       .product-image-panel { min-height:260px; padding:20px; }
-      .product-main-image-wrap { aspect-ratio: 1; }
       .section { padding:18px 14px; }
       .chart-wrap { height:280px; min-height: 280px; }
       .offer-row { grid-template-columns:1fr auto; }
       .offer-row .visit-btn { grid-column:2; }
       .offer-price { font-size:14px; }
       .trending-products { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      .trending-image-wrap { aspect-ratio: 1; }
       .stats-grid { grid-template-columns:1fr 1fr; gap:9px; }
       .stat { padding:13px 10px; }
       .stat-value { font-size:17px; }
@@ -776,7 +753,7 @@
 <header>
   <div class="header-container">
     <a class="logo" id="logoSlot" href="/" aria-label="Home">
-      <span class="logo-name">Sasta</span><span class="logo-tld">.pk</span>
+      <!-- DB_LOGO_INJECT -->
     </a>
 
     <nav class="header-nav" aria-label="Main Navigation">
@@ -799,7 +776,7 @@
       <div class="product-image-panel">
         <div class="product-gallery" id="productGallery">
           <div class="product-main-image-wrap skeleton-box">
-            <img id="productImage" class="product-image" alt="" loading="eager" style="display:none;">
+            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" style="display:none;">
           </div>
           <div id="productGalleryThumbs" class="product-gallery-thumbs"></div>
           <div id="galleryCount" class="gallery-count"></div>
@@ -837,7 +814,6 @@
       </div>
     </section>
 
-    <!-- Hardcoded sections to permanently eliminate CLS and missing elements -->
     <section class="section" id="chartSection">
       <div class="section-heading">
         <div>
@@ -940,7 +916,7 @@
       <a href="#">Privacy Policy</a>
       <a href="#">Terms of Service</a>
     </div>
-    <div id="footerTxt"></div>
+    <div id="footerTxt"><!-- DB_FOOTER_TEXT_INJECT --></div>
   </div>
 </footer>
 
@@ -959,15 +935,18 @@
 
 <div id="toastContainer" class="toast-container"></div>
 
+<!-- DB_CUSTOM_HEAD_INJECT -->
+
 <script>
 (function () {
   const CFG = window.APP_CONFIG || { API_BASE_URL: "", BRAND_NAME: "" };
+  const serverData = window.__INITIAL_DATA__ || {};
 
   const state = {
-    product: null,
-    history: [],
+    product: serverData.product || null,
+    history: serverData.history || [],
     range: "30",
-    settings: null
+    settings: serverData.settings || null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -1030,9 +1009,7 @@
         const product = normalizeProduct(data, productId);
         if (product) return product;
       }
-    } catch (e) {
-      console.warn("Product detail endpoint unavailable:", e);
-    }
+    } catch (e) {}
 
     try {
       const cached = JSON.parse(sessionStorage.getItem("selectedProduct") || "null");
@@ -1066,61 +1043,9 @@
     }
   }
 
-  async function loadSettings() {
-    try {
-      const res = await fetch(`${CFG.API_BASE_URL}/api/settings`);
-      if (res.ok) state.settings = await res.json();
-    } catch (e) {
-      state.settings = null;
-    }
-    applySettings();
-  }
-
-  function getPageSettings() {
-    const raw = state.settings || {};
-    return raw && typeof raw.data === "object" && raw.data !== null
-      ? raw.data
-      : raw;
-  }
-
   function isTrendingEnabled() {
-    return getPageSettings().showTrendingSection === true;
-  }
-
-  function applySettings() {
     const settings = state.settings || {};
-    const theme = settings.theme || {};
-
-    if (theme.brandColor) document.documentElement.style.setProperty("--color-brand", theme.brandColor);
-    if (theme.accentColor) document.documentElement.style.setProperty("--color-accent", theme.accentColor);
-    if (theme.fontBody) document.documentElement.style.setProperty("--font-body", `"${theme.fontBody}", sans-serif`);
-    if (theme.fontDisplay) document.documentElement.style.setProperty("--font-display", `"${theme.fontDisplay}", sans-serif`);
-
-    const rawLogo = settings.logoText || CFG.BRAND_NAME || "Sasta.pk";
-    const dot = rawLogo.indexOf(".");
-    const name = dot > 0 ? rawLogo.slice(0, dot) : rawLogo.slice(0, Math.ceil(rawLogo.length / 2));
-    const tld = dot > 0 ? rawLogo.slice(dot) : rawLogo.slice(Math.ceil(rawLogo.length / 2));
-
-    $("logoSlot").innerHTML =
-      `<span class="logo-name">${escapeHtml(name)}</span><span class="logo-tld">${escapeHtml(tld)}</span>`;
-
-    if (settings.customHead) {
-      const temp = document.createElement("div");
-      temp.innerHTML = settings.customHead;
-      while (temp.firstChild) document.head.appendChild(temp.firstChild);
-    }
-
-    const footerText = settings.footerText || "";
-    const footerLinks = `
-      <a href="/">Home</a>
-      <a href="/">Compare Prices</a>
-      <a href="/deals">Top Deals</a>
-      <a href="#">About Us</a>
-      <a href="#">Privacy Policy</a>
-      <a href="#">Terms of Service</a>
-    `;
-    $("footerSlot").innerHTML =
-      `<div class="footer-container"><div class="footer-links">${footerLinks}</div><div>${escapeHtml(footerText)}</div></div>`;
+    return settings.showTrendingSection === true;
   }
 
   function extractPriceHistory() {
@@ -1195,12 +1120,12 @@
 
       svg.appendChild(make("line", {
         x1: pad.l, y1: yy, x2: W - pad.r, y2: yy,
-        stroke: "#E4DDCB", "stroke-width": 1
+        stroke: "#D4CBC0", "stroke-width": 1
       }));
 
       const label = make("text", {
         x: pad.l - 10, y: yy + 4,
-        "text-anchor": "end", fill: "#5B6B62",
+        "text-anchor": "end", fill: "#44524A",
         "font-size": 11, "font-family": "Inter, sans-serif"
       });
       label.textContent = "Rs " + Math.round(price).toLocaleString("en-PK");
@@ -1230,7 +1155,7 @@
       const text = make("text", {
         x: x(i), y: H - 17,
         "text-anchor": i === 0 ? "start" : i === data.length - 1 ? "end" : "middle",
-        fill: "#5B6B62",
+        fill: "#44524A",
         "font-size": 11,
         "font-family": "Inter, sans-serif"
       });
@@ -1342,7 +1267,7 @@
     if (thumbs) {
       thumbs.innerHTML = images.map((url, index) => `
         <button class="gallery-thumb ${index === 0 ? "active" : ""}" type="button" data-gallery-index="${index}" aria-label="View image ${index + 1}">
-          <img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.gallery-thumb').style.display='none'">
+          <img src="${escapeHtml(url)}" alt="" width="54" height="54" loading="lazy" onerror="this.closest('.gallery-thumb').style.display='none'">
         </button>
       `).join("");
 
@@ -1367,6 +1292,9 @@
     const bestPrice = p.min_price != null
       ? Number(p.min_price)
       : (offers.length ? Number(offers[0].price) : null);
+
+    const mainImageWrap = document.querySelector(".product-main-image-wrap");
+    if (mainImageWrap) mainImageWrap.classList.remove("skeleton-box");
 
     $("breadcrumbTitle").classList.remove("skeleton-box");
     $("breadcrumbTitle").style.width = "auto";
@@ -1653,7 +1581,7 @@
           <a class="trending-card" href="/product?id=${encodeURIComponent(p.id)}" aria-label="View ${escapeHtml(p.title || "product")}">
             <span class="trending-rank">#${index + 1}</span>
             <div class="trending-image-wrap">
-              ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" loading="lazy" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
+              ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" width="150" height="150" loading="lazy" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
             </div>
             <div class="trending-body">
               <div class="trending-query">Trending: ${escapeHtml(query)}</div>
@@ -1767,44 +1695,43 @@
       return;
     }
 
-    await loadSettings();
+    if (!state.product) {
+      await loadSettings();
+      try {
+        state.product = await fetchProduct(id);
+        state.history = await fetchHistory(id);
+      } catch (e) {
+        console.error(e);
+        $("productPage").style.display = "none";
+        $("errorState").style.display = "block";
+        $("errorMessage").textContent = "This product could not be loaded.";
+        return;
+      }
+    }
 
-    try {
-      state.product = await fetchProduct(id);
-      state.history = await fetchHistory(id);
+    requestAnimationFrame(() => {
+      renderProduct();
+      fetchTrendingProducts();
+    });
 
-      requestAnimationFrame(() => {
-        renderProduct();
-        fetchTrendingProducts();
+    const submitAlertBtn = $("submitAlert");
+    if (submitAlertBtn) submitAlertBtn.addEventListener("click", submitAlert);
+
+    const closeModal = $("closeModal");
+    if (closeModal) {
+      closeModal.addEventListener("click", () => {
+        $("alertModal").classList.remove("active");
+        document.body.classList.remove("modal-open");
       });
-
-      const targetBtn = $("targetBtn");
-      if (targetBtn) targetBtn.addEventListener("click", openAlertModal);
-      const submitAlertBtn = $("submitAlert");
-      if (submitAlertBtn) submitAlertBtn.addEventListener("click", submitAlert);
-
-      const closeModal = $("closeModal");
-      if (closeModal) {
-        closeModal.addEventListener("click", () => {
-          $("alertModal").classList.remove("active");
+    }
+    const alertModal = $("alertModal");
+    if (alertModal) {
+      alertModal.addEventListener("click", e => {
+        if (e.target === alertModal) {
+          alertModal.classList.remove("active");
           document.body.classList.remove("modal-open");
-        });
-      }
-      const alertModal = $("alertModal");
-      if (alertModal) {
-        alertModal.addEventListener("click", e => {
-          if (e.target === alertModal) {
-            alertModal.classList.remove("active");
-            document.body.classList.remove("modal-open");
-          }
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      $("productPage").style.display = "none";
-      $("errorState").style.display = "block";
-      $("errorMessage").textContent =
-        "This product could not be loaded. Try opening it again from the comparison page.";
+        }
+      });
     }
   }
 

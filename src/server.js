@@ -112,6 +112,41 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
   });
 });
 
+// Server-side pre-rendered route for individual product pages
+app.get('/product', async (req, res) => {
+  const productId = (req.query.id || "").trim();
+  
+  await renderPage(req, res, {
+    templateName: 'product.html',
+    routePath: '/product',
+    extraDataFn: async (req, dbPool) => {
+      let product = null;
+      let history = [];
+
+      if (productId) {
+        try {
+          // Fetch product details & history concurrently from database/pool
+          const productResult = await dbPool.query('SELECT * FROM products WHERE id = $1', [productId]);
+          if (productResult.rows.length > 0) {
+            product = productResult.rows[0];
+          }
+
+          const historyResult = await dbPool.query('SELECT * FROM product_history WHERE product_id = $1 ORDER BY recorded_at ASC', [productId]);
+          history = historyResult.rows;
+        } catch (err) {
+          console.error("Error pre-rendering product server-side:", err);
+        }
+      }
+
+      return {
+        initialData: {
+          product,
+          history
+        }
+      };
+    }
+  });
+});
 // --------------------------------------------------
 // Static assets & Pretty Pages (AFTER SSR ROUTES)
 // --------------------------------------------------
