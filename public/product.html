@@ -729,38 +729,77 @@
     }
     .modal-actions { display:flex; justify-content:flex-end; gap:8px; }
 
-    @media (max-width:600px) {
-      header { padding:12px 16px; }
-      .header-container { justify-content:center; }
-      .header-nav { justify-content:center; gap:12px; }
-      .page { padding:20px 12px 50px; }
-      .product-info { padding:22px 18px; }
-      
-      /* Let panel height be determined by children safely */
-      .product-image-panel { 
-        min-height:auto; 
-        padding:20px 16px; 
+/* =========================================
+       RESPONSIVE MEDIA QUERIES
+       ========================================= */
+
+    /* Tablet & Small Desktop */
+    @media (max-width: 800px) {
+      .product-hero { 
+        grid-template-columns: 1fr; /* Forces hero to stack vertically into two rows */
       }
+      .product-image-panel {
+        min-height: 300px;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-line);
+      }
+      .stats-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+      }
+      .specs-grid { 
+        grid-template-columns: 1fr; 
+      }
+    }
+
+    /* Standard Mobile */
+    @media (max-width: 600px) {
+      header { padding: 12px 16px; }
+      .header-container { justify-content: center; }
+      .header-nav { justify-content: center; gap: 12px; }
       
-      /* Cap the image width so it doesn't stretch off screen vertically */
+      .page { padding: 20px 12px 50px; }
+      
+      /* Image wrapper limits */
+      .product-image-panel { 
+        min-height: auto; 
+        padding: 20px 16px; 
+      }
       .product-main-image-wrap { 
         width: 100%;
-        max-width: 280px; /* Caps the size so aspect-ratio: 1 doesn't break the layout */
-        margin:0 auto 16px; 
+        max-width: 280px; /* Caps the size so aspect-ratio: 1 doesn't blow out */
+        margin: 0 auto 16px; 
       }
+      .product-info { padding: 22px 18px; }
       
-      .section { padding:18px 14px; }
-      .chart-wrap { height:280px; min-height: 280px; }
-      .offer-row { grid-template-columns:1fr auto; }
-      .offer-row .visit-btn { grid-column:2; }
-      .offer-price { font-size:14px; }
-      .trending-products { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      .stats-grid { grid-template-columns:1fr 1fr; gap:9px; }
-      .stat { padding:13px 10px; }
-      .stat-value { font-size:17px; }
-      .stat-footer { font-size:9px; }
-      .toast-container { left:16px; right:16px; bottom:16px; }
-      .toast { min-width:0; width:100%; }
+      .section { padding: 18px 14px; }
+      .chart-wrap { height: 280px; min-height: 280px; }
+      
+      /* Store Offers Grid */
+      .offer-row { grid-template-columns: 1fr auto; }
+      .offer-row .visit-btn { grid-column: 2; }
+      .offer-price { font-size: 14px; }
+      
+      /* 2-Column Grids for Mobile */
+      .trending-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+      
+      .stat { padding: 13px 10px; }
+      .stat-value { font-size: 17px; }
+      .stat-footer { font-size: 9px; }
+      
+      .toast-container { left: 16px; right: 16px; bottom: 16px; }
+      .toast { min-width: 0; width: 100%; }
+    }
+
+    /* Small Mobile (Extra safety for narrow screens <= 380px) */
+    @media (max-width: 380px) {
+      /* Stack these fully so text doesn't overlap or break bounds */
+      .trending-products { grid-template-columns: 1fr; } 
+      .stats-grid { grid-template-columns: 1fr; } 
+      
+      /* Slightly scale down massive text */
+      .current-price { font-size: 24px; }
+      .product-title { font-size: 22px; }
     }
   </style>
 </head>
