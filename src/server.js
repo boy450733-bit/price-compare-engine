@@ -119,11 +119,10 @@ app.get('/deals', async (req, res) => {
 // Server-side database theme & custom head injection for the home page
 app.get(['/', '/index', '/index.html'], async (req, res) => {
   try {
-    // Run core required queries concurrently, handle search_logs safely
     const [settingsResult, storesResult, topSearchesResult] = await Promise.all([
       pool.query('SELECT data FROM site_settings WHERE id = 1'),
       pool.query('SELECT name, color, enabled FROM stores WHERE enabled = true'),
-      pool.query('SELECT query FROM search_log GROUP BY query ORDER BY count(*) DESC LIMIT 5').catch(() => ({ rows: [] }))
+      pool.query('SELECT query FROM search_log GROUP BY query ORDER BY count(*) DESC LIMIT 5')
     ]);
 
     const settings = settingsResult.rows[0]?.data || {};
@@ -197,8 +196,10 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
       </script>
     `;
 
+    // Match both possible tag formats seen in your files
     html = html.replace('/* DB_THEME_INJECT */', inlineCss);
     html = html.replace('/* Database Theme Variables Injection Point */\n    /* DB_THEME_INJECT */', inlineCss);
+    
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent + serverBootstrapScript);
     html = html.replace('href="/"', `href="${absoluteCanonical}"`);
 
