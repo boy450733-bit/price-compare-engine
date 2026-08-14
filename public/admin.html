@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sasta.pk Admin</title>
+<title id="pageTitle">Admin Panel</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%226%22%20y%3D%228%22%20width%3D%2238%22%20height%3D%2228%22%20rx%3D%223%22%20fill%3D%22%232563EB%22/%3E%3Crect%20x%3D%2210%22%20y%3D%2212%22%20width%3D%2230%22%20height%3D%2220%22%20rx%3D%221%22%20fill%3D%22%23FFFFFF%22/%3E%3Crect%20x%3D%2220%22%20y%3D%2238%22%20width%3D%2210%22%20height%3D%223%22%20fill%3D%22%23475569%22/%3E%3Crect%20x%3D%2216%22%20y%3D%2241%22%20width%3D%2218%22%20height%3D%222%22%20rx%3D%221%22%20fill%3D%22%2364748B%22/%3E%3Cg%20transform%3D%22translate(46%2018)%22%3E%3Ccircle%20r%3D%228%22%20fill%3D%22%23F59E0B%22/%3E%3Ccircle%20r%3D%223%22%20fill%3D%22%23FFFFFF%22/%3E%3Cg%20stroke%3D%22%23F59E0B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22-11%22%20x2%3D%220%22%20y2%3D%22-8%22/%3E%3Cline%20x1%3D%220%22%20y1%3D%228%22%20x2%3D%220%22%20y2%3D%2211%22/%3E%3Cline%20x1%3D%22-11%22%20y1%3D%220%22%20x2%3D%22-8%22%20y2%3D%220%22/%3E%3Cline%20x1%3D%228%22%20y1%3D%220%22%20x2%3D%2211%22%20y2%3D%220%22/%3E%3Cline%20x1%3D%22-8%22%20y1%3D%22-8%22%20x2%3D%22-6%22%20y2%3D%22-6%22/%3E%3Cline%20x1%3D%228%22%20y1%3D%22-8%22%20x2%3D%226%22%20y2%3D%22-6%22/%3E%3Cline%20x1%3D%22-8%22%20y1%3D%228%22%20x2%3D%22-6%22%20y2%3D%226%22/%3E%3Cline%20x1%3D%228%22%20y1%3D%228%22%20x2%3D%226%22%20y2%3D%226%22/%3E%3C/g%3E%3C/g%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%226%22%20fill%3D%22%2310B981%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2248%22%20r%3D%222%22%20fill%3D%22%23FFFFFF%22/%3E%3Cpath%20d%3D%22M46.5%2054c1.2-2%205.8-2%207%200%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #F7F5EF; --surface: #fff; --ink: #17231D; --ink-soft: #6B7A70;
-    --brand: #0B6E4F; --brand-dark: #094F39; --line: #E7E1D2; --accent: #E8A33D;
+    --bg: #F7F5EF; --surface: #fff; --ink: #17231D; --ink-soft: #44524A;
+    --brand: #0B6E4F; --brand-dark: #094F39; --line: #D4CBC0; --accent: #E8A33D;
     --danger: #C24B3F; --ok: #0B6E4F; --radius: 10px;
   }
   * { box-sizing: border-box; }
@@ -128,7 +128,7 @@
 </div>
 
 <div id="authGate">
-  <h1>Sasta.pk Admin</h1>
+  <h1 id="authBrandTitle">Admin Panel</h1>
   <p>Enter your admin token to continue.</p>
   <input type="text" id="tokenInput" placeholder="ADMIN_TOKEN">
   <button id="loginBtn">Enter</button>
@@ -138,7 +138,7 @@
 <div id="app">
   <div class="shell">
     <div class="sidebar">
-      <div class="brand">Sasta<span style="color:var(--accent)">.pk</span> Admin</div>
+      <div class="brand" id="sidebarBrandName">Admin</div>
       <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
       <button class="tab-btn" data-tab="stores">🏬 Store</button>
       <button class="tab-btn" data-tab="affiliate">🔗 Affiliate</button>
@@ -425,16 +425,65 @@
           </tbody>
         </table>
 
-        <h3 style="font-size:14px;margin-bottom:10px">Theme Customization</h3>
+        <h3 style="font-size:14px;margin-bottom:10px">Theme Customization &amp; Design Tokens</h3>
         <table style="margin-bottom:24px">
           <tbody>
-            <tr><td style="width:160px">Brand Color</td><td><input type="color" id="s-brandColor" value="#f07605"></td>
-            <td>Accent Color</td><td><input type="color" id="s-accentColor" value="#e8c187"></td></tr>
-            <tr><td>Body Font</td><td><input type="text" class="cell-input" id="s-fontBody" value="Inter"></td>
-            <td>Display Font</td><td><input type="text" class="cell-input" id="s-fontDisplay" value="Space Grotesk"></td></tr>
+            <tr>
+              <td style="width:160px">Preset Themes</td>
+              <td colspan="3">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn-sm" onclick="applyColorPreset('#FAF7F0', '#FFFFFF', '#17231D', '#44524A', '#0B6E4F', '#094F39', '#E8A33D', '#C4841F', '#D4CBC0', '#C24B3F', '16')" style="background:#0B6E4F; color:#fff;">Emerald Gold</button>
+                  <button type="button" class="btn-sm" onclick="applyColorPreset('#F7F5EF', '#FFFFFF', '#17231D', '#6B7A70', '#050842', '#094F39', '#0905f5', '#0000aa', '#E7E1D2', '#C24B3F', '14')" style="background:#050842; color:#fff;">Deep Corporate</button>
+                  <button type="button" class="btn-sm" onclick="applyColorPreset('#FFF5F3', '#FFFFFF', '#2C1810', '#6B5048', '#C24B3F', '#96352B', '#E8A33D', '#C4841F', '#EAD5D0', '#C24B3F', '12')" style="background:#C24B3F; color:#fff;">Sunset Flame</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Brand Color</td>
+              <td><input type="color" id="s-brandColor" value="#0B6E4F"></td>
+              <td>Brand Dark Color</td>
+              <td><input type="color" id="s-brandDark" value="#094F39"></td>
+            </tr>
+            <tr>
+              <td>Accent Color</td>
+              <td><input type="color" id="s-accentColor" value="#E8A33D"></td>
+              <td>Accent Dark Color</td>
+              <td><input type="color" id="s-accentDark" value="#C4841F"></td>
+            </tr>
+            <tr>
+              <td>Background Color</td>
+              <td><input type="color" id="s-colorBg" value="#FAF7F0"></td>
+              <td>Surface Color</td>
+              <td><input type="color" id="s-colorSurface" value="#FFFFFF"></td>
+            </tr>
+            <tr>
+              <td>Ink (Text) Color</td>
+              <td><input type="color" id="s-colorInk" value="#17231D"></td>
+              <td>Ink Soft (Muted) Color</td>
+              <td><input type="color" id="s-colorInkSoft" value="#44524A"></td>
+            </tr>
+            <tr>
+              <td>Line / Border Color</td>
+              <td><input type="color" id="s-colorLine" value="#D4CBC0"></td>
+              <td>Danger Color</td>
+              <td><input type="color" id="s-colorDanger" value="#C24B3F"></td>
+            </tr>
+            <tr>
+              <td>Border Radius (px)</td>
+              <td><input type="number" class="cell-input" id="s-radius" value="16" min="0" max="32"></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Body Font</td>
+              <td><input type="text" class="cell-input" id="s-fontBody" value="Inter"></td>
+              <td>Display Font</td>
+              <td><input type="text" class="cell-input" id="s-fontDisplay" value="Space Grotesk"></td>
+            </tr>
           </tbody>
         </table>
-        <h3 style="font-size:14px;margin-bottom:10px">Pagination &amp; Columns &amp;Display</h3>
+
+        <h3 style="font-size:14px;margin-bottom:10px">Pagination &amp; Columns &amp; Display</h3>
         <table style="margin-bottom:24px">
           <tbody>
             <tr>
@@ -451,8 +500,17 @@
                 <input type="number" class="cell-input" id="s-dealsColCount" value="4" min="1" max="10">
               </td>
             </tr>
+            <tr>
+              <td>Show Trending Section on Homepage</td>
+              <td colspan="5">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top: 6px;">
+                  <input type="checkbox" id="s-showTrendingSection"> Enable Trending Section Feed
+                </label>
+              </td>
+            </tr>
           </tbody>
         </table>
+
         <h3 style="font-size:14px;margin-bottom:10px">Product Card Feature Toggles</h3>
         <table style="margin-bottom:24px">
           <tbody>
@@ -505,6 +563,7 @@
   let worklistData = [];
   let linkedData = [];
   let alertsData = [];
+  let allAlertsData = [];
   let cachedStats = null;
   let chartProductsInstance = null;
   let chartClicksInstance = null;
@@ -749,6 +808,20 @@
     }
   }
 
+  window.applyColorPreset = function(bg, surface, ink, inkSoft, brand, brandDark, accent, accentDark, line, danger, radius) {
+    document.getElementById('s-colorBg').value = bg;
+    document.getElementById('s-colorSurface').value = surface;
+    document.getElementById('s-colorInk').value = ink;
+    document.getElementById('s-colorInkSoft').value = inkSoft;
+    document.getElementById('s-brandColor').value = brand;
+    document.getElementById('s-brandDark').value = brandDark;
+    document.getElementById('s-accentColor').value = accent;
+    document.getElementById('s-accentDark').value = accentDark;
+    document.getElementById('s-colorLine').value = line;
+    document.getElementById('s-colorDanger').value = danger;
+    document.getElementById('s-radius').value = radius;
+  };
+
   function renderMailersList(mailers = []) {
     const container = document.getElementById("mailersListContainer");
     if (!container) return;
@@ -987,6 +1060,20 @@
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
     const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
 
+    const dynamicTitle = data.logoText ? `${data.logoText} Admin` : "Admin Panel";
+    document.getElementById("pageTitle").textContent = dynamicTitle;
+    const sidebarBrand = document.getElementById("sidebarBrandName");
+    if (sidebarBrand) {
+      const parts = (data.logoText || "Admin").split(" ");
+      const namePart = parts[0] || "Admin";
+      const tldPart = parts.slice(1).join(" ") || "";
+      sidebarBrand.innerHTML = `${namePart}${tldPart ? `<span style="color:var(--accent)"> ${tldPart}</span>` : ""} Admin`;
+    }
+    const authBrand = document.getElementById("authBrandTitle");
+    if (authBrand) {
+      authBrand.textContent = data.logoText ? `${data.logoText} Admin` : "Admin Panel";
+    }
+
     setVal("s-logoText", data.logoText || "");
     setVal("s-siteUrl", data.siteUrl || "");
     setVal("s-customHead", data.customHead || "");
@@ -994,12 +1081,23 @@
     setVal("s-footerText", data.footerText || "");
     setVal("s-heroQuotes", (data.heroQuotes || []).join("\n"));
 
-    // Load products per page setting (defaults to 12 if not set)
     setVal("s-productsPerPage", data.productsPerPage || 12);
+    setVal("s-homeColCount", data.homeColCount || 3);
+    setVal("s-dealsColCount", data.dealsColCount || 4);
+    setCheck("s-showTrendingSection", data.showTrendingSection !== false);
     
     const theme = data.theme || {};
-    setVal("s-brandColor", theme.brandColor || "#f07605");
-    setVal("s-accentColor", theme.accentColor || "#e8c187");
+    setVal("s-brandColor", theme.brandColor || "#0B6E4F");
+    setVal("s-brandDark", theme.brandDark || "#094F39");
+    setVal("s-accentColor", theme.accentColor || "#E8A33D");
+    setVal("s-accentDark", theme.accentDark || "#C4841F");
+    setVal("s-colorBg", theme.colorBg || "#FAF7F0");
+    setVal("s-colorSurface", theme.colorSurface || "#FFFFFF");
+    setVal("s-colorInk", theme.colorInk || "#17231D");
+    setVal("s-colorInkSoft", theme.colorInkSoft || "#44524A");
+    setVal("s-colorLine", theme.colorLine || "#D4CBC0");
+    setVal("s-colorDanger", theme.colorDanger || "#C24B3F");
+    setVal("s-radius", theme.radius || "16");
     setVal("s-fontBody", theme.fontBody || "Inter");
     setVal("s-fontDisplay", theme.fontDisplay || "Space Grotesk");
 
@@ -1024,20 +1122,6 @@
     }
 
     let mailers = al.mailers || [];
-    if (mailers.length === 0 && al.mailServer) {
-      mailers = [{
-        name: "Legacy Configured Mailer",
-        type: "smtp",
-        host: al.mailServer,
-        port: al.mailPort || 465,
-        secure: al.mailSecure !== false,
-        username: al.mailUsername || "",
-        password: al.mailPassword || "",
-        sender: al.mailSender || '"Sasta.pk" <noreply@sasta.pk>',
-        active: true
-      }];
-    }
-
     renderMailersList(mailers);
   }
 
@@ -1053,13 +1137,23 @@
       customHead: getVal("s-customHead"),
       heroSubtitle: getVal("s-heroSubtitle"),
       footerText: getVal("s-footerText"),
-      homeColCount: Number(getVal("s-homeColCount")) || 3,       // <--- Converted to Number
+      homeColCount: Number(getVal("s-homeColCount")) || 3,
       dealsColCount: Number(getVal("s-dealsColCount")) || 4,
-      productsPerPage: Number(getVal("s-productsPerPage")) || 12, // <--- Added here
+      productsPerPage: Number(getVal("s-productsPerPage")) || 12,
+      showTrendingSection: getCheck("s-showTrendingSection"),
       heroQuotes: getVal("s-heroQuotes").split("\n").map((s) => s.trim()).filter(Boolean),
       theme: {
         brandColor: getVal("s-brandColor"),
+        brandDark: getVal("s-brandDark"),
         accentColor: getVal("s-accentColor"),
+        accentDark: getVal("s-accentDark"),
+        colorBg: getVal("s-colorBg"),
+        colorSurface: getVal("s-colorSurface"),
+        colorInk: getVal("s-colorInk"),
+        colorInkSoft: getVal("s-colorInkSoft"),
+        colorLine: getVal("s-colorLine"),
+        colorDanger: getVal("s-colorDanger"),
+        radius: getVal("s-radius"),
         fontBody: getVal("s-fontBody"),
         fontDisplay: getVal("s-fontDisplay")
       },
@@ -1077,6 +1171,7 @@
     try {
       await api("/settings", { method: "PUT", body: JSON.stringify(payload) });
       showToast("Site settings saved successfully!", "success");
+      loadSettings();
     } catch (err) {
       showToast("Error saving settings: " + err.message, "error");
     }
@@ -1489,7 +1584,7 @@
         <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
         <td>
           <div style="display: flex; gap: 4px;">
-            <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+            <button type="button" class="btn-sm save-link" style="background: var(--brand); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
             <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
           </div>
         </td>
@@ -1498,7 +1593,7 @@
     bindWorklistListeners(tbody);
   }
 
-function bindLinkedListeners(tbody) {
+  function bindLinkedListeners(tbody) {
     tbody.querySelectorAll(".save-link:not([data-bound])").forEach((btn) => {
       btn.setAttribute("data-bound", "true");
       btn.addEventListener("click", async (e) => {
@@ -1508,7 +1603,6 @@ function bindLinkedListeners(tbody) {
         if (!productId) return;
 
         try {
-          // If affiliateUrl is empty, backend handles it as a delete/clear action
           await api("/affiliate-links", { method: "POST", body: JSON.stringify({ productId, affiliateUrl }) });
           
           if (!affiliateUrl) {
@@ -1517,7 +1611,6 @@ function bindLinkedListeners(tbody) {
             showToast("Affiliate link updated!", "success");
           }
 
-          // Refresh data arrays to sync pending worklist and linked list state
           const [workRes, linkRes] = await Promise.all([
             api("/affiliate-worklist?limit=50&offset=0"),
             api("/affiliate-links?limit=50&offset=0")
@@ -1545,7 +1638,6 @@ function bindLinkedListeners(tbody) {
             showToast("Affiliate link deleted", "success");
             row.remove();
 
-            // Refresh linkedData count & state
             const linkRes = await api("/affiliate-links?limit=50&offset=0");
             linkedData = linkRes.links || [];
             renderLinked(linkedData);
@@ -1574,7 +1666,7 @@ function bindLinkedListeners(tbody) {
         <td>
           <div style="display: flex; align-items: center; gap: 6px;">
             <input type="text" class="cell-input f-affiliate-url" value="${l.affiliate_url || ""}" style="flex: 1;">
-            <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+            <button type="button" class="btn-sm save-link" style="background: var(--brand); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
             <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
           </div>
         </td>
@@ -1681,7 +1773,6 @@ function bindLinkedListeners(tbody) {
     bindAlertsListeners(tbody);
   }
 
-  // Filter helper implementation for text and status dropdown
   let currentAlertsSearch = "";
   let currentAlertsStatus = "all";
 
@@ -1743,14 +1834,13 @@ function bindLinkedListeners(tbody) {
           <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
           <td>
             <div style="display: flex; gap: 4px;">
-              <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+              <button type="button" class="btn-sm save-link" style="background: var(--brand); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
               <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
             </div>
           </td>
         </tr>`).join("");
       bindWorklistListeners(tbody);
 
-      // FIX: Update the count display utility properly on search filter change
       const countEl = document.getElementById("worklistCount");
       if (countEl) countEl.textContent = `${filtered.length} of ${worklistData.length}`;
     }
@@ -1768,7 +1858,7 @@ function bindLinkedListeners(tbody) {
       await api("/trigger-alerts", { method: "POST" });
       
       btn.textContent = "✓ Success!";
-      btn.style.background = "var(--ok, #0B6E4F)";
+      btn.style.background = "var(--ok)";
       btn.style.color = "#fff";
       
       showToast("Price alerts check completed!", "success");
@@ -1783,7 +1873,7 @@ function bindLinkedListeners(tbody) {
 
     } catch (err) {
       btn.textContent = "❌ Failed";
-      btn.style.background = "var(--danger, #dc2626)";
+      btn.style.background = "var(--danger)";
       btn.style.color = "#fff";
       
       showToast("Error: " + err.message, "error");
@@ -1798,7 +1888,6 @@ function bindLinkedListeners(tbody) {
     }
   });
 
-  // Initialize loadmore infinite scrolls
   setupInfiniteScroll({
     containerSelector: "#worklistTable tbody",
     sentinelId: "worklistSentinel",
@@ -1814,7 +1903,7 @@ function bindLinkedListeners(tbody) {
           <td><input type="text" class="cell-input f-affiliate-url" placeholder="paste tracked link here"></td>
           <td>
             <div style="display: flex; gap: 4px;">
-              <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+              <button type="button" class="btn-sm save-link" style="background: var(--brand); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
               <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
             </div>
           </td>
@@ -1840,7 +1929,7 @@ function bindLinkedListeners(tbody) {
         <td>
           <div style="display: flex; align-items: center; gap: 6px;">
             <input type="text" class="cell-input f-affiliate-url" value="${l.affiliate_url || ""}" style="flex: 1;">
-            <button type="button" class="btn-sm save-link" style="background: var(--color-brand, #f07605); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
+            <button type="button" class="btn-sm save-link" style="background: var(--brand); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Save</button>
             <button type="button" class="btn-sm delete-link" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
           </div>
         </td>
