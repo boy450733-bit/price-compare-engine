@@ -127,7 +127,7 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     const [settingsResult, storesResult, topSearchesResult] = await Promise.all([
       pool.query('SELECT data FROM site_settings WHERE id = 1'),
       pool.query('SELECT name, color, enabled FROM stores WHERE enabled = true'),
-      pool.query('SELECT query FROM search_logs GROUP BY query ORDER BY count(*) DESC LIMIT 5') // adjust based on your schema for top searches
+      pool.query('SELECT query FROM search_logs GROUP BY query ORDER BY count(*) DESC LIMIT 5')
     ]);
 
     const settings = settingsResult.rows[0]?.data || {};
@@ -155,12 +155,26 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     let customHeadContent = settings.customHead || '';
     customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
 
-    // Format logo text
-    const rawLogo = String(settings.logoText || "Sasta.pk");
-    const dot = rawLogo.indexOf(".");
-    let logoName = dot > 0 ? rawLogo.slice(0, dot) : rawLogo;
-    let logoTld = dot > 0 ? rawLogo.slice(dot) : "";
-    const formattedLogoHtml = `${escapeHtml(logoName)}${logoTld ? `<span class="dot">${escapeHtml(logoTld)}</span>` : ""}`;
+    // Format logo text with regex check and half-length fallback
+    const rawLogoText = String(settings.logoText || "Sasta.pk");
+    let namePart = rawLogoText;
+    let tldPart = "";
+
+    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+    if (domainRegex.test(rawLogoText)) {
+      const firstDotIndex = rawLogoText.indexOf(".");
+      namePart = rawLogoText.substring(0, firstDotIndex);
+      tldPart = rawLogoText.substring(firstDotIndex);
+    } else {
+      const mid = Math.floor(rawLogoText.length / 2);
+      namePart = rawLogoText.substring(0, mid);
+      tldPart = rawLogoText.substring(mid);
+    }
+
+    const brandColor = theme.brandColor || "#0B6E4F";
+    const accentColor = theme.accentColor || "#E8A33D";
+    const formattedLogoHtml = `<span class="logo-name" style="color: ${brandColor};">${escapeHtml(namePart)}</span><span class="logo-tld" style="color: ${accentColor};">${escapeHtml(tldPart)}</span>`;
+
     const footerText = settings.footerText || "Powered by Sasta.pk Engine";
     const homeCols = Number(settings.homeColCount) || 3;
 
@@ -170,10 +184,10 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
         --color-surface: ${theme.colorSurface || '#FFFFFF'};
         --color-ink: ${theme.colorInk || '#17231D'};
         --color-ink-soft: ${theme.colorInkSoft || '#5B6B62'};
-        --color-brand: ${theme.brandColor || '#0B6E4F'};
+        --color-brand: ${brandColor};
         --color-brand-dark: ${theme.brandDark || '#094F39'};
         --color-line: ${theme.colorLine || '#E4DDCB'};
-        --color-accent: ${theme.accentColor || '#E8A33D'};
+        --color-accent: ${accentColor};
         --color-danger: ${theme.colorDanger || '#C24B3F'};
         --font-body: "${theme.fontBody || 'Inter'}", sans-serif;
         --font-display: "${theme.fontDisplay || 'Space Grotesk'}", sans-serif;
@@ -205,6 +219,7 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   }
 });
+
 
 // Helper function for HTML escaping inside server.js
 function escapeHtml(value) {
