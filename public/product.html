@@ -121,7 +121,8 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:30px;
+      padding:20px;
+      margin:1px;
       background:linear-gradient(135deg,#FCFAF4 0%,#F5F0E1 100%);
       border-right:1px solid var(--color-line);
       position:relative;
@@ -209,6 +210,8 @@
       object-fit: contain;
       mix-blend-mode: multiply;
       background: transparent;
+      transition: transform 0.3s ease; /* Ensure it only transitions smoothly when a state changes */
+      animation: none !important;     /* Forcefully disable any lingering keyframe animations */
     }
     .image-placeholder { 
       font-size: 72px;
