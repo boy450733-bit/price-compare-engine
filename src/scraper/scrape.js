@@ -24,7 +24,7 @@ export async function getSharedBrowser() {
     const userDataDir = path.resolve('.browser_session_data');
 
     sharedBrowser = await puppeteer.launch({
-      headless: "new",
+      headless: "false",
       userDataDir, // Stores cookies & cache so you appear as an existing visitor
       args: [
         '--no-sandbox',
