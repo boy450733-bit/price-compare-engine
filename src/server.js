@@ -70,9 +70,18 @@ app.get('/deals', async (req, res) => {
 
     let html = fs.readFileSync(path.join(publicDir, 'deals.html'), 'utf8');
 
-    // Build absolute canonical URL from settings siteUrl or fallback to request protocol/host
+    // Build absolute canonical URL
     const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
     const absoluteCanonical = new URL('/deals', baseUrl).href;
+
+    // Parse logo text (e.g., "Sasta Shop" or "Sasta.pk" -> Name + TLD dot)
+    const rawLogo = String(settings.logoText || "Sasta.pk");
+    const dot = rawLogo.indexOf(".");
+    let logoName = dot > 0 ? rawLogo.slice(0, dot) : rawLogo;
+    let logoTld = dot > 0 ? rawLogo.slice(dot) : "";
+    const formattedLogoHtml = `${escapeHtml(logoName)}${logoTld ? `<span class="dot">${escapeHtml(logoTld)}</span>` : ""}`;
+
+    const footerText = settings.footerText || "Powered by Sasta.pk Engine";
 
     const inlineCss = `
       :root {
@@ -91,11 +100,14 @@ app.get('/deals', async (req, res) => {
       }
     `;
 
+    // Replace injection placeholders and text anchors
     html = html.replace('/* DB_THEME_INJECT */', inlineCss);
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', settings.customHead || '');
-    
-    // Replace the static canonical href with the dynamic absolute URL
     html = html.replace('href="/deals"', `href="${absoluteCanonical}"`);
+    
+    // Replace dynamic logo and footer template tags
+    html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
+    html = html.replace('<!-- DB_FOOTER_TEXT_INJECT -->', escapeHtml(footerText));
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
@@ -105,6 +117,15 @@ app.get('/deals', async (req, res) => {
   }
 });
 
+// Helper function for HTML escaping inside server.js
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 // Pretty URLs for remaining pages
 app.use(prettyPages(publicDir));
 
