@@ -135,7 +135,7 @@
       background:linear-gradient(135deg,#FCFAF4 0%,#F5F0E1 100%);
       border-right:1px solid var(--color-line);
       position:relative;
-      contain: layout size;
+      contain: layout; /* REMOVED 'size' */
       min-width: 0;
     }
     .best-badge {
@@ -729,25 +729,26 @@
     }
     .modal-actions { display:flex; justify-content:flex-end; gap:8px; }
 
-    @media (max-width:800px) {
-      .product-hero { grid-template-columns:1fr; }
-      .product-image-panel {
-        min-height:300px;
-        border-right:0;
-        border-bottom:1px solid var(--color-line);
-      }
-      .stats-grid { grid-template-columns:repeat(2,1fr); }
-      .specs-grid { grid-template-columns:1fr; }
-    }
-
     @media (max-width:600px) {
       header { padding:12px 16px; }
       .header-container { justify-content:center; }
       .header-nav { justify-content:center; gap:12px; }
       .page { padding:20px 12px 50px; }
       .product-info { padding:22px 18px; }
-      .product-image-panel { min-height:auto; padding:16px; }
-      .product-main-image-wrap { max-width:100%; margin:0 auto 10px; }
+      
+      /* Let panel height be determined by children safely */
+      .product-image-panel { 
+        min-height:auto; 
+        padding:20px 16px; 
+      }
+      
+      /* Cap the image width so it doesn't stretch off screen vertically */
+      .product-main-image-wrap { 
+        width: 100%;
+        max-width: 280px; /* Caps the size so aspect-ratio: 1 doesn't break the layout */
+        margin:0 auto 16px; 
+      }
+      
       .section { padding:18px 14px; }
       .chart-wrap { height:280px; min-height: 280px; }
       .offer-row { grid-template-columns:1fr auto; }

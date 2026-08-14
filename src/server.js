@@ -134,7 +134,8 @@ app.get('/product', async (req, res) => {
           if (baseResult.rows.length > 0) {
             const baseProduct = baseResult.rows[0];
 
-            const [offerResult, historyResult, trendingResult] = await Promise.all([
+            // Fetch product offers, price history, trending products, and live trending queries concurrently
+            const [offerResult, historyResult, trendingResult, trendingQueriesResult] = await Promise.all([
               dbPool.query(
                 `SELECT p.id, p.store, p.price, p.url, p.image, p.in_stock, p.rating, p.scraped_at, s.color AS "storeColor"
                  FROM products p
@@ -150,11 +151,20 @@ app.get('/product', async (req, res) => {
               dbPool.query(
                 `SELECT p.* FROM products p WHERE p.id::text != $1 ORDER BY p.scraped_at DESC LIMIT 8`,
                 [productId]
+              ).catch(() => ({ rows: [] })),
+              dbPool.query(
+                `SELECT query 
+                 FROM search_history 
+                 WHERE query IS NOT NULL AND TRIM(query) != ''
+                 GROUP BY query 
+                 ORDER BY COUNT(*) DESC 
+                 LIMIT 5`
               ).catch(() => ({ rows: [] }))
             ]);
 
             const offerRows = offerResult.rows;
 
+            // Build unique image gallery array
             const images = [];
             const seenImages = new Set();
             const addImage = (url) => {
@@ -173,6 +183,7 @@ app.get('/product', async (req, res) => {
 
             const validPrices = offerRows.map(o => Number(o.price)).filter(price => Number.isFinite(price) && price > 0);
             
+            // Assemble product object matching client expectations
             product = {
               id: baseProduct.id,
               fingerprint: baseProduct.fingerprint,
@@ -193,9 +204,14 @@ app.get('/product', async (req, res) => {
             };
 
             history = historyResult.rows;
+
+            // Extract the queries into a flat string array
+            const dynamicQueries = trendingQueriesResult.rows.map(row => row.query);
+
             trendingProducts = {
               products: trendingResult.rows,
-              queries: ["Mobiles", "Smartphones", "Latest Deals"]
+              // Fallback to defaults if the search_history table is completely empty
+              queries: dynamicQueries.length > 0 ? dynamicQueries : ["Mobiles", "Smartphones", "Latest Deals"]
             };
           }
         } catch (err) {
