@@ -120,10 +120,10 @@ app.get('/deals', async (req, res) => {
     res.sendFile(path.join(publicDir, 'deals.html'));
   }
 });
+
 // Server-side database theme & custom head injection for the home page
 app.get(['/', '/index', '/index.html'], async (req, res) => {
   try {
-    // 1. Run the 3 required database queries concurrently
     const [settingsResult, storesResult, topSearchesResult] = await Promise.all([
       pool.query('SELECT data FROM site_settings WHERE id = 1'),
       pool.query('SELECT name, color, enabled FROM stores WHERE enabled = true'),
@@ -137,25 +137,22 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
       { name: "Daraz", color: "#F57224", enabled: true }
     ];
     
-    // Determine initial search query
+    // Capture search query from URL properly
     const urlQuery = (req.query.q || "").trim();
     let initialQuery = urlQuery;
     if (!initialQuery) {
       const topQueries = topSearchesResult.rows.map(r => r.query);
-      initialQuery = topQueries.length > 0 ? topQueries[0] : "Xiaomi Redmi";
+      initialQuery = topQueries.length > 0 ? topQueries[0] : ""; // Default to empty string instead of hardcoding Xiaomi Redmi on server
     }
 
     let html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
 
-    // Build absolute canonical URL
     const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
     const absoluteCanonical = new URL('/', baseUrl).href;
 
-    // Clean up duplicate canonicals from customHead if present
     let customHeadContent = settings.customHead || '';
     customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
 
-    // Format logo text with regex check and half-length fallback
     const rawLogoText = String(settings.logoText || "Sasta.pk");
     let namePart = rawLogoText;
     let tldPart = "";
@@ -195,7 +192,6 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
       }
     `;
 
-    // Inject server-rendered configuration payload so client JS doesn't need fetch waterfalls for settings/stores
     const serverBootstrapScript = `
       <script>
         window.__INITIAL_DATA__ = {
@@ -210,7 +206,6 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent + serverBootstrapScript);
     html = html.replace('href="/"', `href="${absoluteCanonical}"`);
 
-    // Bulletproof Logo Replacement with fallback
     if (html.includes('<!-- DB_LOGO_INJECT -->')) {
       html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
     } else {
@@ -226,7 +221,6 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   }
 });
-
 // Helper function for HTML escaping inside server.js
 function escapeHtml(value) {
   return String(value ?? "")

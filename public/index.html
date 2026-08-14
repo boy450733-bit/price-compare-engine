@@ -886,18 +886,7 @@
   let currentController = null;
 
   async function fetchNewSearch(query, limitOverride) {
-    if (!query) {
-      query = "Xiaomi Redmi";
-      
-      const inputEl = document.getElementById("searchInput");
-      const filterBarEl = document.getElementById("filterBar");
-      const resultsEl = document.getElementById("results");
-      
-      if (inputEl) inputEl.value = query;
-      if (filterBarEl) filterBarEl.classList.add("visible");
-      if (resultsEl) resultsEl.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
-    }
-
+    // If query is explicitly empty, don't force Xiaomi Redmi unless intended
     currentQuery = query;
 
     if (currentController) {
@@ -925,11 +914,9 @@
         applyClientFiltersAndRender();
       }
     } catch (err) {
-      if (err.name === 'AbortError') {
-        return;
-      }
+      if (err.name === 'AbortError') return;
       if (query === currentQuery) {
-        renderEmpty("Connection Error", "Unable to reach price comparison backend. Please check your network connection.");
+        renderEmpty("Connection Error", "Unable to reach price comparison backend.");
       }
     }
   }
@@ -1133,7 +1120,7 @@
     observer.observe(sentinel);
   }
 
-  async function initApp() {
+async function initApp() {
     const inputEl = document.getElementById("searchInput");
 
     applySettings();
@@ -1141,31 +1128,22 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlQuery = (urlParams.get("q") || "").trim();
-    const initialQuery = urlQuery || serverData.initialQuery || "Xiaomi Redmi";
-
-    if (urlQuery && inputEl) {
-      inputEl.value = urlQuery;
-    } else if (inputEl) {
-      inputEl.value = initialQuery;
-    }
+    // Use server data or URL query, and fall back to empty string if none exists
+    const initialQuery = urlQuery || serverData.initialQuery || "";
 
     if (inputEl) {
-      document.getElementById("filterBar")?.classList.add("visible");
-      document.getElementById("results").innerHTML =
-        Array.from({ length: 6 })
-          .map(() => `<div class="skeleton"></div>`)
-          .join("");
+      inputEl.value = initialQuery;
+      if (initialQuery) {
+        document.getElementById("filterBar")?.classList.add("visible");
+        document.getElementById("results").innerHTML =
+          Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
+      }
     }
 
-    const pageSize =
-      settings && settings.productsPerPage
-        ? Number(settings.productsPerPage)
-        : 8;
+    const pageSize = settings && settings.productsPerPage ? Number(settings.productsPerPage) : 8;
 
     if (initialQuery) {
       await fetchNewSearch(initialQuery, pageSize);
-    } else {
-      await fetchNewSearch("", pageSize);
     }
 
     setupInfiniteScroll({
@@ -1174,7 +1152,6 @@
       pageSize
     });
   }
-
   initApp();
 
 })();
