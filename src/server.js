@@ -70,18 +70,22 @@ app.get('/deals', async (req, res) => {
 
     let html = fs.readFileSync(path.join(publicDir, 'deals.html'), 'utf8');
 
-    // Build absolute canonical URL
     const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
     const absoluteCanonical = new URL('/deals', baseUrl).href;
 
-    // Parse logo text (e.g., "Sasta Shop" or "Sasta.pk" -> Name + TLD dot)
+    // Clean up duplicate canonicals from customHead if present
+    let customHeadContent = settings.customHead || '';
+    customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
+
     const rawLogo = String(settings.logoText || "Sasta.pk");
     const dot = rawLogo.indexOf(".");
     let logoName = dot > 0 ? rawLogo.slice(0, dot) : rawLogo;
     let logoTld = dot > 0 ? rawLogo.slice(dot) : "";
     const formattedLogoHtml = `${escapeHtml(logoName)}${logoTld ? `<span class="dot">${escapeHtml(logoTld)}</span>` : ""}`;
-
     const footerText = settings.footerText || "Powered by Sasta.pk Engine";
+
+    // Pull database column count (defaults to 3)
+    const dealCols = Number(settings.dealsColCount) || 3;
 
     const inlineCss = `
       :root {
@@ -96,18 +100,18 @@ app.get('/deals', async (req, res) => {
         --color-danger: ${theme.colorDanger || '#C24B3F'};
         --font-body: "${theme.fontBody || 'Inter'}", sans-serif;
         --font-display: "${theme.fontDisplay || 'Space Grotesk'}", sans-serif;
-        --deal-cols: ${settings.dealsColCount || 3};
+        --deal-cols: ${dealCols};
       }
     `;
 
-    // Replace injection placeholders and text anchors
     html = html.replace('/* DB_THEME_INJECT */', inlineCss);
-    html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', settings.customHead || '');
+    html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent);
     html = html.replace('href="/deals"', `href="${absoluteCanonical}"`);
-    
-    // Replace dynamic logo and footer template tags
     html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
     html = html.replace('<!-- DB_FOOTER_TEXT_INJECT -->', escapeHtml(footerText));
+
+    // Optional: If you want the server to render the matching number of initial skeleton cards 
+    // instead of a hardcoded 2 or 4, you can also inject them here based on dealCols!
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
