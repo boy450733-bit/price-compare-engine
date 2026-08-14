@@ -96,7 +96,13 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
       let initialQuery = urlQuery;
       if (!initialQuery) {
         const topQueries = topSearchesResult.rows.map(r => r.query);
-        initialQuery = topQueries.length > 0 ? topQueries[0] : "";
+        if (topQueries.length > 0) {
+          // Pick a random query from the top results array
+          const randomIndex = Math.floor(Math.random() * topQueries.length);
+          initialQuery = topQueries[randomIndex];
+        } else {
+          initialQuery = ""; // Fallback if no search logs exist
+        }
       }
 
       return {
