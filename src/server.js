@@ -56,7 +56,7 @@ app.use(cookieParser());
 
 
 // --------------------------------------------------
-// Public directory & Server-Side Rendered Routes
+// Server-Side Rendered Routes (MUST BE BEFORE STATIC/PRETTYPAGES)
 // --------------------------------------------------
 
 const publicDir = path.resolve("public");
@@ -73,7 +73,6 @@ app.get('/deals', async (req, res) => {
     const baseUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
     const absoluteCanonical = new URL('/deals', baseUrl).href;
 
-    // Clean up duplicate canonicals from customHead if present
     let customHeadContent = settings.customHead || '';
     customHeadContent = customHeadContent.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, '');
 
@@ -84,7 +83,6 @@ app.get('/deals', async (req, res) => {
     const formattedLogoHtml = `${escapeHtml(logoName)}${logoTld ? `<span class="dot">${escapeHtml(logoTld)}</span>` : ""}`;
     const footerText = settings.footerText || "Powered by Sasta.pk Engine";
 
-    // Pull database column count (defaults to 3)
     const dealCols = Number(settings.dealsColCount) || 3;
 
     const inlineCss = `
@@ -110,9 +108,6 @@ app.get('/deals', async (req, res) => {
     html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
     html = html.replace('<!-- DB_FOOTER_TEXT_INJECT -->', escapeHtml(footerText));
 
-    // Optional: If you want the server to render the matching number of initial skeleton cards 
-    // instead of a hardcoded 2 or 4, you can also inject them here based on dealCols!
-
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (err) {
@@ -137,12 +132,11 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
       { name: "Daraz", color: "#F57224", enabled: true }
     ];
     
-    // Capture search query from URL properly
     const urlQuery = (req.query.q || "").trim();
     let initialQuery = urlQuery;
     if (!initialQuery) {
       const topQueries = topSearchesResult.rows.map(r => r.query);
-      initialQuery = topQueries.length > 0 ? topQueries[0] : ""; // Default to empty string instead of hardcoding Xiaomi Redmi on server
+      initialQuery = topQueries.length > 0 ? topQueries[0] : "";
     }
 
     let html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
@@ -202,7 +196,10 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
       </script>
     `;
 
+    // Match both possible tag formats seen in your files
     html = html.replace('/* DB_THEME_INJECT */', inlineCss);
+    html = html.replace('/* Database Theme Variables Injection Point */\n    /* DB_THEME_INJECT */', inlineCss);
+    
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent + serverBootstrapScript);
     html = html.replace('href="/"', `href="${absoluteCanonical}"`);
 
@@ -221,6 +218,7 @@ app.get(['/', '/index', '/index.html'], async (req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   }
 });
+
 // Helper function for HTML escaping inside server.js
 function escapeHtml(value) {
   return String(value ?? "")
@@ -230,11 +228,13 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-// Pretty URLs for remaining pages
+
+
+// --------------------------------------------------
+// Static assets & Pretty Pages (AFTER SSR ROUTES)
+// --------------------------------------------------
+
 app.use(prettyPages(publicDir));
-
-
-// Static assets
 app.use(express.static(publicDir));
 
 
