@@ -105,9 +105,10 @@ export async function renderPage(req, res, { templateName, routePath, extraDataF
     html = html.replace('<!-- DB_CUSTOM_HEAD_INJECT -->', customHeadContent + bootstrapScript);
     
     // Replace dynamic canonical hrefs depending on template pattern
-    html = html.replace(`href="${routePath}"`, `href="${absoluteCanonical}"`);
-    html = html.replace('href="/"', `href="${absoluteCanonical}"`);
-    html = html.replace('href="/deals"', `href="${absoluteCanonical}"`);
+    html = html.replace(
+      '<link rel="canonical" href="">', 
+      `<link rel="canonical" href="${absoluteCanonical}">`
+    );
 
     if (html.includes('<!-- DB_LOGO_INJECT -->')) {
       html = html.replace('<!-- DB_LOGO_INJECT -->', formattedLogoHtml);
