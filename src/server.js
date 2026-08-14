@@ -214,7 +214,7 @@ app.get('/product', async (req, res) => {
             trendingProducts = {
               products: trendingResult.rows,
               // Fallback to defaults if the search_log table is completely empty
-              queries: dynamicQueries.length > 0 ? dynamicQueries : ['iPhone 15',S 'Samsung S24', 'Samsung S24','Infinix Note 30']
+              queries: dynamicQueries.length > 0 ? dynamicQueries : ["iPhone 15", "Samsung S24", "Samsung S24", "Infinix Note 30"]
             };
           }
         } catch (err) {
