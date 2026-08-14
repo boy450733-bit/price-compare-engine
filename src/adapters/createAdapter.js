@@ -1,8 +1,10 @@
 import * as cheerio from "cheerio";
 import stringSimilarity from "string-similarity";
 import crypto from "node:crypto";
+// Import the Zero-Cost Stealth Scraper you built in scrape.js
+import { executeZeroCostScrape } from "../scraper/scrape.js";
 
-// --- STEP 1: Anti-Bot Evasion (Rotating User-Agents) ---
+// --- STEP 1: Anti-Bot Evasion (Rotating User-Agents for standard JSON fetches) ---
 const USER_AGENTS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
@@ -23,6 +25,9 @@ export function createAdapter(config) {
   return (config.parseJson || config.selectors?.isApi) ? createJsonAdapter(config) : createHtmlAdapter(config);
 }
 
+// -------------------------------------------------------------------------
+// STANDARD FETCH (Used primarily for unprotected JSON API endpoints)
+// -------------------------------------------------------------------------
 async function performFetch(config, query) {
   const {
     searchUrl,
@@ -32,7 +37,6 @@ async function performFetch(config, query) {
     headers = {},
   } = config;
 
-  // --- Human-like randomized delay (0.5s to 2s) to prevent WAF blocks ---
   await sleep(Math.floor(Math.random() * 1500) + 500);
 
   const rawTemplate = searchUrl || search_url_template;
@@ -43,7 +47,7 @@ async function performFetch(config, query) {
     headers: { 
       "User-Agent": getRandomUserAgent(), 
       "Accept-Language": "en-US,en;q=0.9",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept": "application/json,text/html,*/*;q=0.8",
       ...headers 
     },
   };
@@ -59,6 +63,9 @@ async function performFetch(config, query) {
   }
 }
 
+// -------------------------------------------------------------------------
+// JSON ADAPTER (Uses Standard Fetch)
+// -------------------------------------------------------------------------
 function createJsonAdapter(config) {
   const { parseJson, parse_json: parseJsonCode, name, baseUrl, base_url } = config;
   const resolvedBaseUrl = baseUrl || base_url;
@@ -82,13 +89,11 @@ function createJsonAdapter(config) {
     try {
       const data = await res.json();
 
-      // 1. If a custom parseJson function was provided
       if (typeof parseJsonFn === "function") {
         const results = parseJsonFn(data, query) || [];
         return (Array.isArray(results) ? results : []).map(p => formatProductRecord(p, name, resolvedBaseUrl));
       }
 
-      // 2. Dynamic JSON API mapping from database selectors configuration
       const sel = config.selectors || {};
       const path = sel.dataPath || "mods.listItems";
       const items = path.split('.').reduce((obj, key) => obj?.[key], data) || [];
@@ -140,11 +145,16 @@ function formatProductRecord(p, storeName, baseUrl) {
   };
 }
 
+// -------------------------------------------------------------------------
+// HTML ADAPTER (Upgraded to use Stealth Puppeteer Engine)
+// -------------------------------------------------------------------------
 function createHtmlAdapter(config) {
   const {
     name,
     baseUrl: rawBaseUrl,
     base_url,
+    searchUrl,
+    search_url_template,
     selectors: selectorsData,
     parsePrice = defaultParsePrice,
   } = config;
@@ -176,18 +186,26 @@ function createHtmlAdapter(config) {
   } = selectors || {};
 
   return async function adapter(query) {
-    const res = await performFetch(config, query);
-    if (!res.ok) {
-      console.warn(`[adapter] ${name}: HTTP ${res.status}`);
-      return [];
-    }
+    const rawTemplate = searchUrl || search_url_template;
+    const url = typeof rawTemplate === "function" ? rawTemplate(query) : rawTemplate.replace("{query}", encodeURIComponent(query));
 
     try {
-      const html = await res.text();
+      // --- STEP 2: Use Stealth Puppeteer to fetch the HTML safely ---
+      // This bypasses Cloudflare and returns the raw DOM string for Cheerio
+      const html = await executeZeroCostScrape(url, async (page) => {
+        return await page.content(); 
+      });
+
+      if (!html) {
+        console.warn(`[adapter] ${name}: Stealth scrape returned empty HTML for ${url}`);
+        return [];
+      }
+
+      // Pass the safely retrieved HTML into your existing Cheerio logic
       const $ = cheerio.load(html);
       const results = [];
 
-      // --- STEP 2: JSON-LD Schema.org Extraction Fallback ---
+      // JSON-LD Schema.org Extraction Fallback
       const jsonLdProducts = [];
       $('script[type="application/ld+json"]').each((_, el) => {
         try {
@@ -287,7 +305,7 @@ function createHtmlAdapter(config) {
 
       return results;
     } catch (err) {
-      console.error(`[adapter] ${name}: HTML parsing failed: ${err.message}`);
+      console.error(`[adapter] ${name}: Stealth HTML parsing failed: ${err.message}`);
       return [];
     }
   };

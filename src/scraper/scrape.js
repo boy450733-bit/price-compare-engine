@@ -1,9 +1,135 @@
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import path from 'node:path';
 import { query } from "../db/client.js";
 import { productId } from "../utils/hash.js";
 import { getActiveAdapters } from "../adapters/stores/index.js";
 import { processProduct } from "../intelligence/index.js";
 
+// ============================================================================
+// 1. ADVANCED SCRAPER RELIABILITY (ANTI-DETECTION ENGINE)
+// ============================================================================
+
+// Apply the stealth plugin to eliminate navigator.webdriver flags
+puppeteer.use(StealthPlugin());
+
+let sharedBrowser = null;
+
+/**
+ * Returns a singleton browser instance with persistent session storage.
+ * This retains cookies, cache, and state across scrape tasks for free.
+ */
+export async function getSharedBrowser() {
+  if (!sharedBrowser || !sharedBrowser.isConnected()) {
+    const userDataDir = path.resolve('.browser_session_data');
+
+    sharedBrowser = await puppeteer.launch({
+      headless: "new",
+      userDataDir, // Stores cookies & cache so you appear as an existing visitor
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-infobars',
+        '--window-size=1366,768',
+        '--lang=en-US,en;q=0.9',
+        '--disable-features=IsolateOrigins,site-per-process'
+      ],
+      ignoreHTTPSErrors: true,
+      defaultViewport: {
+        width: 1366,
+        height: 768,
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: false,
+        isLandscape: true
+      }
+    });
+  }
+  return sharedBrowser;
+}
+
+/**
+ * Adds human-like randomized delays to avoid triggering rate-limiting heuristics.
+ */
+export const randomDelay = (min = 1000, max = 2500) =>
+  new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min));
+
+/**
+ * Executes a scrape task safely on a single IP without proxy costs.
+ * -> IMPORT AND USE THIS INSIDE YOUR INDIVIDUAL STORE ADAPTERS <-
+ */
+export async function executeZeroCostScrape(targetUrl, scrapeLogicFn) {
+  const browser = await getSharedBrowser();
+  const page = await browser.newPage();
+
+  try {
+    // Set modern standard HTTP headers
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'sec-ch-ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+      'sec-ch-ua-mobile': '?0',
+      'sec-ch-ua-platform': '"Windows"',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1'
+    });
+
+    // Block non-critical tracking & image downloads to conserve your server's CPU & bandwidth
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const resourceType = req.resourceType();
+      const url = req.url().toLowerCase();
+
+      if (['media', 'font'].includes(resourceType) || url.includes('google-analytics') || url.includes('facebook')) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
+
+    // Navigate to page
+    await page.goto(targetUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    });
+
+    // Emulate light natural pause before attempting DOM extraction
+    await randomDelay(800, 1800);
+
+    // Run the extraction logic passed by your adapter
+    const data = await scrapeLogicFn(page);
+    return data;
+
+  } catch (error) {
+    console.error(`Scraper error on ${targetUrl}:`, error.message);
+    return null;
+  } finally {
+    // Close only the tab to free memory; keep the browser profile running for the next job
+    await page.close();
+  }
+}
+
+/**
+ * Optional cleanup function to call during server shutdown/SIGINT
+ */
+export async function closeSharedBrowser() {
+  if (sharedBrowser) {
+    await sharedBrowser.close();
+    sharedBrowser = null;
+  }
+}
+
+
+// ============================================================================
+// 2. DATA PIPELINE & DATABASE INSERTION LOGIC
+// ============================================================================
+
 export async function scrapeStoreForQuery(storeName, adapter, searchQuery) {
+  // The adapter now internally uses executeZeroCostScrape() to return these listings
   const listings = await adapter(searchQuery);
   if (!listings || listings.length === 0) return 0;
 
