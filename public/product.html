@@ -135,7 +135,7 @@
       background:linear-gradient(135deg,#FCFAF4 0%,#F5F0E1 100%);
       border-right:1px solid var(--color-line);
       position:relative;
-      contain: layout; /* REMOVED 'size' */
+      contain: layout;
       min-width: 0;
     }
     .best-badge {
@@ -205,9 +205,9 @@
     .product-main-image-wrap {
       width: 100%;
       max-width: 280px;
-      aspect-ratio: 1; /* Automatically scales height to width */
+      aspect-ratio: 1;
       height: auto;
-      margin: 0 auto 10px; /* Centered, without side margins that cause overflow */
+      margin: 0 auto 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -240,6 +240,7 @@
       gap: 8px;
       flex-wrap: wrap;
       padding: 0 12px;
+      min-height: 62px; /* CLS FIX: Reserve height for the thumbnails before they load */
     }
     .gallery-thumb {
       width: 54px;
@@ -729,29 +730,24 @@
     }
     .modal-actions { display:flex; justify-content:flex-end; gap:8px; }
 
-/* =========================================
-       RESPONSIVE MEDIA QUERIES
-       ========================================= */
+    /* CLS FIX: Static skeleton sizes assigned via CSS classes instead of inline styles */
+    .skel-title { width: 90%; min-height: 38px; }
+    .skel-price { width: 140px; min-height: 42px; }
+    .skel-category { width: 70px; min-height: 20px; }
+    .skel-meta { width: 80px; min-height: 16px; }
+    .skel-btn { width: 110px; min-height: 38px; border-radius: 9px; }
 
-    /* Tablet & Small Desktop */
     @media (max-width: 800px) {
-      .product-hero { 
-        grid-template-columns: 1fr; /* Forces hero to stack vertically into two rows */
-      }
+      .product-hero { grid-template-columns: 1fr; }
       .product-image-panel {
         min-height: 300px;
         border-right: 0;
         border-bottom: 1px solid var(--color-line);
       }
-      .stats-grid { 
-        grid-template-columns: repeat(2, 1fr); 
-      }
-      .specs-grid { 
-        grid-template-columns: 1fr; 
-      }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .specs-grid { grid-template-columns: 1fr; }
     }
 
-    /* Standard Mobile */
     @media (max-width: 600px) {
       header { padding: 12px 16px; }
       .header-container { justify-content: center; }
@@ -759,14 +755,13 @@
       
       .page { padding: 20px 12px 50px; }
       
-      /* Image wrapper limits */
       .product-image-panel { 
         min-height: auto; 
         padding: 20px 16px; 
       }
       .product-main-image-wrap { 
         width: 100%;
-        max-width: 280px; /* Caps the size so aspect-ratio: 1 doesn't blow out */
+        max-width: 280px;
         margin: 0 auto 16px; 
       }
       .product-info { padding: 22px 18px; }
@@ -774,12 +769,10 @@
       .section { padding: 18px 14px; }
       .chart-wrap { height: 280px; min-height: 280px; }
       
-      /* Store Offers Grid */
       .offer-row { grid-template-columns: 1fr auto; }
       .offer-row .visit-btn { grid-column: 2; }
       .offer-price { font-size: 14px; }
       
-      /* 2-Column Grids for Mobile */
       .trending-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .stats-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
       
@@ -789,15 +782,15 @@
       
       .toast-container { left: 16px; right: 16px; bottom: 16px; }
       .toast { min-width: 0; width: 100%; }
+
+      /* CLS FIX: Expand skeleton min-heights dynamically on mobile because titles wrap to 2 lines */
+      .skel-title { min-height: 64px; }
+      .skel-price { min-height: 32px; }
     }
 
-    /* Small Mobile (Extra safety for narrow screens <= 380px) */
     @media (max-width: 380px) {
-      /* Stack these fully so text doesn't overlap or break bounds */
       .trending-products { grid-template-columns: 1fr; } 
       .stats-grid { grid-template-columns: 1fr; } 
-      
-      /* Slightly scale down massive text */
       .current-price { font-size: 24px; }
       .product-title { font-size: 22px; }
     }
@@ -824,6 +817,7 @@
     <div class="breadcrumb">
       <a href="/">Compare Prices</a>
       <span> / </span>
+      <!-- Removed inline styles and assigned CSS classes for skeleton management -->
       <span id="breadcrumbTitle" class="skeleton-box" style="display:inline-block; width:120px; min-height:14px;">&nbsp;</span>
     </div>
 
@@ -831,7 +825,8 @@
       <div class="product-image-panel">
         <div class="product-gallery" id="productGallery">
           <div class="product-main-image-wrap skeleton-box">
-            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" fetchpriority="high" style="display:none;">
+            <!-- Removed display:none. The empty src prevents a broken image, and JS immediately gives it a src -->
+            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" fetchpriority="high">
           </div>
           <div id="productGalleryThumbs" class="product-gallery-thumbs"></div>
           <div id="galleryCount" class="gallery-count"></div>
@@ -839,25 +834,25 @@
       </div>
 
       <div class="product-info">
-        <span id="productCategory" class="category-pill skeleton-box" style="width:70px; min-height:20px;">&nbsp;</span>
-        <h1 id="productTitle" class="product-title skeleton-box" style="width:90%; min-height:38px;">&nbsp;</h1>
+        <span id="productCategory" class="category-pill skeleton-box skel-category">&nbsp;</span>
+        <h1 id="productTitle" class="product-title skeleton-box skel-title">&nbsp;</h1>
 
         <div class="product-meta">
-          <span id="rating" class="skeleton-box" style="width:80px; min-height:16px;">&nbsp;</span>
+          <span id="rating" class="skeleton-box skel-meta">&nbsp;</span>
           <span>•</span>
-          <span id="offerCount" class="skeleton-box" style="width:90px; min-height:16px;">&nbsp;</span>
+          <span id="offerCount" class="skeleton-box skel-meta">&nbsp;</span>
           <span id="updatedAt"></span>
         </div>
 
         <div class="price-block">
-          <span id="currentPrice" class="current-price skeleton-box" style="width:140px; min-height:38px;">&nbsp;</span>
+          <span id="currentPrice" class="current-price skeleton-box skel-price">&nbsp;</span>
           <span id="oldPrice" class="old-price"></span>
           <span id="priceChange" class="price-change stable"></span>
         </div>
 
         <div class="hero-actions">
-          <div class="skeleton-box" style="width:110px; min-height:38px; border-radius:9px;"></div>
-          <div class="skeleton-box" style="width:80px; min-height:38px; border-radius:9px;"></div>
+          <div class="skeleton-box skel-btn"></div>
+          <div class="skeleton-box skel-btn" style="width: 80px;"></div>
         </div>
 
         <div class="alert-box skeleton-box" style="opacity: 0.6; min-height: 64px;">
@@ -1279,7 +1274,7 @@
     }
 
     if (image) {
-      image.style.display = "block";
+      image.src = images[0]; 
       image.alt = product.title || "Product";
     }
 
@@ -1314,7 +1309,6 @@
     }
 
     if (count) count.textContent = images.length > 1 ? `${images.length} images from available stores` : "1 product image";
-    setMainImage(0);
   }
 
   function renderProduct() {
@@ -1331,28 +1325,33 @@
     const mainImageWrap = document.querySelector(".product-main-image-wrap");
     if (mainImageWrap) mainImageWrap.classList.remove("skeleton-box");
 
-    $("breadcrumbTitle").classList.remove("skeleton-box");
-    $("breadcrumbTitle").style.width = "auto";
-    $("breadcrumbTitle").style.height = "auto";
-    $("breadcrumbTitle").textContent = p.title || "Product";
+    // CLS FIX: Completely wipe out any skeleton classes here so height properties recalculate naturally
+    const breadcrumbTitle = $("breadcrumbTitle");
+    breadcrumbTitle.className = "";
+    breadcrumbTitle.style.width = "auto";
+    breadcrumbTitle.style.height = "auto";
+    breadcrumbTitle.textContent = p.title || "Product";
 
-    $("productTitle").classList.remove("skeleton-box");
-    $("productTitle").style.width = "auto";
-    $("productTitle").style.height = "auto";
-    $("productTitle").textContent = p.title || "Product";
+    const productTitle = $("productTitle");
+    productTitle.className = "product-title"; 
+    productTitle.style.width = "auto";
+    productTitle.style.height = "auto";
+    productTitle.textContent = p.title || "Product";
 
-    $("productCategory").classList.remove("skeleton-box");
-    $("productCategory").style.width = "auto";
-    $("productCategory").style.height = "auto";
-    $("productCategory").textContent = p.category || "Mobile";
+    const productCategory = $("productCategory");
+    productCategory.className = "category-pill";
+    productCategory.style.width = "auto";
+    productCategory.style.height = "auto";
+    productCategory.textContent = p.category || "Mobile";
 
-    $("currentPrice").classList.remove("skeleton-box");
-    $("currentPrice").style.width = "auto";
-    $("currentPrice").style.height = "auto";
-    $("currentPrice").textContent = formatPKR(bestPrice);
+    const currentPrice = $("currentPrice");
+    currentPrice.className = "current-price";
+    currentPrice.style.width = "auto";
+    currentPrice.style.height = "auto";
+    currentPrice.textContent = formatPKR(bestPrice);
 
     const ratingEl = $("rating");
-    ratingEl.classList.remove("skeleton-box");
+    ratingEl.className = "";
     ratingEl.style.width = "auto";
     ratingEl.style.height = "auto";
     const rating = p.max_rating && Number(p.max_rating) > 0
@@ -1361,7 +1360,7 @@
     ratingEl.innerHTML = `<span class="stars">${escapeHtml(rating)}</span>`;
 
     const offerEl = $("offerCount");
-    offerEl.classList.remove("skeleton-box");
+    offerEl.className = "";
     offerEl.style.width = "auto";
     offerEl.style.height = "auto";
     offerEl.textContent = `${offers.length} store offer${offers.length === 1 ? "" : "s"}`;
@@ -1593,11 +1592,25 @@
       }
     }
 
-    if (!items.length) return;
+    if (!items.length) {
+      section.classList.remove("loaded");
+      return;
+    }
 
-    chips.innerHTML = queries.map((q, i) => `
-      <button class="trend-chip ${i === 0 ? "active" : ""}" type="button" data-query="${escapeHtml(q)}">${escapeHtml(q)}</button>
-    `).join("");
+    if (queries.length > 0) {
+      chips.style.display = "flex";
+      chips.innerHTML = queries.map((q, i) => `
+        <button class="trend-chip ${i === 0 ? "active" : ""}" type="button" data-query="${escapeHtml(q)}">${escapeHtml(q)}</button>
+      `).join("");
+
+      chips.querySelectorAll(".trend-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          location.href = `/?q=${encodeURIComponent(chip.dataset.query || "")}`;
+        });
+      });
+    } else {
+      chips.style.display = "none";
+    }
 
     grid.innerHTML = items.map((item, index) => {
       const p = item.product || item;
@@ -1605,7 +1618,8 @@
 
       const price = p.min_price != null ? Number(p.min_price) : (p.price != null ? Number(p.price) : null);
       const storeCount = Number(p.store_count || 1);
-      const query = normalizeTrendQuery(item.query || "Trending");
+      const fallbackQuery = queries.length > 0 ? queries[0] : "Popular";
+      const queryText = normalizeTrendQuery(item.query || fallbackQuery);
 
       return `
         <a class="trending-card" href="/product?id=${encodeURIComponent(p.id)}" aria-label="View ${escapeHtml(p.title || "product")}">
@@ -1614,7 +1628,7 @@
             ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" width="150" height="150" loading="lazy" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
           </div>
           <div class="trending-body">
-            <div class="trending-query">Trending: ${escapeHtml(query)}</div>
+            <div class="trending-query">Trending: ${escapeHtml(queryText)}</div>
             <div class="trending-title">${escapeHtml(p.title || "Product")}</div>
             <div class="trending-price">${formatPKR(price)}</div>
             <div class="trending-stats">
@@ -1626,12 +1640,6 @@
           </div>
         </a>`;
     }).join("");
-
-    chips.querySelectorAll(".trend-chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        location.href = `/?q=${encodeURIComponent(chip.dataset.query || "")}`;
-      });
-    });
 
     section.classList.add("loaded");
   }
@@ -1715,7 +1723,6 @@
       return;
     }
 
-    // FALLBACK: If server-side pre-render failed or data is missing, fetch it locally
     if (!state.product) {
       state.product = await fetchProduct(id);
       state.history = await fetchHistory(id);
@@ -1728,10 +1735,10 @@
       return;
     }
 
-    requestAnimationFrame(() => {
-      renderProduct();
-      fetchTrendingProducts();
-    });
+    // CLS FIX: Execute render logic synchronously instead of waiting for requestAnimationFrame. 
+    // This blocks the initial empty skeleton paint and forces the browser to render the populated DOM instantly.
+    renderProduct();
+    fetchTrendingProducts();
 
     const submitAlertBtn = $("submitAlert");
     if (submitAlertBtn) submitAlertBtn.addEventListener("click", submitAlert);
@@ -1757,5 +1764,6 @@
   init();
 })();
 </script>
+
 </body>
 </html>
