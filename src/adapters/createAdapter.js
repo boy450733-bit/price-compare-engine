@@ -147,7 +147,7 @@ function formatProductRecord(p, storeName, baseUrl) {
 }
 
 // -------------------------------------------------------------------------
-// HTML ADAPTER (Upgraded to use Stealth Puppeteer Engine & Advanced Selectors)
+// HTML ADAPTER (Hybrid Engine: Fast Fetch + Stealth Puppeteer Fallback)
 // -------------------------------------------------------------------------
 function createHtmlAdapter(config) {
   const {
@@ -184,7 +184,7 @@ function createHtmlAdapter(config) {
     reviewCount = null,
     outOfStock = null,
     inStockIndicator = null,
-    details = null, // <--- ADDED THIS SO IT CAN PULL FROM CONFIG
+    details = null, // Pulling from config
   } = selectors || {};
 
   return async function adapter(query) {
@@ -192,17 +192,44 @@ function createHtmlAdapter(config) {
     const url = typeof rawTemplate === "function" ? rawTemplate(query) : rawTemplate.replace("{query}", encodeURIComponent(query));
 
     try {
-      // --- Use Stealth Puppeteer to fetch the HTML safely ---
-      const html = await executeZeroCostScrape(url, async (page) => {
-        return await page.content(); 
-      });
+      let html = "";
+      
+      // --- PHASE 1: The Fast Path (Standard Fetch + Cheerio) ---
+      try {
+        const res = await performFetch(config, query);
+        if (res.ok) {
+          const rawText = await res.text();
+          
+          // Anti-Bot Check: Make sure we didn't just download a Cloudflare Captcha page
+          const isChallenge = rawText.length < 50000 && (
+            rawText.toLowerCase().includes("cf-browser-verification") || 
+            rawText.toLowerCase().includes("just a moment...") || 
+            rawText.toLowerCase().includes("cloudflare") ||
+            rawText.toLowerCase().includes("captcha")
+          );
+          
+          if (!isChallenge && rawText.length > 5000) {
+            html = rawText; // Success! We bypassed Puppeteer completely.
+          }
+        }
+      } catch (fastErr) {
+        // Fast path threw an error (e.g., TCP block). Silently fall through.
+      }
+
+      // --- PHASE 2: The Stealth Fallback (Puppeteer) ---
+      if (!html) {
+        console.debug(`[adapter] ${name}: Fast fetch blocked/failed. Engaging Stealth Puppeteer fallback...`);
+        html = await executeZeroCostScrape(url, async (page) => {
+          return await page.content(); 
+        });
+      }
 
       if (!html) {
-        console.warn(`[adapter] ${name}: Stealth scrape returned empty HTML for ${url}`);
+        console.warn(`[adapter] ${name}: Both Fast and Stealth scrapes failed for ${url}`);
         return [];
       }
 
-      // Pass the safely retrieved HTML into existing Cheerio logic
+      // Pass the safely retrieved HTML (from either method) into existing Cheerio logic
       const $ = cheerio.load(html);
       const results = [];
 
@@ -312,7 +339,7 @@ function createHtmlAdapter(config) {
             }
           }
 
-          // <--- FIXED: Safely define detailsText before it goes into the result object
+          // Safely define detailsText before it goes into the result object
           let detailsText = details ? getFirstText($el, details) : "";
 
           results.push(formatProductRecord({
@@ -324,7 +351,7 @@ function createHtmlAdapter(config) {
             rating: ratingValue,
             reviewCount: reviewCountValue,
             inStock: inStockValue,
-            details: detailsText,
+            details: detailsText, 
           }, name, baseUrl));
         } catch (rowErr) {
           console.debug(`[adapter] ${name}: Skipped malformed row: ${rowErr.message}`);
@@ -333,12 +360,11 @@ function createHtmlAdapter(config) {
 
       return results;
     } catch (err) {
-      console.error(`[adapter] ${name}: Stealth HTML parsing failed: ${err.message}`);
+      console.error(`[adapter] ${name}: HTML parsing failed: ${err.message}`);
       return [];
     }
   };
 }
-
 // --- STEP 2.5: Advanced Pseudo-Selector Parser ---
 function parsePseudoSelector(selector) {
   if (typeof selector !== "string") return { cleanSel: selector, type: 'node' };
