@@ -319,6 +319,7 @@ function createHtmlAdapter(config) {
             rating: ratingValue,
             reviewCount: reviewCountValue,
             inStock: inStockValue,
+            details: detailsText,
           }, name, baseUrl));
         } catch (rowErr) {
           console.debug(`[adapter] ${name}: Skipped malformed row: ${rowErr.message}`);
