@@ -826,7 +826,7 @@
         <div class="product-gallery" id="productGallery">
           <div class="product-main-image-wrap skeleton-box">
             <!-- Removed display:none. The empty src prevents a broken image, and JS immediately gives it a src -->
-            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" fetchpriority="high">
+            <img id="productImage" class="product-image" alt="" width="280" height="280" loading="eager" referrerpolicy="no-referrer" fetchpriority="high">
           </div>
           <div id="productGalleryThumbs" class="product-gallery-thumbs"></div>
           <div id="galleryCount" class="gallery-count"></div>
@@ -1625,7 +1625,7 @@
         <a class="trending-card" href="/product?id=${encodeURIComponent(p.id)}" aria-label="View ${escapeHtml(p.title || "product")}">
           <span class="trending-rank">#${index + 1}</span>
           <div class="trending-image-wrap">
-            ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" width="150" height="150" loading="lazy" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
+            ${p.image ? `<img class="trending-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title || "Product")}" width="150" height="150" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">` : `<span class="image-placeholder">📱</span>`}
           </div>
           <div class="trending-body">
             <div class="trending-query">Trending: ${escapeHtml(queryText)}</div>
