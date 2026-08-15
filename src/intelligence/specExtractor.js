@@ -13,11 +13,11 @@ function find(regex,text){
   return m?m[1]:null;
 }
 
-export function extractSpecs(title=""){
-  const text=title.toLowerCase();
-
-  const specs={};
-
+export function extractSpecs(title = "", details = "") {
+  // Combine the title and any scraped description/spec table text into one block
+  const text = `${title} ${details}`.toLowerCase();
+  
+  const specs = {};
   // 1. RAM Extraction — handles explicit formats, shorthand slash formats (e.g., "8/128gb"), and commas
   const ramMatch =
     text.match(/(\d{1,2})\s*(?:gb)?\s*ram\b/i) || 
@@ -29,25 +29,28 @@ export function extractSpecs(title=""){
     specs.ram = ramMatch[1];
   }
 
-  // 2. Storage Extraction — scan figures, avoiding the one claimed as RAM
-  const romMatches = [...text.matchAll(/(\d{2,4})\s*(gb|tb)\b/gi)];
+  // 2. Storage Extraction — Upgraded to \d{1,4} to successfully capture "1TB" or "2TB"
+  const romMatches = [...text.matchAll(/(\d{1,4})\s*(gb|tb)\b/gi)];
+  
+  // Safely find the storage value, ensuring it doesn't accidentally grab the RAM value
   const romCandidate = romMatches.find(
-    (m) => !(specs.ram && m[1] === specs.ram)
+    (m) => !(specs.ram && m[1] === specs.ram && m[2].toLowerCase() === 'gb')
   );
+  
   if (romCandidate) {
-    specs.storage = romCandidate[1] + " " + romCandidate[2].toUpperCase();
+    // Standardize to uppercase (e.g., "128GB" or "1TB")
+    specs.storage = romCandidate[1] + romCandidate[2].toUpperCase();
   }
 
   // 3. Battery (mAh)
-  const battery = find(/(\d{4,5})\s*mah/i, text);
+  const battery = find(/(\d{3,5})\s*mah/i, text);
   if (battery) {
     specs.battery = battery + " mAh";
   }
 
   // 4. Display size (inches or quotes)
   const display = find(/(\d+(?:\.\d+)?)\s*(?:inch|inches|\b|")/i, text);
-  // Refined safeguard against false inches match if it looks like a model number
-  if (display && parseFloat(display) < 20) {
+  if (display && parseFloat(display) < 20 && parseFloat(display) > 1) {
     specs.display = display + '"';
   }
 
@@ -57,23 +60,27 @@ export function extractSpecs(title=""){
     specs.refreshRate = refresh + " Hz";
   }
 
-  // 6. Camera (MP)
-  const camera = find(/(\d{2,3})\s*(?:mp|megapixel)/i, text);
+  // 6. Camera (MP) — Upgraded to support decimals (e.g., "50.5MP")
+  const camera = find(/(\d+(?:\.\d+)?)\s*(?:mp|megapixel)/i, text);
   if (camera) {
     specs.camera = camera + " MP";
   }
 
-  // 7. CPU / Processors (Mobile, Desktop, and Laptops)
+  // 7. CPU / Processors — Upgraded to support "Gen 1/2/3" and "A17 Pro" 
   const cpu = text.match(
-    /\b(snapdragon\s*\+?\s*\w+\s*\d*|dimensity\s*\d+|helio\s*[a-z0-9]+|exynos\s*\d+|kirin\s*\d+|apple\s*a\d+\s*bionic|apple\s*m[1234](?:\s*pro|\s*max|\s*ultra)?|tensor\s*g\d+|core\s*i[3579]-?\d{4,5}[a-z]*|ryzen\s*[3579]\s*\d{4}[a-z]*)\b/i
+    /\b(snapdragon\s*\d[a-z0-9\s]*gen\s*\d|snapdragon\s*\+?\s*\w+\s*\d*|dimensity\s*\d+|helio\s*[a-z0-9]+|exynos\s*\d+|kirin\s*\d+|apple\s*a\d+(?:\s*pro|\s*bionic)?|apple\s*m[1234](?:\s*pro|\s*max|\s*ultra)?|tensor\s*g\d+|core\s*(?:ultra\s*)?i?[3579]-?\d{4,5}[a-z]*|ryzen\s*[3579]\s*\d{4}[a-z]*)\b/i
   );
   if (cpu) {
-    specs.cpu = cpu[1].toUpperCase();
+    // Convert to strict Title Case for database cleanliness (e.g., "Snapdragon 8 Gen 3")
+    specs.cpu = cpu[1]
+      .replace(/\s+/g, ' ')
+      .replace(/(^|\s)\w/g, c => c.toUpperCase())
+      .trim();
   }
 
-  // 8. GPU (Graphics cards)
+  // 8. GPU — Added support for mobile Adreno and Mali chips
   const gpu = text.match(
-    /\b(rtx\s*\d{3,4}(?:\s*ti|\s*super)?|gtx\s*\d{3,4}(?:\s*ti)?|rx\s*\d{4}(?:\s*xt)?|arc\s*[a-z0-9]+)\b/i
+    /\b(rtx\s*\d{3,4}(?:\s*ti|\s*super)?|gtx\s*\d{3,4}(?:\s*ti)?|rx\s*\d{4}(?:\s*xt)?|arc\s*[a-z0-9]+|adreno\s*\d+|mali\s*[-g\d]+)\b/i
   );
   if (gpu) {
     specs.gpu = gpu[1].toUpperCase();
@@ -94,7 +101,10 @@ export function extractSpecs(title=""){
   // 11. SIM support type
   const sim = text.match(/\b(single sim|dual sim|e-sim|esim)\b/i);
   if (sim) {
-    specs.sim = sim[1].toUpperCase();
+    // Standardize e-sim to E-SIM
+    let simType = sim[1].toUpperCase();
+    if (simType === "ESIM") simType = "E-SIM";
+    specs.sim = simType;
   }
 
   return specs;

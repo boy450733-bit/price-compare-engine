@@ -1,5 +1,4 @@
 // src/intelligence/fingerprint.js
-
 import crypto from "node:crypto";
 
 function slug(value = "") {
@@ -10,6 +9,28 @@ function slug(value = "") {
 }
 
 export function createFingerprint(product) {
+  const parts = [];
+
+  // Use the FULL cleaned title instead of the stripped model to prevent cross-generation merging
+  const coreIdentity = product.cleanedTitle || product.model || "unknown";
+  parts.push(slug(coreIdentity));
+
+  const specs = product.specs || {};
+
+  if (specs.ram) parts.push(slug(specs.ram));
+  if (specs.storage) parts.push(slug(specs.storage));
+  if (specs.network) parts.push(slug(specs.network));
+
+  const raw = parts.join("|");
+
+  return crypto
+    .createHash("sha1")
+    .update(raw)
+    .digest("hex");
+}
+
+export function fingerprintText(product) {
+
   const parts = [];
 
   if (product.category) parts.push(slug(product.category));

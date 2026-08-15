@@ -724,7 +724,7 @@
           <div class="card-image">
             ${
               image
-                ? `<img src="${escapeHtml(image)}" alt="${title}" width="200" height="150" loading="lazy" decoding="async" fetchpriority="low">`
+                ? `<img src="${escapeHtml(image)}" alt="${title}" width="200" height="150" loading="lazy" referrerpolicy="no-referrer" decoding="async" fetchpriority="low">`
                 : `<div class="image-placeholder" aria-hidden="true">📱</div>`
             }
           </div>
