@@ -416,6 +416,9 @@
   let dynamicRams = new Set();
   let dynamicRoms = new Set();
 
+  // --- ADDED: Sleep helper for Long Polling ---
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
   function formatPKR(n) {
     if (n === null || n === undefined) return "N/A";
     return "Rs " + Number(n).toLocaleString("en-PK");
@@ -751,12 +754,12 @@
           class="product-image-link"
           href="product?id=${encodeURIComponent(p.id)}"
           data-product-id="${p.id}"
-          aria-label="View ${titleText}"
+          aria-label="View ${titleText.replace(/"/g, '&quot;')}"
         >
           <div class="card-image">
             ${p.image
               ? `<img src="${p.image}"
-                     alt="${titleText}"
+                     alt="${titleText.replace(/"/g, '&quot;')}"
                      width="270"
                      height="180"
                      loading="lazy"
@@ -771,12 +774,12 @@
             <div>
               <div class="meta-container">
               <span class="category-pill">${p.category}</span>
-              <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText}" data-product-min-price="${p.min_price || ''}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
+              <button class="track-price-btn" data-product-id="${p.id}" data-product-title="${titleText.replace(/"/g, '&quot;')}" data-product-min-price="${p.min_price || ''}" style="background:none; border:none; color:var(--color-brand); font-size:11.5px; font-weight:700; cursor:pointer; padding:0; margin-top:4px;">
                 🔔 Track Price Drop
               </button>
               </div>
             </div>
-            ${showTitle ? `<div class="card-title" title="${titleText}">${titleText}</div>` : ``}
+            ${showTitle ? `<div class="card-title" title="${titleText.replace(/"/g, '&quot;')}">${titleText}</div>` : ``}
             ${showSpecs ? `<div class="specs-bar">${specsHtml}</div>` : ``}
             <hr class="card-divider">
             <div class="card-meta-row">
@@ -880,6 +883,7 @@
 
   let currentController = null;
 
+  // --- UPDATED: Long Polling implementation for immediate background scraping results ---
   async function fetchNewSearch(query, limitOverride) {
     currentQuery = query;
 
@@ -887,27 +891,53 @@
       currentController.abort();
     }
     currentController = new AbortController();
+    const signal = currentController.signal;
 
     try {
       const pageLimit = limitOverride || (settings && settings.productsPerPage ? Number(settings.productsPerPage) : 12);
       const params = new URLSearchParams({ q: query, limit: String(pageLimit), offset: "0" });
-      const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`, {
-        signal: currentController.signal
-      });
-      const data = await res.json();
       
-      if (query === currentQuery) {
+      const maxAttempts = 15; // 15 attempts * 3s = 45 seconds total poll time
+      const pollInterval = 3000;
+      let attempts = 0;
+      let fetchedData = null;
+
+      // Loop up to 15 times while waiting for the background scraper
+      while (attempts < maxAttempts) {
+        attempts++;
+        const res = await fetch(`${CFG.API_BASE_URL}/api/products?${params.toString()}`, { signal });
+        fetchedData = await res.json();
+        const items = fetchedData.products || [];
+
+        // If products are found, we successfully grabbed data from DB, exit the loop!
+        if (items.length > 0) {
+          break;
+        }
+
+        // If no products, update the UI to notify the user and wait 3 seconds
+        if (query === currentQuery) {
+          statusLine.innerHTML = `<span style="color:var(--color-brand); font-weight:600;">Scraping live prices... (${attempts}/${maxAttempts})</span>`;
+        }
+
+        // Check if user typed again before sleeping
+        if (signal.aborted) return;
+        await sleep(pollInterval);
+        if (signal.aborted) return;
+      }
+
+      if (query === currentQuery && fetchedData) {
         dynamicCategories.clear();
         dynamicBrands.clear();
         dynamicRams.clear();
         dynamicRoms.clear();
 
-        cachedProducts = (data.products || []).map(extractSpecsAndMetadata);
+        cachedProducts = (fetchedData.products || []).map(extractSpecsAndMetadata);
         
         populateFilterDropdowns();
         applyClientFiltersAndRender();
       }
     } catch (err) {
+      // Abort errors are expected when typing fast, safely ignore
       if (err.name === 'AbortError') return;
       if (query === currentQuery) {
         renderEmpty("Connection Error", "Unable to reach price comparison backend.");
