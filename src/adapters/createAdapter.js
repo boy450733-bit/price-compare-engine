@@ -141,7 +141,8 @@ function formatProductRecord(p, storeName, baseUrl) {
     reviewCount: p.reviewCount !== undefined ? Number(p.reviewCount) : 0,
     inStock: p.inStock !== false,
     store: storeName,
-    scraped_at: new Date()
+    scraped_at: new Date(),
+    details: p.details || "" // Pass details safely
   };
 }
 
@@ -183,6 +184,7 @@ function createHtmlAdapter(config) {
     reviewCount = null,
     outOfStock = null,
     inStockIndicator = null,
+    details = null, // <--- ADDED THIS SO IT CAN PULL FROM CONFIG
   } = selectors || {};
 
   return async function adapter(query) {
@@ -234,16 +236,16 @@ function createHtmlAdapter(config) {
             href = jsonLdProducts[index].url;
           }
 
-          // --- NEW: Aggressively sanitize the title ---
-          // Strips rogue HTML tags and collapses massive line breaks/tabs into single spaces
+          // Aggressively sanitize the title
           if (titleText) {
             titleText = titleText
-              .replace(/<[^>]*>?/gm, '') // Strip all HTML tags
-              .replace(/\s+/g, ' ')      // Convert multiple spaces/newlines to a single space
+              .replace(/<[^>]*>?/gm, '')
+              .replace(/\s+/g, ' ')      
               .trim();
           }
 
           if (!titleText || !href) return;
+          
           let imageSrc = null;
           if (image) {
             const { cleanSel, type, attr } = parsePseudoSelector(image);
@@ -309,6 +311,9 @@ function createHtmlAdapter(config) {
               inStockValue = offer.availability.includes("InStock");
             }
           }
+
+          // <--- FIXED: Safely define detailsText before it goes into the result object
+          let detailsText = details ? getFirstText($el, details) : "";
 
           results.push(formatProductRecord({
             title: titleText,
