@@ -55,43 +55,49 @@
 
     body.modal-open { overflow: hidden; }
 
-    header {
-      background:var(--color-surface);
-      border-bottom:1px solid var(--color-line);
-      padding:16px 24px;
-      position:sticky;
-      top:0;
-      z-index:100;
-      box-shadow:0 2px 8px rgba(23,35,29,.02);
+        header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      min-height: 62px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-line);
+      padding: 15px max(20px, calc((100vw - 1200px) / 2 + 20px));
+      contain: layout paint;
     }
+
     .header-container {
-      max-width:1140px;
-      margin:auto;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      flex-wrap:wrap;
+      width: 100%;
+      max-width: 1200px;
+      min-height: 32px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
     }
+
     .logo {
-      font-family:var(--font-display);
-      font-weight:700;
-      font-size:24px;
-      display:inline-flex;
-      align-items:center;
-      min-height:32px;
+      flex: 0 0 auto;
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--color-ink);
+      white-space: nowrap;
     }
-    .logo-name { color:var(--color-brand-dark); }
-    .logo-tld { color:var(--color-accent); }
-    .header-nav {
-      display:flex;
-      gap:20px;
-      flex-wrap:wrap;
-      font-size:13.5px;
-      font-weight:600;
-      color:var(--color-ink-soft);
+    .logo .dot { color: var(--color-brand); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13.5px;
+      font-weight: 600;
+      white-space: nowrap;
     }
-    .header-nav a:hover { color:var(--color-brand); }
+    .nav-links a { color: var(--color-ink-soft); }
+    .nav-links a:hover, .nav-links a.active { color: var(--color-brand); }
 
     main { flex:1; min-width: 0; }
 
