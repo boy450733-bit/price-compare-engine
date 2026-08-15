@@ -30,44 +30,6 @@ export function createFingerprint(product) {
 }
 
 export function fingerprintText(product) {
-
-  const parts = [];
-
-  if (product.category) parts.push(slug(product.category));
-  if (product.brand) parts.push(slug(product.brand));
-  if (product.model) parts.push(slug(product.model));
-
-  const specs = product.specs || {};
-
-  if (specs.ram) parts.push(`${specs.ram}gb`);
-
-  if (specs.storage)
-    parts.push(
-      specs.storage
-        .toLowerCase()
-        .replace(/\s+/g, "")
-    );
-
-  if (specs.cpu) parts.push(slug(specs.cpu));
-
-  if (specs.gpu) parts.push(slug(specs.gpu));
-
-  if (specs.display)
-    parts.push(
-      specs.display
-        .replace(/"/g, "")
-        .replace(/\s+/g, "")
-    );
-
-  const raw = parts.join("|");
-
-  return crypto
-    .createHash("sha1")
-    .update(raw)
-    .digest("hex");
-}
-
-export function fingerprintText(product) {
   const specs = product.specs || {};
 
   return [
