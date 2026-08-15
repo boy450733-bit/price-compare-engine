@@ -146,7 +146,7 @@ function formatProductRecord(p, storeName, baseUrl) {
 }
 
 // -------------------------------------------------------------------------
-// HTML ADAPTER (Upgraded to use Stealth Puppeteer Engine)
+// HTML ADAPTER (Upgraded to use Stealth Puppeteer Engine & Advanced Selectors)
 // -------------------------------------------------------------------------
 function createHtmlAdapter(config) {
   const {
@@ -190,8 +190,7 @@ function createHtmlAdapter(config) {
     const url = typeof rawTemplate === "function" ? rawTemplate(query) : rawTemplate.replace("{query}", encodeURIComponent(query));
 
     try {
-      // --- STEP 2: Use Stealth Puppeteer to fetch the HTML safely ---
-      // This bypasses Cloudflare and returns the raw DOM string for Cheerio
+      // --- Use Stealth Puppeteer to fetch the HTML safely ---
       const html = await executeZeroCostScrape(url, async (page) => {
         return await page.content(); 
       });
@@ -201,7 +200,7 @@ function createHtmlAdapter(config) {
         return [];
       }
 
-      // Pass the safely retrieved HTML into your existing Cheerio logic
+      // Pass the safely retrieved HTML into existing Cheerio logic
       const $ = cheerio.load(html);
       const results = [];
 
@@ -237,7 +236,16 @@ function createHtmlAdapter(config) {
 
           if (!titleText || !href) return;
 
-          let imageSrc = image ? getFirstAttrValue($el.find(image), imageAttr) : null;
+          let imageSrc = null;
+          if (image) {
+            const { cleanSel, type, attr } = parsePseudoSelector(image);
+            if (type === 'attr') {
+              imageSrc = $el.find(cleanSel).attr(attr);
+            } else {
+              imageSrc = getFirstAttrValue($el.find(cleanSel), imageAttr);
+            }
+          }
+
           if (!imageSrc && jsonLdProducts[index]?.image) {
             const img = jsonLdProducts[index].image;
             imageSrc = Array.isArray(img) ? img[0] : (typeof img === 'string' ? img : img.url);
@@ -247,14 +255,18 @@ function createHtmlAdapter(config) {
           let originalPriceText = "";
 
           if (originalPrice) {
-            originalPriceText = $el.find(originalPrice).text().trim();
+            originalPriceText = getFirstText($el, originalPrice);
             if (priceBox.length) {
               priceBox = priceBox.clone();
-              priceBox.find(originalPrice).remove();
+              priceBox.find(parsePseudoSelector(originalPrice).cleanSel).remove();
             }
           }
 
-          let numericPrice = parsePrice(priceBox.text());
+          let priceText = price && typeof price === 'string' && price.includes('::') 
+            ? getFirstText($el, price) 
+            : priceBox.text();
+
+          let numericPrice = parsePrice(priceText);
           if ((!numericPrice || numericPrice === 0) && jsonLdProducts[index]?.offers) {
             const offer = Array.isArray(jsonLdProducts[index].offers) 
               ? jsonLdProducts[index].offers[0] 
@@ -263,22 +275,24 @@ function createHtmlAdapter(config) {
           }
 
           const ratingValue = rating
-            ? parseFloat($el.find(rating).text().match(/[\d.]+/)?.[0] || "0")
+            ? parseFloat(getFirstText($el, rating).match(/[\d.]+/)?.[0] || "0")
             : (jsonLdProducts[index]?.aggregateRating?.ratingValue ? parseFloat(jsonLdProducts[index].aggregateRating.ratingValue) : 0);
 
           const reviewCountValue = reviewCount
-            ? parseInt($el.find(reviewCount).text().replace(/[^\d]/g, ""), 10) || 0
+            ? parseInt(getFirstText($el, reviewCount).replace(/[^\d]/g, ""), 10) || 0
             : (jsonLdProducts[index]?.aggregateRating?.reviewCount ? parseInt(jsonLdProducts[index].aggregateRating.reviewCount, 10) : 0);
 
           let inStockValue = true;
           if (outOfStock) {
-            inStockValue = $el.find(outOfStock).length === 0;
-            if ($el.find(outOfStock).length > 0) {
+            const oosSel = parsePseudoSelector(outOfStock).cleanSel;
+            inStockValue = $el.find(oosSel).length === 0;
+            if ($el.find(oosSel).length > 0) {
               console.debug(`[adapter] ${name}: "${titleText}" - OUT OF STOCK (found: ${outOfStock})`);
             }
           } else if (inStockIndicator) {
-            inStockValue = $el.find(inStockIndicator).length > 0;
-            if ($el.find(inStockIndicator).length === 0) {
+            const isSel = parsePseudoSelector(inStockIndicator).cleanSel;
+            inStockValue = $el.find(isSel).length > 0;
+            if ($el.find(isSel).length === 0) {
               console.debug(`[adapter] ${name}: "${titleText}" - OUT OF STOCK (missing: ${inStockIndicator})`);
             }
           } else if (jsonLdProducts[index]?.offers) {
@@ -311,22 +325,60 @@ function createHtmlAdapter(config) {
   };
 }
 
+// --- STEP 2.5: Advanced Pseudo-Selector Parser ---
+function parsePseudoSelector(selector) {
+  if (typeof selector !== "string") return { cleanSel: selector, type: 'node' };
+  
+  if (selector.includes('::text')) {
+    return { cleanSel: selector.replace('::text', ''), type: 'text' };
+  }
+  
+  const attrMatch = selector.match(/::attr\((.*?)\)/);
+  if (attrMatch) {
+    return { cleanSel: selector.replace(attrMatch[0], ''), type: 'attr', attr: attrMatch[1] };
+  }
+  
+  return { cleanSel: selector, type: 'node' };
+}
+
 function getFirstMatching($el, selectorOrArray) {
   if (!selectorOrArray) return $el.find();
   const list = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
   for (const sel of list) {
-    const found = $el.find(sel);
+    const { cleanSel } = parsePseudoSelector(sel);
+    const found = $el.find(cleanSel);
     if (found.length) return found;
   }
-  return $el.find(list[0]);
+  const { cleanSel } = parsePseudoSelector(list[0]);
+  return $el.find(cleanSel);
 }
 
 function getFirstText($el, selectorOrArray) {
-  return getFirstMatching($el, selectorOrArray).text().trim();
+  if (!selectorOrArray) return "";
+  const list = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+  for (const sel of list) {
+    const { cleanSel, type, attr } = parsePseudoSelector(sel);
+    const found = $el.find(cleanSel);
+    if (found.length) {
+      if (type === 'attr') return found.attr(attr) || "";
+      return found.text().trim();
+    }
+  }
+  return "";
 }
 
-function getFirstAttrFromSelector($el, selectorOrArray, attr) {
-  return getFirstMatching($el, selectorOrArray).attr(attr);
+function getFirstAttrFromSelector($el, selectorOrArray, fallbackAttr) {
+  if (!selectorOrArray) return "";
+  const list = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+  for (const sel of list) {
+    const { cleanSel, type, attr } = parsePseudoSelector(sel);
+    const found = $el.find(cleanSel);
+    if (found.length) {
+      const finalAttr = type === 'attr' ? attr : fallbackAttr;
+      return found.attr(finalAttr) || "";
+    }
+  }
+  return "";
 }
 
 function getFirstAttrValue($el, attrs) {
