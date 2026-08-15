@@ -234,8 +234,16 @@ function createHtmlAdapter(config) {
             href = jsonLdProducts[index].url;
           }
 
-          if (!titleText || !href) return;
+          // --- NEW: Aggressively sanitize the title ---
+          // Strips rogue HTML tags and collapses massive line breaks/tabs into single spaces
+          if (titleText) {
+            titleText = titleText
+              .replace(/<[^>]*>?/gm, '') // Strip all HTML tags
+              .replace(/\s+/g, ' ')      // Convert multiple spaces/newlines to a single space
+              .trim();
+          }
 
+          if (!titleText || !href) return;
           let imageSrc = null;
           if (image) {
             const { cleanSel, type, attr } = parsePseudoSelector(image);
