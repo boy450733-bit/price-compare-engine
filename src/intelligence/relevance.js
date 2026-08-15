@@ -1,13 +1,19 @@
 // src/intelligence/relevance.js
 
-// Listings scoring below this are treated as noise (wrong product,
-// unrelated accessory, etc.) and dropped by the scraper before insert.
-export const MIN_ACCEPT_SCORE = 0.1;
+// Increased from 0.1 to 0.60 to prevent accessory and variant bleed.
+// Listings scoring below this are treated as noise and dropped.
+export const MIN_ACCEPT_SCORE = 0.60;
 
 const STOP_WORDS = new Set([
   "the","for","with","and","dual","sim","pta","official","new","latest",
   "mobile","phone","smartphone","edition","global","version","factory",
   "unlocked","kit","box","color","colour"
+]);
+
+// Negative keywords to prevent matching core products with their accessories
+const ACCESSORY_KEYWORDS = new Set([
+  "cover", "case", "cable", "protector", "strap", "glass", "pouch", 
+  "charger", "adapter", "wall", "handsfree", "earbuds", "earphones", "wcp02"
 ]);
 
 function tokenize(text = "") {
@@ -17,6 +23,11 @@ function tokenize(text = "") {
     .split(/\s+/)
     .filter(Boolean)
     .filter(t => !STOP_WORDS.has(t));
+}
+
+function isAccessory(text = "") {
+  const tokens = tokenize(text);
+  return tokens.some(t => ACCESSORY_KEYWORDS.has(t));
 }
 
 function jaccard(a, b) {
@@ -94,11 +105,21 @@ export function calculateRelevance(queryInfo, productInfo) {
     productInfo.specs
   );
 
-  const score =
+  let score =
     text * 0.45 +
     numbers * 0.25 +
     brand * 0.15 +
     specs * 0.15;
+
+  // --- ACCESSORY GATING ---
+  // Check if the original query and the found product are accessories
+  const queryIsAccessory = isAccessory(queryInfo.cleanedTitle);
+  const productIsAccessory = isAccessory(productInfo.cleanedTitle);
+
+  // If the search was NOT for an accessory, but the product IS an accessory, heavily penalize it
+  if (!queryIsAccessory && productIsAccessory) {
+    score *= 0.1; // Drops a 60% match down to a 6% match, guaranteeing it fails MIN_ACCEPT_SCORE
+  }
 
   return {
     score,
