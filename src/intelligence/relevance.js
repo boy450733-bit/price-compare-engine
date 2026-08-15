@@ -1,7 +1,6 @@
 // src/intelligence/relevance.js
 
-// Increased from 0.1 to 0.60 to prevent accessory and variant bleed.
-// Listings scoring below this are treated as noise and dropped.
+// Keep the strict threshold to prevent accessories, but the new text logic will easily pass core products
 export const MIN_ACCEPT_SCORE = 0.60;
 
 const STOP_WORDS = new Set([
@@ -30,17 +29,22 @@ function isAccessory(text = "") {
   return tokens.some(t => ACCESSORY_KEYWORDS.has(t));
 }
 
-function jaccard(a, b) {
-  const A = new Set(a);
-  const B = new Set(b);
+// --- UPGRADED: Subset Overlap Match ---
+// Replaces Jaccard to prevent short queries from being penalized by long merchant titles
+function textSimilarity(queryTokens, titleTokens) {
+  if (!queryTokens.length) return 1; // Give full credit if no text to compare
 
-  let intersection = 0;
-  for (const x of A) {
-    if (B.has(x)) intersection++;
+  let matched = 0;
+  for (const q of queryTokens) {
+    // Match if the query token is an exact match OR a substring 
+    // (e.g. query "reno" matches title token "reno13")
+    if (titleTokens.some(t => t === q || t.includes(q) || q.includes(t))) {
+      matched++;
+    }
   }
 
-  const union = new Set([...A, ...B]).size;
-  return union ? intersection / union : 0;
+  // Divide by query length, NOT union. If all query words are in the title, it's 100% (1.0)
+  return matched / queryTokens.length;
 }
 
 function numberSimilarity(query, title) {
@@ -50,9 +54,8 @@ function numberSimilarity(query, title) {
   if (!q.length) return 1;
 
   let matched = 0;
-
   for (const n of q) {
-    if (t.includes(n)) matched++;
+    if (t.includes(n) || title.includes(n)) matched++;
   }
 
   return matched / q.length;
@@ -62,9 +65,7 @@ function brandScore(queryBrand, productBrand) {
   if (!queryBrand) return 1;
   if (!productBrand) return 0.5;
 
-  return queryBrand.toLowerCase() === productBrand.toLowerCase()
-    ? 1
-    : 0;
+  return queryBrand.toLowerCase() === productBrand.toLowerCase() ? 1 : 0;
 }
 
 function specScore(querySpecs = {}, productSpecs = {}) {
@@ -73,7 +74,6 @@ function specScore(querySpecs = {}, productSpecs = {}) {
 
   for (const key of Object.keys(querySpecs)) {
     total++;
-
     if (!productSpecs[key]) continue;
 
     if (
@@ -91,7 +91,7 @@ export function calculateRelevance(queryInfo, productInfo) {
   const queryTokens = tokenize(queryInfo.cleanedTitle);
   const titleTokens = tokenize(productInfo.cleanedTitle);
 
-  const text = jaccard(queryTokens, titleTokens);
+  const text = textSimilarity(queryTokens, titleTokens);
   const numbers = numberSimilarity(
     queryInfo.cleanedTitle,
     productInfo.cleanedTitle
@@ -112,13 +112,12 @@ export function calculateRelevance(queryInfo, productInfo) {
     specs * 0.15;
 
   // --- ACCESSORY GATING ---
-  // Check if the original query and the found product are accessories
   const queryIsAccessory = isAccessory(queryInfo.cleanedTitle);
   const productIsAccessory = isAccessory(productInfo.cleanedTitle);
 
   // If the search was NOT for an accessory, but the product IS an accessory, heavily penalize it
   if (!queryIsAccessory && productIsAccessory) {
-    score *= 0.1; // Drops a 60% match down to a 6% match, guaranteeing it fails MIN_ACCEPT_SCORE
+    score *= 0.1; 
   }
 
   return {
