@@ -803,7 +803,13 @@
   }
   
   function applyClientFiltersAndRender() {
-    if (!cachedProducts.length) return;
+    // FIX: If the scraper finishes but finds 0 products, remove skeletons and show empty state
+    if (!cachedProducts || cachedProducts.length === 0) {
+      renderEmpty("No products found", "We checked all stores but couldn't find live prices for this item.");
+      statusLine.innerHTML = "";
+      renderStoreChips({}); // Reset store counts to zero
+      return;
+    }
 
     const selCategory = categorySelectEl.value;
     const selBrand = brandSelectEl.value;
@@ -961,6 +967,8 @@
     filterBar.classList.add("visible");
     results.innerHTML = Array.from({ length: 6 }).map(() => `<div class="skeleton"></div>`).join("");
     statusLine.innerHTML = "";
+    // ADD THIS LINE to instantly reset the store counts to 0 while loading
+    renderStoreChips({});
 
     debounceTimer = setTimeout(async () => {
       const parsed = typeof parseNaturalQuery === "function" 
