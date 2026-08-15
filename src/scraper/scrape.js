@@ -24,7 +24,7 @@ export async function getSharedBrowser() {
     const userDataDir = path.resolve('.browser_session_data');
 
     sharedBrowser = await puppeteer.launch({
-      headless: "new",
+      headless: "false",
       userDataDir, // Stores cookies & cache so you appear as an existing visitor
       args: [
         '--no-sandbox',
@@ -101,8 +101,8 @@ export async function executeZeroCostScrape(targetUrl, scrapeLogicFn) {
     await randomDelay(800, 1800);
     
     // TEMPORARY DEBUG SCREENSHOT
-    console.log(`📸 Taking debug screenshot of ${targetUrl}`);
-    await page.screenshot({ path: 'debug-scrape.png', fullPage: false });
+    //console.log(`📸 Taking debug screenshot of ${targetUrl}`);
+    //await page.screenshot({ path: 'debug-scrape.png', fullPage: false });
     // Run the extraction logic passed by your adapter
     const data = await scrapeLogicFn(page);
     return data;
