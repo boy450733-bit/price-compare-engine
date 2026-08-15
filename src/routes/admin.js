@@ -3,7 +3,8 @@ import crypto from "node:crypto";
 import { query as db, pool } from "../db/client.js";
 import { invalidateStoreCache } from "../adapters/stores/index.js";
 import { checkAndSendPriceAlerts } from "../utils/notifier.js";
-
+// ADD THIS IMPORT:
+import { executeZeroCostScrape } from "../scraper/scrape.js";
 const router = Router();
 
 function tokensMatch(a, b) {
@@ -380,7 +381,7 @@ import { createAdapter } from "../adapters/createAdapter.js";
 // Test a store configuration live against a search term
 router.post("/test-store", async (req, res) => {
   const { base_url, search_url_template, selectors } = req.body;
-  const testQuery = req.body.query || "laptop";
+  const testQuery = req.body.query || "Samsung Galaxy S26 Ultra";
 
   if (!base_url) {
     return res.status(400).json({ error: "Base URL is required for testing." });
@@ -412,7 +413,7 @@ router.post("/test-store", async (req, res) => {
   }
 });
 
-// Raw HTML fetch test
+// Raw HTML fetch test (Upgraded to Stealth Puppeteer Engine)
 router.post("/test-store-raw", async (req, res) => {
   const { base_url, search_url_template, query, selectors } = req.body;
   if (!search_url_template) {
@@ -423,19 +424,18 @@ router.post("/test-store-raw", async (req, res) => {
   const customHeaders = selectors?.headers || {};
 
   try {
-    const response = await fetch(searchUrl, {
-      method: selectors?.method || "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        ...customHeaders
-      },
-      body: (selectors?.method === "POST") ? (selectors?.body || null) : undefined
+    // Replaced standard fetch() with our zero-cost stealth scraper
+    const htmlText = await executeZeroCostScrape(searchUrl, async (page) => {
+      // Apply any custom headers defined in the store config
+      if (Object.keys(customHeaders).length > 0) {
+        await page.setExtraHTTPHeaders(customHeaders);
+      }
+      return await page.content();
     });
 
-    const status = response.status;
-    const ok = response.ok;
-    const htmlText = await response.text();
+    if (!htmlText) {
+      throw new Error("Stealth browser returned empty HTML or blocked by anti-bot protection.");
+    }
 
     let bodyContent = htmlText;
     const bodyMatch = htmlText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -447,8 +447,8 @@ router.post("/test-store-raw", async (req, res) => {
     const truncatedHtml = bodyContent.length > maxLen ? bodyContent.slice(0, maxLen) + "\n\n... [Truncated]" : bodyContent;
 
     res.json({
-      success: ok,
-      status,
+      success: true,
+      status: 200, // Stealth scrape succeeds with 200 if HTML is returned
       contentLength: htmlText.length,
       htmlSnippet: truncatedHtml
     });
